@@ -34,7 +34,7 @@ export default function AuditLogsPage() {
     {
       id: "log-102",
       timestamp: "2026-10-03 21:40:12",
-      user: "Dian Sastrawan (Admin)",
+      user: "Pricilia Kishin Hassanand (Admin)",
       role: "ADMINISTRATOR",
       ipAddress: "103.21.244.18",
       action: "2FA_AUTHENTICATION_SUCCESS",
