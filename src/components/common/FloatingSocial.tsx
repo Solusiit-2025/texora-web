@@ -2,12 +2,12 @@
 
 import { motion } from "framer-motion";
 import { SOCIAL_LINKS } from "@/config/social";
-import { SOCIAL_HOVER, SOCIAL_ICONS } from "./SocialLinks";
+import { SOCIAL_BRAND, SOCIAL_ICONS } from "./SocialLinks";
 
 /**
  * Floating social rail pinned to the right edge of the viewport.
  * Hidden on small screens (footer icons cover mobile); each item
- * expands to reveal its label on hover (desktop).
+ * is brand-colored and expands to reveal its label on hover (desktop).
  */
 export function FloatingSocial() {
   return (
@@ -15,11 +15,12 @@ export function FloatingSocial() {
       initial={{ x: 48, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={{ delay: 0.6, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-      className="hidden md:flex fixed right-0 top-1/2 -translate-y-1/2 z-40 flex-col gap-1 p-1.5 rounded-l-2xl bg-slate-900/90 border border-r-0 border-slate-700/80 shadow-2xl shadow-black/50 backdrop-blur-xl"
+      className="hidden md:flex fixed right-0 top-1/2 -translate-y-1/2 z-40 flex-col gap-1.5 p-2 rounded-l-2xl bg-slate-900/90 border border-r-0 border-slate-700/80 shadow-2xl shadow-black/50 backdrop-blur-xl"
       aria-label="Media sosial Texora"
     >
       {SOCIAL_LINKS.map((s) => {
         const Icon = SOCIAL_ICONS[s.id];
+        const brand = SOCIAL_BRAND[s.id];
         return (
           <a
             key={s.id}
@@ -28,10 +29,25 @@ export function FloatingSocial() {
             rel="noopener noreferrer"
             aria-label={s.label}
             title={s.label}
-            className={`group flex items-center gap-0 rounded-xl p-2.5 text-slate-400 transition-colors hover:bg-slate-800 ${SOCIAL_HOVER[s.id]}`}
+            style={{
+              color: brand.color,
+              backgroundColor: brand.bg,
+              borderColor: brand.border,
+              ["--sc" as string]: brand.glow,
+            }}
+            className="group flex items-center gap-0 rounded-xl border p-2 transition-all hover:shadow-[0_8px_24px_-6px_var(--sc)] hover:brightness-125"
           >
-            <Icon className="w-[18px] h-[18px] shrink-0" />
-            <span className="max-w-0 overflow-hidden whitespace-nowrap text-xs font-semibold transition-all duration-300 group-hover:max-w-[120px] group-hover:ml-2 group-hover:mr-1">
+            <span
+              className="flex shrink-0"
+              style={
+                brand.chromatic
+                  ? { filter: "drop-shadow(1px 0 0 #25F4EE) drop-shadow(-1px 0 0 #FE2C55)" }
+                  : undefined
+              }
+            >
+              <Icon className="w-[18px] h-[18px]" />
+            </span>
+            <span className="max-w-0 overflow-hidden whitespace-nowrap text-xs font-semibold text-slate-100 transition-all duration-300 group-hover:max-w-[140px] group-hover:ml-2 group-hover:mr-1">
               {s.label}
             </span>
           </a>

@@ -33,12 +33,61 @@ export const SOCIAL_HOVER: Record<SocialLink["id"], string> = {
   whatsapp: "hover:border-emerald-500/60 hover:text-emerald-400",
 };
 
+export interface SocialBrand {
+  /** Icon color */
+  color: string;
+  /** Translucent tinted background */
+  bg: string;
+  /** Translucent tinted border */
+  border: string;
+  /** Glow color for hover shadow */
+  glow: string;
+  /** TikTok chromatic aberration effect (cyan/pink split) */
+  chromatic?: boolean;
+}
+
+/** Official-ish brand colors tuned for the dark UI. */
+export const SOCIAL_BRAND: Record<SocialLink["id"], SocialBrand> = {
+  tiktok: {
+    color: "#FFFFFF",
+    bg: "rgba(255,255,255,0.07)",
+    border: "rgba(255,255,255,0.22)",
+    glow: "rgba(37,244,238,0.35)",
+    chromatic: true,
+  },
+  instagram: {
+    color: "#F0426E",
+    bg: "rgba(240,66,110,0.10)",
+    border: "rgba(240,66,110,0.35)",
+    glow: "rgba(240,66,110,0.40)",
+  },
+  facebook: {
+    color: "#4C9AFF",
+    bg: "rgba(76,154,255,0.10)",
+    border: "rgba(76,154,255,0.35)",
+    glow: "rgba(76,154,255,0.40)",
+  },
+  youtube: {
+    color: "#FF4D4D",
+    bg: "rgba(255,77,77,0.10)",
+    border: "rgba(255,77,77,0.35)",
+    glow: "rgba(255,77,77,0.40)",
+  },
+  whatsapp: {
+    color: "#2EE06F",
+    bg: "rgba(46,224,111,0.10)",
+    border: "rgba(46,224,111,0.35)",
+    glow: "rgba(46,224,111,0.40)",
+  },
+};
+
 /** Social media icon buttons (TikTok, Instagram, Facebook, YouTube, WhatsApp). */
 export function SocialLinks() {
   return (
     <div className="flex items-center gap-2.5">
       {SOCIAL_LINKS.map((s) => {
         const Icon = SOCIAL_ICONS[s.id];
+        const brand = SOCIAL_BRAND[s.id];
         return (
           <a
             key={s.id}
@@ -47,9 +96,24 @@ export function SocialLinks() {
             rel="noopener noreferrer"
             aria-label={s.label}
             title={s.label}
-            className={`w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 transition-all hover:-translate-y-0.5 ${SOCIAL_HOVER[s.id]}`}
+            style={{
+              color: brand.color,
+              backgroundColor: brand.bg,
+              borderColor: brand.border,
+              ["--sc" as string]: brand.glow,
+            }}
+            className="w-9 h-9 rounded-xl border flex items-center justify-center transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_-6px_var(--sc)] hover:brightness-125"
           >
-            <Icon className="w-4 h-4" />
+            <span
+              className="flex"
+              style={
+                brand.chromatic
+                  ? { filter: "drop-shadow(1px 0 0 #25F4EE) drop-shadow(-1px 0 0 #FE2C55)" }
+                  : undefined
+              }
+            >
+              <Icon className="w-4 h-4" />
+            </span>
           </a>
         );
       })}
