@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   Home,
   Layers, 
@@ -23,8 +24,23 @@ interface NavbarProps {
   cartCount?: number;
 }
 
+const NAV_LINKS = [
+  { name: "Home", href: "/", icon: Home },
+  { name: "Katalog Kain", href: "/catalog", icon: Layers },
+  { 
+    name: "Kustom Sublimasi", 
+    href: "/custom-sublimation", 
+    badge: "Visualizer",
+    icon: Palette,
+    special: true
+  },
+  { name: "Lacak Pesanan", href: "/track-order" },
+  { name: "Konsultasi B2B", href: "/contact" },
+];
+
 export function Navbar({ cartCount = 2 }: NavbarProps) {
   const pathname = usePathname();
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
   const [activeRole, setActiveRole] = useState("Pembeli (Storefront)");
@@ -58,60 +74,87 @@ export function Navbar({ cartCount = 2 }: NavbarProps) {
             </div>
           </Link>
 
-          {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center space-x-1">
-            <Link 
-              href="/" 
-              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
-                pathname === "/"
-                  ? "text-white bg-white/10 font-semibold border border-white/15 shadow-sm"
-                  : "text-slate-200 hover:text-white hover:bg-white/5"
-              }`}
-            >
-              <Home className={`w-4 h-4 ${pathname === "/" ? "text-brand-300" : "text-slate-400"}`} />
-              <span>Home</span>
-            </Link>
+          {/* Desktop Navigation Links with Professional Floating Pill Transitions */}
+          <nav 
+            className="hidden lg:flex items-center space-x-1 p-1 rounded-2xl bg-slate-900/50 border border-white/10 backdrop-blur-md relative"
+            onMouseLeave={() => setHoveredIndex(null)}
+          >
+            {NAV_LINKS.map((item, index) => {
+              const isActive = item.href === "/" 
+                ? pathname === "/" 
+                : pathname?.startsWith(item.href);
+              const isHovered = hoveredIndex === index;
+              const Icon = item.icon;
 
-            <Link 
-              href="/catalog" 
-              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
-                pathname?.startsWith("/catalog")
-                  ? "text-white bg-white/10 font-semibold border border-white/15 shadow-sm"
-                  : "text-slate-200 hover:text-white hover:bg-white/5"
-              }`}
-            >
-              <span>Katalog Kain</span>
-            </Link>
-            
-            <Link 
-              href="/custom-sublimation" 
-              className="px-3.5 py-2 rounded-lg text-sm font-semibold text-accent-cyan hover:bg-accent-cyan/10 transition-all flex items-center gap-1.5 border border-accent-cyan/30"
-            >
-              <Palette className="w-4 h-4 text-accent-cyan animate-pulse" />
-              <span>Kustom Sublimasi (Visualizer)</span>
-            </Link>
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onMouseEnter={() => setHoveredIndex(index)}
+                  className={`relative px-4 py-2 rounded-xl text-sm font-medium transition-colors duration-200 flex items-center gap-2 select-none ${
+                    item.special
+                      ? isActive
+                        ? "text-accent-cyan font-bold"
+                        : "text-accent-cyan hover:text-white"
+                      : isActive 
+                        ? "text-white font-semibold" 
+                        : "text-slate-300 hover:text-white"
+                  }`}
+                >
+                  {/* Floating Hover Indicator Pill (Glides effortlessly between items) */}
+                  {isHovered && !isActive && (
+                    <motion.span
+                      layoutId="nav-hover-pill"
+                      className="absolute inset-0 rounded-xl bg-white/[0.08] border border-white/10"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ type: "spring", stiffness: 450, damping: 32 }}
+                    />
+                  )}
 
-            <Link 
-              href="/track-order" 
-              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all ${
-                pathname?.startsWith("/track-order")
-                  ? "text-white bg-white/10 font-semibold border border-white/15 shadow-sm"
-                  : "text-slate-200 hover:text-white hover:bg-white/5"
-              }`}
-            >
-              Lacak Pesanan
-            </Link>
+                  {/* Active Page Gliding Pill & Subtle Bottom Gold Beacon */}
+                  {isActive && (
+                    <>
+                      <motion.span
+                        layoutId="nav-active-pill"
+                        className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/[0.14] to-white/[0.04] border border-white/20 shadow-[0_2px_12px_rgba(0,0,0,0.35)]"
+                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                      />
+                      <motion.span
+                        layoutId="nav-active-glow"
+                        className="absolute -bottom-[2px] left-3 right-3 h-[2px] rounded-full bg-gradient-to-r from-transparent via-brand-400 to-transparent shadow-[0_0_8px_rgba(220,185,110,0.9)]"
+                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                      />
+                    </>
+                  )}
 
-            <Link 
-              href="/contact" 
-              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all ${
-                pathname?.startsWith("/contact")
-                  ? "text-white bg-white/10 font-semibold border border-white/15 shadow-sm"
-                  : "text-slate-200 hover:text-white hover:bg-white/5"
-              }`}
-            >
-              Konsultasi B2B
-            </Link>
+                  <span className="relative z-10 flex items-center gap-2">
+                    {Icon && (
+                      <Icon 
+                        className={`w-4 h-4 transition-transform duration-200 ${
+                          item.special
+                            ? "text-accent-cyan animate-pulse"
+                            : isActive 
+                              ? "text-brand-300 scale-105" 
+                              : "text-slate-400"
+                        }`} 
+                      />
+                    )}
+                    <span>{item.name}</span>
+                    {item.badge && (
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${
+                        isActive
+                          ? "bg-accent-cyan/25 text-accent-cyan border border-accent-cyan/40"
+                          : "bg-accent-cyan/15 text-accent-cyan border border-accent-cyan/25"
+                      }`}>
+                        {item.badge}
+                      </span>
+                    )}
+                  </span>
+                </Link>
+              );
+            })}
           </nav>
 
           {/* Right Action Controls: Role Switcher Demo, Cart & Portal Access */}
@@ -130,70 +173,78 @@ export function Navbar({ cartCount = 2 }: NavbarProps) {
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
               </button>
 
-              {roleDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-64 rounded-xl bg-slate-900 border border-slate-700 shadow-2xl p-2 z-50 backdrop-blur-xl">
-                  <div className="text-[10px] uppercase font-bold text-slate-400 px-3 py-1.5 tracking-wider">
-                    Simulasi Akses Peran (PRD RBAC)
-                  </div>
-                  <Link
-                    href="/"
-                    onClick={() => { setActiveRole("Pembeli (Storefront)"); setRoleDropdownOpen(false); }}
-                    className="flex items-center justify-between px-3 py-2 rounded-lg text-xs hover:bg-brand-500/20 text-slate-200 hover:text-brand-300 transition-colors"
+              <AnimatePresence>
+                {roleDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: -6 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: -6 }}
+                    transition={{ duration: 0.18, ease: "easeOut" }}
+                    className="absolute right-0 mt-2 w-64 rounded-2xl bg-slate-900/95 border border-slate-700 shadow-2xl p-2 z-50 backdrop-blur-2xl"
                   >
-                    <span>🛒 Toko & Katalog (Storefront)</span>
-                    <span className="text-[10px] text-slate-400">Publik</span>
-                  </Link>
-                  <Link
-                    href="/customer/dashboard"
-                    onClick={() => { setActiveRole("Portal Pelanggan B2B"); setRoleDropdownOpen(false); }}
-                    className="flex items-center justify-between px-3 py-2 rounded-lg text-xs hover:bg-emerald-500/20 text-slate-200 hover:text-emerald-300 transition-colors font-medium"
-                  >
-                    <span>👤 Portal Pelanggan (Proofing & Pajak)</span>
-                    <span className="text-[10px] bg-emerald-500/30 px-1.5 py-0.5 rounded text-white">B2B V2</span>
-                  </Link>
-                  <Link
-                    href="/portal/crm/leads"
-                    onClick={() => { setActiveRole("Sales Rep (CRM)"); setRoleDropdownOpen(false); }}
-                    className="flex items-center justify-between px-3 py-2 rounded-lg text-xs hover:bg-accent-violet/20 text-slate-200 hover:text-accent-violet transition-colors"
-                  >
-                    <span>💼 Sales Rep (CRM Pipeline)</span>
-                    <span className="text-[10px] bg-accent-violet/30 px-1.5 py-0.5 rounded text-white">Internal</span>
-                  </Link>
-                  <Link
-                    href="/portal/warehouse/inventory"
-                    onClick={() => { setActiveRole("Gudang (Warehouse)"); setRoleDropdownOpen(false); }}
-                    className="flex items-center justify-between px-3 py-2 rounded-lg text-xs hover:bg-accent-amber/20 text-slate-200 hover:text-accent-amber transition-colors"
-                  >
-                    <span>📦 Staf Gudang (Roll Barcode)</span>
-                    <span className="text-[10px] bg-accent-amber/30 px-1.5 py-0.5 rounded text-white">Internal</span>
-                  </Link>
-                  <Link
-                    href="/portal/dashboard"
-                    onClick={() => { setActiveRole("Admin (Enterprise Portal)"); setRoleDropdownOpen(false); }}
-                    className="flex items-center justify-between px-3 py-2 rounded-lg text-xs hover:bg-brand-500/20 text-slate-200 hover:text-brand-300 transition-colors font-semibold"
-                  >
-                    <span>⚡ Executive Portal & OMS</span>
-                    <span className="text-[10px] bg-brand-500/40 px-1.5 py-0.5 rounded text-white">Admin</span>
-                  </Link>
-                  <Link
-                    href="/portal/audit-logs"
-                    onClick={() => { setActiveRole("Keamanan & Audit"); setRoleDropdownOpen(false); }}
-                    className="flex items-center justify-between px-3 py-2 rounded-lg text-xs hover:bg-red-500/20 text-slate-200 hover:text-red-300 transition-colors"
-                  >
-                    <span>🛡️ Log Audit & Jejak 2FA</span>
-                    <span className="text-[10px] bg-red-500/30 px-1.5 py-0.5 rounded text-white">Security</span>
-                  </Link>
-                  <div className="my-1 border-t border-slate-800" />
-                  <Link
-                    href="/login"
-                    onClick={() => setRoleDropdownOpen(false)}
-                    className="flex items-center justify-between px-3 py-2 rounded-lg text-xs bg-brand-500/10 hover:bg-brand-500/20 text-brand-300 transition-colors font-semibold"
-                  >
-                    <span>🔐 Halaman Masuk / Login</span>
-                    <span className="text-[10px] text-brand-400">Auth</span>
-                  </Link>
-                </div>
-              )}
+                    <div className="text-[10px] uppercase font-bold text-slate-400 px-3 py-1.5 tracking-wider">
+                      Simulasi Akses Peran (PRD RBAC)
+                    </div>
+                    <Link
+                      href="/"
+                      onClick={() => { setActiveRole("Pembeli (Storefront)"); setRoleDropdownOpen(false); }}
+                      className="flex items-center justify-between px-3 py-2 rounded-lg text-xs hover:bg-brand-500/20 text-slate-200 hover:text-brand-300 transition-colors"
+                    >
+                      <span>🛒 Toko & Katalog (Storefront)</span>
+                      <span className="text-[10px] text-slate-400">Publik</span>
+                    </Link>
+                    <Link
+                      href="/customer/dashboard"
+                      onClick={() => { setActiveRole("Portal Pelanggan B2B"); setRoleDropdownOpen(false); }}
+                      className="flex items-center justify-between px-3 py-2 rounded-lg text-xs hover:bg-emerald-500/20 text-slate-200 hover:text-emerald-300 transition-colors font-medium"
+                    >
+                      <span>👤 Portal Pelanggan (Proofing & Pajak)</span>
+                      <span className="text-[10px] bg-emerald-500/30 px-1.5 py-0.5 rounded text-white">B2B V2</span>
+                    </Link>
+                    <Link
+                      href="/portal/crm/leads"
+                      onClick={() => { setActiveRole("Sales Rep (CRM)"); setRoleDropdownOpen(false); }}
+                      className="flex items-center justify-between px-3 py-2 rounded-lg text-xs hover:bg-accent-violet/20 text-slate-200 hover:text-accent-violet transition-colors"
+                    >
+                      <span>💼 Sales Rep (CRM Pipeline)</span>
+                      <span className="text-[10px] bg-accent-violet/30 px-1.5 py-0.5 rounded text-white">Internal</span>
+                    </Link>
+                    <Link
+                      href="/portal/warehouse/inventory"
+                      onClick={() => { setActiveRole("Gudang (Warehouse)"); setRoleDropdownOpen(false); }}
+                      className="flex items-center justify-between px-3 py-2 rounded-lg text-xs hover:bg-accent-amber/20 text-slate-200 hover:text-accent-amber transition-colors"
+                    >
+                      <span>📦 Staf Gudang (Roll Barcode)</span>
+                      <span className="text-[10px] bg-accent-amber/30 px-1.5 py-0.5 rounded text-white">Internal</span>
+                    </Link>
+                    <Link
+                      href="/portal/dashboard"
+                      onClick={() => { setActiveRole("Admin (Enterprise Portal)"); setRoleDropdownOpen(false); }}
+                      className="flex items-center justify-between px-3 py-2 rounded-lg text-xs hover:bg-brand-500/20 text-slate-200 hover:text-brand-300 transition-colors font-semibold"
+                    >
+                      <span>⚡ Executive Portal & OMS</span>
+                      <span className="text-[10px] bg-brand-500/40 px-1.5 py-0.5 rounded text-white">Admin</span>
+                    </Link>
+                    <Link
+                      href="/portal/audit-logs"
+                      onClick={() => { setActiveRole("Keamanan & Audit"); setRoleDropdownOpen(false); }}
+                      className="flex items-center justify-between px-3 py-2 rounded-lg text-xs hover:bg-red-500/20 text-slate-200 hover:text-red-300 transition-colors"
+                    >
+                      <span>🛡️ Log Audit & Jejak 2FA</span>
+                      <span className="text-[10px] bg-red-500/30 px-1.5 py-0.5 rounded text-white">Security</span>
+                    </Link>
+                    <div className="my-1 border-t border-slate-800" />
+                    <Link
+                      href="/login"
+                      onClick={() => setRoleDropdownOpen(false)}
+                      className="flex items-center justify-between px-3 py-2 rounded-lg text-xs bg-brand-500/10 hover:bg-brand-500/20 text-brand-300 transition-colors font-semibold"
+                    >
+                      <span>🔐 Halaman Masuk / Login</span>
+                      <span className="text-[10px] text-brand-400">Auth</span>
+                    </Link>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Shopping Cart Button */}
@@ -234,7 +285,7 @@ export function Navbar({ cartCount = 2 }: NavbarProps) {
             </Link>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white"
+              className="p-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white transition-colors"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -243,64 +294,63 @@ export function Navbar({ cartCount = 2 }: NavbarProps) {
         </div>
       </div>
 
-      {/* Mobile Menu Dropdown */}
-      {mobileMenuOpen && (
-        <div className="md:hidden bg-slate-900/95 border-b border-slate-800 px-4 pt-3 pb-6 space-y-2 backdrop-blur-xl">
-          <Link
-            href="/"
-            onClick={() => setMobileMenuOpen(false)}
-            className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-base font-medium transition-all ${
-              pathname === "/"
-                ? "bg-brand-500/20 text-white font-bold border border-brand-500/30"
-                : "text-slate-200 hover:bg-slate-800"
-            }`}
+      {/* Mobile Menu Dropdown with Smooth Staggered Animation */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            className="md:hidden overflow-hidden bg-slate-900/98 border-b border-slate-800 px-4 pt-3 pb-6 space-y-2 backdrop-blur-2xl"
           >
-            <Home className="w-5 h-5 text-brand-400" />
-            <span>Home</span>
-          </Link>
-          <Link
-            href="/catalog"
-            onClick={() => setMobileMenuOpen(false)}
-            className={`block px-3 py-2 rounded-lg text-base font-medium transition-all ${
-              pathname?.startsWith("/catalog")
-                ? "bg-brand-500/20 text-white font-bold border border-brand-500/30"
-                : "text-slate-200 hover:bg-slate-800"
-            }`}
-          >
-            Katalog Kain
-          </Link>
-          <Link
-            href="/custom-sublimation"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2 rounded-lg text-base font-semibold text-accent-cyan bg-accent-cyan/10 border border-accent-cyan/30"
-          >
-            Kustom Sublimasi (Visualizer)
-          </Link>
-          <Link
-            href="/track-order"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2 rounded-lg text-base font-medium text-slate-200 hover:bg-slate-800"
-          >
-            Lacak Pesanan
-          </Link>
-          <Link
-            href="/contact"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2 rounded-lg text-base font-medium text-slate-200 hover:bg-slate-800"
-          >
-            Konsultasi B2B
-          </Link>
-          <div className="pt-2 border-t border-slate-800 flex flex-col gap-2">
-            <Link
-              href="/portal/dashboard"
-              onClick={() => setMobileMenuOpen(false)}
-              className="w-full text-center py-2.5 rounded-lg bg-brand-600 text-white font-semibold text-sm"
-            >
-              Buka Internal Portal (CRM & OMS)
-            </Link>
-          </div>
-        </div>
-      )}
+            {NAV_LINKS.map((item, idx) => {
+              const isActive = item.href === "/" 
+                ? pathname === "/" 
+                : pathname?.startsWith(item.href);
+              const Icon = item.icon;
+
+              return (
+                <motion.div
+                  key={item.href}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.035, duration: 0.2 }}
+                >
+                  <Link
+                    href={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-base font-medium transition-all ${
+                      isActive
+                        ? "bg-brand-500/20 text-white font-bold border border-brand-500/30"
+                        : "text-slate-200 hover:bg-slate-800/80 hover:text-white"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      {Icon && <Icon className={`w-5 h-5 ${isActive ? "text-brand-300" : "text-slate-400"}`} />}
+                      <span>{item.name}</span>
+                    </div>
+                    {item.badge && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider bg-accent-cyan/20 text-accent-cyan border border-accent-cyan/40">
+                        {item.badge}
+                      </span>
+                    )}
+                  </Link>
+                </motion.div>
+              );
+            })}
+            <div className="pt-2 border-t border-slate-800 flex flex-col gap-2">
+              <Link
+                href="/portal/dashboard"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full text-center py-2.5 rounded-xl bg-brand-600 text-white font-semibold text-sm shadow-lg shadow-brand-600/30"
+              >
+                Buka Internal Portal (CRM & OMS)
+              </Link>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 }
