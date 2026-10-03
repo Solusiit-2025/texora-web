@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { FloatingSocial } from "@/components/common/FloatingSocial";
 
 export const metadata: Metadata = {
   title: "PT. Texora Visi Prima — Sublimasi & Kain Industri",
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="bg-textile-pattern text-slate-100 antialiased min-h-screen flex flex-col font-sans">
         <ThemeProvider>{children}</ThemeProvider>
+        <FloatingSocial />
       </body>
     </html>
   );

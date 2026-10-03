@@ -17,7 +17,7 @@ function WhatsAppIcon({ className }: { className?: string }) {
   );
 }
 
-const ICONS: Record<SocialLink["id"], (props: { className?: string }) => JSX.Element> = {
+export const SOCIAL_ICONS: Record<SocialLink["id"], (props: { className?: string }) => JSX.Element> = {
   tiktok: TikTokIcon,
   instagram: (p) => <Instagram className={p.className} />,
   facebook: (p) => <Facebook className={p.className} />,
@@ -25,7 +25,7 @@ const ICONS: Record<SocialLink["id"], (props: { className?: string }) => JSX.Ele
   whatsapp: WhatsAppIcon,
 };
 
-const HOVER: Record<SocialLink["id"], string> = {
+export const SOCIAL_HOVER: Record<SocialLink["id"], string> = {
   tiktok: "hover:border-white/50 hover:text-white",
   instagram: "hover:border-pink-500/60 hover:text-pink-400",
   facebook: "hover:border-blue-500/60 hover:text-blue-400",
@@ -38,7 +38,7 @@ export function SocialLinks() {
   return (
     <div className="flex items-center gap-2.5">
       {SOCIAL_LINKS.map((s) => {
-        const Icon = ICONS[s.id];
+        const Icon = SOCIAL_ICONS[s.id];
         return (
           <a
             key={s.id}
@@ -47,7 +47,7 @@ export function SocialLinks() {
             rel="noopener noreferrer"
             aria-label={s.label}
             title={s.label}
-            className={`w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 transition-all hover:-translate-y-0.5 ${HOVER[s.id]}`}
+            className={`w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 transition-all hover:-translate-y-0.5 ${SOCIAL_HOVER[s.id]}`}
           >
             <Icon className="w-4 h-4" />
           </a>
