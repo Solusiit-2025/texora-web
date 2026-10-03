@@ -5,12 +5,87 @@
 @tailwind utilities;
 
 :root {
+  color-scheme: dark;
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-display: 'Urbanist', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-inter: var(--font-sans);
   --font-outfit: var(--font-display);
   --font-jakarta: var(--font-sans);
   --font-urbanist: var(--font-display);
+
+  /* Default theme: Antique Brass (PRD V3 #C29B38). Values are bare
+     RGB triplets so Tailwind opacity modifiers keep working. */
+  --brand-50: 251 247 236;
+  --brand-100: 244 235 205;
+  --brand-200: 233 214 156;
+  --brand-300: 220 191 106;
+  --brand-400: 207 171 75;
+  --brand-500: 194 155 56;
+  --brand-600: 164 127 42;
+  --brand-700: 131 99 34;
+  --brand-800: 100 75 29;
+  --brand-900: 61 47 20;
+  --brand-950: 33 26 11;
+  --accent-cyan: 217 185 92;
+  --accent-violet: 154 123 79;
+}
+
+/* Emerald — deep factory green identity */
+[data-theme="emerald"] {
+  --brand-50: 236 253 245;
+  --brand-100: 209 250 229;
+  --brand-200: 167 243 208;
+  --brand-300: 110 231 183;
+  --brand-400: 52 211 153;
+  --brand-500: 16 185 129;
+  --brand-600: 5 150 105;
+  --brand-700: 4 120 87;
+  --brand-800: 6 95 70;
+  --brand-900: 6 78 59;
+  --brand-950: 2 44 34;
+  --accent-cyan: 94 234 212;
+  --accent-violet: 4 120 87;
+}
+
+/* Sapphire — industrial blue identity */
+[data-theme="sapphire"] {
+  --brand-50: 239 246 255;
+  --brand-100: 219 234 254;
+  --brand-200: 191 219 254;
+  --brand-300: 147 197 253;
+  --brand-400: 96 165 250;
+  --brand-500: 59 130 246;
+  --brand-600: 37 99 235;
+  --brand-700: 29 78 216;
+  --brand-800: 30 64 175;
+  --brand-900: 30 58 138;
+  --brand-950: 23 37 84;
+  --accent-cyan: 125 211 252;
+  --accent-violet: 29 78 216;
+}
+
+/* Crimson — rose red identity */
+[data-theme="crimson"] {
+  --brand-50: 255 241 242;
+  --brand-100: 255 228 230;
+  --brand-200: 254 205 211;
+  --brand-300: 253 164 175;
+  --brand-400: 251 113 133;
+  --brand-500: 244 63 94;
+  --brand-600: 225 29 72;
+  --brand-700: 190 18 60;
+  --brand-800: 136 19 55;
+  --brand-900: 76 5 25;
+  --brand-950: 32 6 13;
+  --accent-cyan: 253 164 175;
+  --accent-violet: 159 18 57;
+}
+
+/* Smooth cross-fade when switching themes (low specificity: Tailwind
+   transition utilities still win wherever they are set). */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 0.3s;
 }
 
 body {
@@ -30,12 +105,12 @@ h1, h2, h3, h4, h5, h6 {
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
-/* Glass surface with thin brass hairline (PRD V3 §4 UI Component Customization) */
+/* Glass surface with thin theme hairline (PRD V3 §4 UI Component Customization) */
 .glass-panel {
   background: rgba(17, 24, 39, 0.72);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(194, 155, 56, 0.18);
+  border: 1px solid rgb(var(--brand-500) / 0.18);
 }
 
 .glass-panel-hover {
@@ -43,14 +118,14 @@ h1, h2, h3, h4, h5, h6 {
 }
 .glass-panel-hover:hover {
   transform: translateY(-3px);
-  border-color: rgba(194, 155, 56, 0.55);
+  border-color: rgb(var(--brand-500) / 0.55);
 }
 
 /* Woven textile texture — subtle warp/weft crosshatch instead of a tech grid */
 .bg-textile-pattern {
   background-color: #0f172a;
   background-image:
-    radial-gradient(ellipse at 85% 0%, rgba(194, 155, 56, 0.10) 0px, transparent 55%),
+    radial-gradient(ellipse at 85% 0%, rgb(var(--brand-500) / 0.10) 0px, transparent 55%),
     radial-gradient(ellipse at 0% 100%, rgba(217, 119, 6, 0.07) 0px, transparent 50%),
     repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.012) 0 2px, transparent 2px 6px),
     repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.012) 0 2px, transparent 2px 6px);
@@ -65,9 +140,9 @@ h1, h2, h3, h4, h5, h6 {
   color: #111827;
 }
 
-/* Brass foil text — slow, restrained sheen rather than a neon gradient loop */
+/* Themed foil text — slow, restrained sheen rather than a neon gradient loop */
 .animated-gradient-text {
-  background: linear-gradient(110deg, #a47f2a 0%, #e9d69c 45%, #c29b38 55%, #a47f2a 100%);
+  background: linear-gradient(110deg, rgb(var(--brand-700)) 0%, rgb(var(--brand-200)) 45%, rgb(var(--brand-500)) 55%, rgb(var(--brand-700)) 100%);
   background-size: 250% 100%;
   -webkit-background-clip: text;
   background-clip: text;
@@ -79,19 +154,19 @@ h1, h2, h3, h4, h5, h6 {
   50% { background-position: 0% 50%; }
 }
 
-/* Thin brass rule with a centred diamond — used as an editorial divider */
+/* Thin theme rule with a centred diamond — used as an editorial divider */
 .brass-rule {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  color: #c29b38;
+  color: rgb(var(--brand-500));
 }
 .brass-rule::before,
 .brass-rule::after {
   content: "";
   height: 1px;
   flex: 1;
-  background: linear-gradient(90deg, transparent, rgba(194, 155, 56, 0.6), transparent);
+  background: linear-gradient(90deg, transparent, rgb(var(--brand-500) / 0.6), transparent);
 }
 
 /* Marquee */
@@ -119,5 +194,5 @@ h1, h2, h3, h4, h5, h6 {
 /* Scrollbar */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: #0f172a; }
-::-webkit-scrollbar-thumb { background: #3d2f14; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #644b1d; }
+::-webkit-scrollbar-thumb { background: rgb(var(--brand-900)); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgb(var(--brand-800)); }

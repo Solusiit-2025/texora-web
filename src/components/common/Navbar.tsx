@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { ThemeDropdown } from "../theme/ThemeDropdown";
 import { 
   Home,
   Layers, 
@@ -123,7 +124,7 @@ export function Navbar({ cartCount = 2 }: NavbarProps) {
                       />
                       <motion.span
                         layoutId="nav-active-glow"
-                        className="absolute -bottom-[2px] left-3 right-3 h-[2px] rounded-full bg-gradient-to-r from-transparent via-brand-400 to-transparent shadow-[0_0_8px_rgba(220,185,110,0.9)]"
+                        className="absolute -bottom-[2px] left-3 right-3 h-[2px] rounded-full bg-gradient-to-r from-transparent via-brand-400 to-transparent shadow-[0_0_8px_rgb(var(--brand-300)/0.9)]"
                         transition={{ type: "spring", stiffness: 380, damping: 30 }}
                       />
                     </>
@@ -247,6 +248,9 @@ export function Navbar({ cartCount = 2 }: NavbarProps) {
               </AnimatePresence>
             </div>
 
+            {/* Accent Theme Picker */}
+            <ThemeDropdown />
+
             {/* Shopping Cart Button */}
             <Link
               href="/cart"
@@ -272,6 +276,7 @@ export function Navbar({ cartCount = 2 }: NavbarProps) {
 
           {/* Mobile menu button */}
           <div className="flex md:hidden items-center space-x-2">
+            <ThemeDropdown compact />
             <Link
               href="/cart"
               className="relative p-2 rounded-lg bg-slate-800 text-slate-200"

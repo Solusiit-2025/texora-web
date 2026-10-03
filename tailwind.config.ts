@@ -17,28 +17,33 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Antique Brass scale (primary accent, PRD V3 #C29B38)
+        // Themeable identity palette — resolved from CSS variables per
+        // `data-theme` on <html> (see globals.css). All `brand-*`,
+        // `accent-cyan/violet` and `brass` classes follow the active theme
+        // automatically, including opacity modifiers (`/10`, `/20`, ...).
+        // Semantic colors (magenta/amber/emerald notifications, terracotta)
+        // stay constant across themes.
         brand: {
-          50: "#FBF7EC",
-          100: "#F4EBCD",
-          200: "#E9D69C",
-          300: "#DCBF6A",
-          400: "#CFAB4B",
-          500: "#C29B38",
-          600: "#A47F2A",
-          700: "#836322",
-          800: "#644B1D",
-          900: "#3D2F14",
-          950: "#211A0B",
+          50: "rgb(var(--brand-50) / <alpha-value>)",
+          100: "rgb(var(--brand-100) / <alpha-value>)",
+          200: "rgb(var(--brand-200) / <alpha-value>)",
+          300: "rgb(var(--brand-300) / <alpha-value>)",
+          400: "rgb(var(--brand-400) / <alpha-value>)",
+          500: "rgb(var(--brand-500) / <alpha-value>)",
+          600: "rgb(var(--brand-600) / <alpha-value>)",
+          700: "rgb(var(--brand-700) / <alpha-value>)",
+          800: "rgb(var(--brand-800) / <alpha-value>)",
+          900: "rgb(var(--brand-900) / <alpha-value>)",
+          950: "rgb(var(--brand-950) / <alpha-value>)",
         },
         accent: {
-          cyan: "#D9B95C",      // light brass highlight (replaces neon cyan)
-          violet: "#9A7B4F",    // aged bronze (replaces violet)
-          magenta: "#D97706",   // warm terracotta (PRD V3 #D97706)
-          amber: "#D97706",
-          emerald: "#4D7C5B",   // muted factory green for success states
+          cyan: "rgb(var(--accent-cyan) / <alpha-value>)",
+          violet: "rgb(var(--accent-violet) / <alpha-value>)",
+          magenta: "#D97706",   // notification secondary (constant)
+          amber: "#D97706",      // warning (constant)
+          emerald: "#4D7C5B",    // muted factory green for success states (constant)
         },
-        brass: "#C29B38",
+        brass: "rgb(var(--brand-500) / <alpha-value>)",
         terracotta: "#D97706",
         alabaster: "#F9FAFB",
         ink: {

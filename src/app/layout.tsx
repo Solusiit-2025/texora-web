@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
 
 export const metadata: Metadata = {
   title: "PT. Texora Visi Prima — Sublimasi & Kain Industri",
@@ -23,9 +25,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Urbanist:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap"
           rel="stylesheet"
         />
+        {/* Apply stored accent theme before first paint (avoids flash). */}
+        <Script id="texora-theme" strategy="beforeInteractive">
+          {`(function(){try{var t=localStorage.getItem('texora-theme');if(t==='emerald'||t==='sapphire'||t==='crimson'){document.documentElement.dataset.theme=t;}}catch(e){}})()`}
+        </Script>
       </head>
       <body className="bg-textile-pattern text-slate-100 antialiased min-h-screen flex flex-col font-sans">
-        {children}
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );
