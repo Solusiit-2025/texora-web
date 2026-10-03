@@ -102,7 +102,7 @@ export function SocialLinks() {
               borderColor: brand.border,
               ["--sc" as string]: brand.glow,
             }}
-            className="w-9 h-9 rounded-xl border flex items-center justify-center transition-all duration-300 group-hover/social:opacity-40 group-hover/social:saturate-50 group-hover/social:scale-[0.96] hover:!opacity-100 hover:!saturate-100 hover:!scale-125 hover:!text-white hover:-translate-y-0.5 hover:bg-[color-mix(in_srgb,var(--sc)_30%,transparent)] hover:shadow-[0_8px_28px_-4px_var(--sc)] hover:brightness-125"
+            className="w-9 h-9 rounded-xl border flex items-center justify-center transition-all duration-300 ease-out group-hover/social:opacity-50 hover:!opacity-100 hover:!scale-110 hover:!text-white hover:-translate-y-0.5 hover:bg-[color-mix(in_srgb,var(--sc)_30%,transparent)] hover:shadow-[0_8px_28px_-4px_var(--sc)]"
           >
             <span
               className="flex"
