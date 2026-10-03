@@ -134,7 +134,7 @@ export default function PortalLayout({
                 ADM
               </div>
               <div>
-                <div className="text-xs font-bold text-white">Pricilia Kishin Hassanand</div>
+                <div className="text-xs font-bold text-white">Pricilia Kishin Hassanannd</div>
                 <div className="text-[10px] text-emerald-400 font-mono">Role: ADMINISTRATOR</div>
               </div>
             </div>

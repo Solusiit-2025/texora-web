@@ -28,7 +28,7 @@ export const MOCK_USERS: User[] = [
   },
   {
     id: "usr-4",
-    name: "Pricilia Kishin Hassanand",
+    name: "Pricilia Kishin Hassanannd",
     email: "admin@texora.co.id",
     role: "ADMINISTRATOR",
     companyName: "PT. Texora Visi Prima",
