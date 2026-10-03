@@ -1,0 +1,71 @@
+Product Requirement Document (PRD) - V3 (Brand Identity & Anti-AI Customization Update)
+PT. TEXORA VISI PRIMA – Advanced E-Commerce & CRM Platform
+
+1. Overview & Executive Summary
+Project Name: PT. Texora Visi Prima E-Commerce & CRM Suite (V3 Brand Identity Enhanced)
+Objective: Build a bespoke, high-performance, full-stack web application for an industrial textile sublimation business. This version explicitly enforces a unique, non-generic brand identity and visual direction to avoid standard AI-generated aesthetic templates, combining industrial luxury with cultural heritage elements.
+Technology Stack: Next.js (React/TypeScript), Node.js, Prisma ORM, PostgreSQL, Tailwind CSS, Shadcn UI, Framer Motion, Socket.io, deployed on Linux VPS with Docker, Nginx, and Cloudflare CDN.
+
+
+
+2. Target Audience & Stakeholders
+B2B / B2C Customers: Textile buyers, garment manufacturers, fashion brands, and individual creators requiring custom sublimation fabrics, printing services, and bulk roll orders.
+Internal Sales & Admin Team: Managing product catalogues, reviewing custom design submissions, approving digital proofs, and tracking invoices.
+Warehouse & Logistics Team: Managing stock levels, pick-and-pack operations, and delivery scheduling.
+Management: Reviewing sales analytics, financial reports, audit logs, and CRM pipeline metrics.
+
+
+
+3. Core Features & Functional Requirements
+3.1. Advanced E-Commerce & Catalog Module
+Product Catalog & Variants: Support for standard and custom-dimension fabric products, color variants, GSM (grams per square meter) specifications, and tiered volume pricing.
+Live Fabric & Sublimation Visualizer (2D/3D Mockup): Interactive preview tool allowing users to upload artwork, map patterns onto fabric roll mockups, and inspect scale/repeats prior to ordering.
+Advanced Tiered Pricing & Volume Calculator: Automated calculation adjusting price per meter dynamically based on total quantity and volume tiers.
+Shopping Cart & Secure Checkout: Multi-step checkout supporting payment gateways, automated tax calculation (CoreTax / PPN), and shipping estimation.
+3.2. Digital Proofing & Production Workflow
+Customer Digital Proof Approval: Dedicated workflow where customers must review and approve digital layout proofs before production begins, reducing print errors.
+Order Management System (OMS) & Real-Time Tracking: Live status dashboard (Pending, Proof Approved, In Production/Sublimation, Shipped, Completed) updated via WebSockets/SSE.
+3.3. Database & API Integration Layer
+RESTful / GraphQL API Endpoints: Built using Next.js Route Handlers / Server Actions to interact securely with PostgreSQL via Prisma ORM.
+ERP & External Integrations: Secure webhooks for inventory syncing, automated invoice generation, and tax reporting data exports.
+Authentication & RBAC: Secure customer login (JWT/HTTP-only cookies, Google OAuth 2.0) with Role-Based Access Control (Customer, Sales, Warehouse, Admin) and 2FA for administrative accounts.
+3.4. CRM (Customer Relationship Management) Module
+Customer Profile Management: Centralized database capturing history, previous orders, custom fabric preferences, and communication logs.
+Lead & Inquiry Pipeline: Tracking custom quote requests from initial submission to final closing.
+Customer Self-Service Portal: Dedicated dashboard for invoice history, tracking shipments, downloading tax documents, and reordering.
+Automated Notifications & Audit Trails: Real-time notification services and comprehensive activity logs recording administrative actions for internal security.
+
+
+
+4. Brand Identity & Anti-Template UI/UX Guidelines
+To ensure the platform possesses a distinct, premium character and avoids generic AI-generated aesthetics, the following design system parameters are mandated:
+
+
+Custom Color Palette (Bespoke Industrial Luxury):
+Primary Dominant: Deep Indigo / Midnight Charcoal (#0F172A / #111827) for a professional, weighty foundation.
+Accent & Heritage: Antique Brass / Warm Terracotta (#C29B38 / #D97706) replacing standard bright AI blues, providing a warm, tactile industrial feel.
+Background & Surface: Alabaster / Off-White (#F9FAFB) with subtle textured contrast.
+Typography Pairing:
+Headings / Branding: Elegant Modern Serif or Display Font (e.g., Cormorant Garamond or custom geometric pairing) to evoke heritage and craftsmanship.
+Body Text: Clean, highly legible sans-serif (e.g., Plus Jakarta Sans or Inter).
+UI Component Customization:
+Avoid flat, generic white cards with standard borders. Implement asymmetric padding, subtle glassmorphism (backdrop-blur with thin gold/brass borders), and organic section dividers.
+Mandatory use of authentic factory imagery, macro photography showcasing real fabric weave and ink absorption, rather than generic stock 3D renders.
+Micro-Interactions & Storytelling:
+Fluid mouse-hover zoom effects revealing technical fabric specifications (GSM, width, weave type) instantly.
+Dedicated "Craftsmanship & Heritage" narrative section explaining the industrial sublimation process.
+
+
+
+5. Non-Functional Requirements & Performance
+Performance & Asset Optimization: Hybrid Rendering (SSR/SSG/ISR), Cloudflare CDN caching, and automated image conversion to WebP/AVIF for high-res textile photos.
+Security & Infrastructure: Strict SSL/TLS encryption, CSRF protection, secure containerized deployment using Docker on a managed Linux VPS.
+
+
+
+6. Development Phases & Milestones
+Phase 1: Architecture, Design System & Database Schema Design (Tailwind custom theme setup, Prisma setup, PostgreSQL migration, RBAC).
+Phase 2: Core E-Commerce & Interactive Visualizer (Next.js layout, product catalog, custom upload & mockup preview tool).
+Phase 3: Backend APIs, OMS & Digital Proofing (Order management, proof approval workflow, real-time WebSocket sync).
+Phase 4: CRM Module & Customer Portal (Customer profiles, lead pipeline, self-service invoice/tax portal, audit logs).
+Phase 5: Testing, Deployment & Optimization (VPS provisioning, Docker setup, Nginx reverse proxy, Cloudflare CDN & SSL hardening).

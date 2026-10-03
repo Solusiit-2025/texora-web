@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # Next.js Application Service
+  texora-web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql://texora_admin:TexoraSec2026!@texora-db:5432/texora_production?schema=public
+      - NEXTAUTH_URL=https://texora.co.id
+      - NEXTAUTH_SECRET=f7e3c1d4a8b290192e4857b28a4c1023
+    depends_on:
+      - texora-db
+    networks:
+      - texora-network
+
+  # PostgreSQL Database Service
+  texora-db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: texora_admin
+      POSTGRES_PASSWORD: TexoraSec2026!
+      POSTGRES_DB: texora_production
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - texora-network
+
+  # Nginx Reverse Proxy with SSL / Cloudflare Integration
+  texora-nginx:
+    image: nginx:alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - texora-web
+    networks:
+      - texora-network
+
+networks:
+  texora-network:
+    driver: bridge
+
+volumes:
+  pgdata:

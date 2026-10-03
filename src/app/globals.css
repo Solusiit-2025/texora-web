@@ -1,0 +1,123 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Urbanist:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Urbanist', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-inter: var(--font-sans);
+  --font-outfit: var(--font-display);
+  --font-jakarta: var(--font-sans);
+  --font-urbanist: var(--font-display);
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #0f172a;
+  color: #f1f5f9;
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/* Glass surface with thin brass hairline (PRD V3 §4 UI Component Customization) */
+.glass-panel {
+  background: rgba(17, 24, 39, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(194, 155, 56, 0.18);
+}
+
+.glass-panel-hover {
+  transition: border-color 0.4s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.glass-panel-hover:hover {
+  transform: translateY(-3px);
+  border-color: rgba(194, 155, 56, 0.55);
+}
+
+/* Woven textile texture — subtle warp/weft crosshatch instead of a tech grid */
+.bg-textile-pattern {
+  background-color: #0f172a;
+  background-image:
+    radial-gradient(ellipse at 85% 0%, rgba(194, 155, 56, 0.10) 0px, transparent 55%),
+    radial-gradient(ellipse at 0% 100%, rgba(217, 119, 6, 0.07) 0px, transparent 50%),
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.012) 0 2px, transparent 2px 6px),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.012) 0 2px, transparent 2px 6px);
+}
+
+/* Alabaster surface with linen-like texture */
+.surface-alabaster {
+  background-color: #f9fafb;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(17, 24, 39, 0.018) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(90deg, rgba(17, 24, 39, 0.018) 0 1px, transparent 1px 4px);
+  color: #111827;
+}
+
+/* Brass foil text — slow, restrained sheen rather than a neon gradient loop */
+.animated-gradient-text {
+  background: linear-gradient(110deg, #a47f2a 0%, #e9d69c 45%, #c29b38 55%, #a47f2a 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: brassSheen 9s ease-in-out infinite;
+}
+@keyframes brassSheen {
+  0%, 100% { background-position: 100% 50%; }
+  50% { background-position: 0% 50%; }
+}
+
+/* Thin brass rule with a centred diamond — used as an editorial divider */
+.brass-rule {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #c29b38;
+}
+.brass-rule::before,
+.brass-rule::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: linear-gradient(90deg, transparent, rgba(194, 155, 56, 0.6), transparent);
+}
+
+/* Marquee */
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marqueeScroll 45s linear infinite;
+}
+.marquee-track:hover { animation-play-state: paused; }
+@keyframes marqueeScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* Kept for backwards compatibility with existing pages; toned down for V3 */
+.shimmer-card { position: relative; overflow: hidden; }
+.animate-float-gentle { animation: none; }
+.animate-pulse-glow { opacity: 0.5; }
+.sublimation-glow { text-shadow: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track, .animated-gradient-text { animation: none; }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #0f172a; }
+::-webkit-scrollbar-thumb { background: #3d2f14; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #644b1d; }
