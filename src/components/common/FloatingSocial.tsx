@@ -15,7 +15,7 @@ export function FloatingSocial() {
       initial={{ x: 48, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={{ delay: 0.6, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-      className="hidden md:flex fixed right-0 top-1/2 -translate-y-1/2 z-40 flex-col gap-1.5 p-2 rounded-l-2xl bg-slate-900/90 border border-r-0 border-slate-700/80 shadow-2xl shadow-black/50 backdrop-blur-xl"
+      className="hidden md:flex fixed right-0 top-1/2 -translate-y-1/2 z-40 flex-col gap-1.5 p-2 rounded-l-2xl bg-slate-900/90 border border-r-0 border-slate-700/80 shadow-2xl shadow-black/50 backdrop-blur-xl group/social"
       aria-label="Media sosial Texora"
     >
       {SOCIAL_LINKS.map((s) => {
@@ -35,7 +35,7 @@ export function FloatingSocial() {
               borderColor: brand.border,
               ["--sc" as string]: brand.glow,
             }}
-            className="group flex items-center gap-0 rounded-xl border p-2 transition-all hover:shadow-[0_8px_24px_-6px_var(--sc)] hover:brightness-125"
+            className="group flex items-center gap-0 rounded-xl border p-2 transition-all duration-300 group-hover/social:opacity-40 group-hover/social:saturate-50 hover:!opacity-100 hover:!saturate-100 hover:!scale-110 hover:!text-white hover:bg-[color-mix(in_srgb,var(--sc)_30%,transparent)] hover:shadow-[0_8px_28px_-4px_var(--sc)] hover:brightness-125"
           >
             <span
               className="flex shrink-0"

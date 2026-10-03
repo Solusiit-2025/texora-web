@@ -84,7 +84,7 @@ export const SOCIAL_BRAND: Record<SocialLink["id"], SocialBrand> = {
 /** Social media icon buttons (TikTok, Instagram, Facebook, YouTube, WhatsApp). */
 export function SocialLinks() {
   return (
-    <div className="flex items-center gap-2.5">
+    <div className="flex items-center gap-2.5 group/social">
       {SOCIAL_LINKS.map((s) => {
         const Icon = SOCIAL_ICONS[s.id];
         const brand = SOCIAL_BRAND[s.id];
@@ -102,7 +102,7 @@ export function SocialLinks() {
               borderColor: brand.border,
               ["--sc" as string]: brand.glow,
             }}
-            className="w-9 h-9 rounded-xl border flex items-center justify-center transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_-6px_var(--sc)] hover:brightness-125"
+            className="w-9 h-9 rounded-xl border flex items-center justify-center transition-all duration-300 group-hover/social:opacity-40 group-hover/social:saturate-50 group-hover/social:scale-[0.96] hover:!opacity-100 hover:!saturate-100 hover:!scale-125 hover:!text-white hover:-translate-y-0.5 hover:bg-[color-mix(in_srgb,var(--sc)_30%,transparent)] hover:shadow-[0_8px_28px_-4px_var(--sc)] hover:brightness-125"
           >
             <span
               className="flex"
