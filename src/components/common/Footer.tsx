@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Layers, ShieldCheck, Award, Truck, Sparkles, Mail, Phone, MapPin } from "lucide-react";
+import { SocialLinks } from "./SocialLinks";
 
 export function Footer() {
   return (
@@ -73,6 +74,12 @@ export function Footer() {
               <span className="leading-relaxed">
                 Jl. Walang Baru VI Blok B1/2, RT 04 / RW 07, Tugu Utara, Tanjung Priok, Jakarta Utara
               </span>
+            </div>
+            <div className="pt-3">
+              <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2.5">
+                Ikuti Kami
+              </p>
+              <SocialLinks />
             </div>
           </div>
 
