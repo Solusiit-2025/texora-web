@@ -34,7 +34,7 @@ export default function OrderDetailPage() {
   const order = MOCK_ORDERS.find((o) => o.id === orderId) || MOCK_ORDERS[0];
 
   const [proofStatus, setProofStatus] = useState<"PENDING" | "APPROVED" | "REVISION_REQUESTED">(
-    order.status === "PENDING_APPROVAL" ? "PENDING" : "APPROVED"
+    order.status === "PENDING_PAYMENT" || order.status === "CONFIRMED" ? "PENDING" : "APPROVED"
   );
   const [revisionNotes, setRevisionNotes] = useState("");
   const [showRevisionModal, setShowRevisionModal] = useState(false);

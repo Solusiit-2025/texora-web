@@ -25,8 +25,8 @@ export async function POST(request: Request) {
       id: `ord-${Date.now()}`,
       orderNumber: `TEX-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, "0")}-${Math.floor(100 + Math.random() * 900)}`,
       createdAt: new Date().toISOString(),
-      status: "PENDING_APPROVAL",
-      paymentStatus: "PENDING",
+      status: "PENDING_PAYMENT",
+      paymentStatus: "UNPAID",
       ...body,
     };
 

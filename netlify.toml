@@ -1,0 +1,9 @@
+# Netlify build settings for web-texora (Next.js 14 + Prisma)
+# Netlify auto-detects Next.js and applies the Essential Next.js runtime.
+[build]
+  command = "prisma generate && npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "20"
+  NPM_FLAGS = "--no-audit --no-fund"
