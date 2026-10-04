@@ -26,6 +26,9 @@ export const STATIC_COUNT = 300;
 const PLATFORMS = ['TIKTOK', 'INSTAGRAM', 'FACEBOOK'] as const;
 const SENTIMENTS = ['POSITIVE', 'NEGATIVE', 'NEUTRAL'] as const;
 const PLATFORM_WEIGHTS = [0.4, 0.35, 0.25];
+// Distribusi demo agar mockup terlihat positif: ~55% positif, ~35% netral, ~10% negatif.
+// Urutan bobot mengikuti SENTIMENTS di atas.
+const SENTIMENT_WEIGHTS = [0.55, 0.1, 0.35];
 
 const USERNAMES = [
   'fashionlover_bali', 'supir_trucking', 'texoraofficial', 'suka_print_warna',
@@ -128,6 +131,17 @@ function mulberry32(seed: number) {
   };
 }
 
+// Weighted pick proporsional (kumulatif) — sesuai bobot yang diberikan.
+function pickWeightedIndex(rand: () => number, weights: readonly number[]): number {
+  const r = rand();
+  let acc = 0;
+  for (let i = 0; i < weights.length; i++) {
+    acc += weights[i];
+    if (r < acc) return i;
+  }
+  return weights.length - 1;
+}
+
 function mockAiReply(sentiment: string, username: string): string {
   switch (sentiment) {
     case 'POSITIVE':
@@ -161,7 +175,7 @@ export function generateStaticMockComments(
       }
     }
 
-    const sentiment = SENTIMENTS[Math.floor(rand() * SENTIMENTS.length)];
+    const sentiment = SENTIMENTS[pickWeightedIndex(rand, SENTIMENT_WEIGHTS)];
     const username = USERNAMES[Math.floor(rand() * USERNAMES.length)];
     const pool =
       sentiment === 'POSITIVE'
