@@ -2,24 +2,25 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  LayoutDashboard, 
-  Users, 
-  Layers, 
-  Package, 
-  FileText, 
-  Settings, 
-  Barcode, 
-  ChevronRight, 
-  ArrowLeft, 
-  ShieldAlert, 
+import {
+  LayoutDashboard,
+  Users,
+  Layers,
+  Package,
+  FileText,
+  Settings,
+  Barcode,
+  ChevronRight,
+  ArrowLeft,
+  ShieldAlert,
   TrendingUp,
   CheckCircle2,
   Scissors,
   FileCheck,
   Sliders,
   DollarSign,
-  ClipboardList
+  ClipboardList,
+  MessagesSquare
 } from "lucide-react";
 
 export default function PortalLayout({
@@ -56,6 +57,13 @@ export default function PortalLayout({
       items: [
         { name: "Stok Roll & Barcode", href: "/portal/warehouse/inventory", icon: Barcode },
         { name: "Pemotongan & Ekspedisi", href: "/portal/warehouse/fulfillment", icon: Scissors },
+      ],
+    },
+    {
+      title: "Social Media AI (Mockup)",
+      highlightGroup: true,
+      items: [
+        { name: "Comment Analytics", href: "/portal/social-media", icon: MessagesSquare, highlight: true, badge: "NEW" },
       ],
     },
     {
@@ -98,12 +106,49 @@ export default function PortalLayout({
           <div className="p-4 space-y-6">
             {navigation.map((group, idx) => (
               <div key={idx} className="space-y-1">
-                <div className="px-3 text-[10px] uppercase font-bold text-slate-500 tracking-wider">
-                  {group.title}
+                <div className="px-3 text-[10px] uppercase font-bold tracking-wider flex items-center gap-1.5">
+                  {(group as any).highlightGroup ? (
+                    <span className="flex items-center gap-1.5 text-fuchsia-400">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-fuchsia-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-fuchsia-500" />
+                      </span>
+                      {group.title}
+                    </span>
+                  ) : (
+                    <span className="text-slate-500">{group.title}</span>
+                  )}
                 </div>
                 {group.items.map((item) => {
                   const Icon = item.icon;
                   const isActive = pathname === item.href;
+                  const isHighlight = (item as any).highlight;
+
+                  if (isHighlight) {
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`relative flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all overflow-hidden border ${
+                          isActive
+                            ? "bg-gradient-to-r from-fuchsia-600 via-purple-600 to-brand-600 text-white border-fuchsia-400/60 shadow-[0_0_20px_rgba(217,70,239,0.45)]"
+                            : "bg-gradient-to-r from-fuchsia-600/15 via-purple-600/10 to-brand-600/15 text-white border-fuchsia-500/40 shadow-[0_0_14px_rgba(217,70,239,0.25)] hover:shadow-[0_0_22px_rgba(217,70,239,0.5)] hover:border-fuchsia-400/70 hover:from-fuchsia-600/25 hover:to-brand-600/25"
+                        }`}
+                      >
+                        {/* kilau sweep */}
+                        <span className="pointer-events-none absolute inset-0 -translate-x-full animate-[shimmer_2.4s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                        <span className="relative flex h-2 w-2 shrink-0">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-fuchsia-400 opacity-75" />
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-fuchsia-400" />
+                        </span>
+                        <Icon className="w-4 h-4 text-fuchsia-300 shrink-0" />
+                        <span className="flex-1">{item.name}</span>
+                        <span className="animate-pulse px-1.5 py-0.5 rounded-md bg-fuchsia-500 text-white text-[9px] font-black tracking-wider shadow">
+                          {(item as any).badge ?? "NEW"}
+                        </span>
+                      </Link>
+                    );
+                  }
 
                   return (
                     <Link

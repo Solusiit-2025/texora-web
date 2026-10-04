@@ -33,11 +33,12 @@ model User {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
-  orders        Order[]
+   orders        Order[]
   designs       CustomDesign[]
   assignedLeads Lead[]         @relation("AssignedSalesRep")
   activities    ActivityLog[]
   customerLeads Lead[]         @relation("CustomerLeads")
+  auditLogs     AuditLog[]
 
   @@map("users")
 }
@@ -257,4 +258,53 @@ model InventoryRoll {
   receivedDate    DateTime      @default(now())
 
   @@map("inventory_rolls")
+}
+
+// -----------------------------------------------------------
+// 7. SOCIAL MEDIA COMMENT COLLECTOR & AI ANALYZER
+// -----------------------------------------------------------
+
+enum SocialPlatform {
+  TIKTOK
+  INSTAGRAM
+  FACEBOOK
+}
+
+enum CommentSentiment {
+  POSITIVE
+  NEUTRAL
+  NEGATIVE
+}
+
+model SocialComment {
+  id          String           @id @default(cuid())
+  platform    SocialPlatform
+  postId      String           // ID of the post/video on the platform
+  commentId   String           @unique // Platform-specific unique comment ID
+  username    String
+  message     String
+  timestamp   DateTime         @default(now()) // Time comment was received/processed
+  sentiment   CommentSentiment?
+  aiReply     String?         // AI-generated suggested reply
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@map("social_comments")
+}
+
+// -----------------------------------------------------------
+// 8. AUDIT LOG
+// -----------------------------------------------------------
+
+model AuditLog {
+  id          String     @id @default(cuid())
+  action      String     // e.g., "CREATE_ORDER", "SOCIAL_AI_PROCESS"
+  userId      String?
+  user        User?      @relation(fields: [userId], references: [id])
+  description String
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime   @default(now())
+
+  @@map("audit_logs")
 }

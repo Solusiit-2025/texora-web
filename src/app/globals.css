@@ -181,6 +181,12 @@ h1, h2, h3, h4, h5, h6 {
   100% { transform: translateX(-50%); }
 }
 
+/* Sidebar highlight sweep — kilau menyapu menu Comment Analytics */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  60%, 100% { transform: translateX(100%); }
+}
+
 /* Kept for backwards compatibility with existing pages; toned down for V3 */
 .shimmer-card { position: relative; overflow: hidden; }
 .animate-float-gentle { animation: none; }
