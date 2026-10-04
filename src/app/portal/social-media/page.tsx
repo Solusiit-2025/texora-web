@@ -54,6 +54,7 @@ type ApiResponse = {
   platformCount: Record<string, number>;
   platformSentiment: Record<string, Record<string, number>>;
   dailyTrend: { date: string; POSITIVE: number; NEUTRAL: number; NEGATIVE: number; total: number }[];
+  mock: boolean;
 };
 
 const PLATFORMS = ['ALL', 'TIKTOK', 'INSTAGRAM', 'FACEBOOK'];
@@ -248,6 +249,18 @@ export default function SocialMediaDashboard() {
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700 font-mono">
               Live AI Sentiment Engine v2.4
             </span>
+            {data && (
+              <span
+                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border font-mono ${
+                  data.mock
+                    ? 'bg-amber-500/10 text-amber-400 border-amber-500/40'
+                    : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/40'
+                }`}
+                title={data.mock ? 'Database tidak reachable — memakai dataset statis identik seed' : 'Data live dari database'}
+              >
+                {data.mock ? '● DATA STATIS — DB offline' : '● DB LIVE'}
+              </span>
+            )}
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-white font-display tracking-tight flex items-center gap-3">
             Social Media Intelligence & Brand Health
