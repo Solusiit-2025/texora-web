@@ -1,14 +1,50 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { MOCK_FABRICS } from "@/lib/mock-data";
 import { formatRupiah, formatNumber } from "@/lib/utils";
 import { FabricSpecCard } from "@/components/storefront/FabricSpecCard";
-import { ArrowRight, ArrowUpRight, ChevronDown, Percent } from "lucide-react";
+import { ArrowRight, ArrowUpRight, ChevronDown, ChevronLeft, ChevronRight, Percent } from "lucide-react";
 
 const ease = [0.16, 1, 0.3, 1] as const;
+
+/** Hero Slider Slides */
+const HERO_SLIDES = [
+  {
+    id: 1,
+    mainImage: "/images/hero/hero-printer.jpg",
+    secondaryImage: "/images/hero/hero-printer-sub.jpg",
+    alt: "Proses cetak kertas transfer sublimasi digital skala industri",
+    tag: "Mesin Cetak Sublim Digital",
+    caption: "“Operator mengalibrasi profil warna ICC pada panel kontrol mesin cetak sublimasi digital.”",
+  },
+  {
+    id: 2,
+    mainImage: "/images/hero/hero-hijab.jpg",
+    secondaryImage: "/images/hero/hero-hijab-sub.jpg",
+    alt: "Kain Voal Ultrafine hasil cetak sublimasi motif batik & floral modern",
+    tag: "Hijab & Fashion Voal",
+    caption: "“Kain Voal Ultrafine cetak motif kustom dengan tekstur lembut & tembus warna presisi.”",
+  },
+  {
+    id: 3,
+    mainImage: "/images/hero/hero-sportswear.jpg",
+    secondaryImage: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=600&q=80",
+    alt: "Bahan kain Dryfit Milano dengan cetak sublimasi warna neon vibrant",
+    tag: "Sportswear & Dryfit Milano",
+    caption: "“Bahan Dryfit Milano & Poly Spandex anti-luntur untuk kostum tim, jersey, dan activewear.”",
+  },
+  {
+    id: 4,
+    mainImage: "/images/hero/hero-rotary.jpg",
+    secondaryImage: "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?auto=format&fit=crop&w=600&q=80",
+    alt: "Mesin kalender rotary heat press sublimasi rol-ke-rol dengan silinder drum pemanas 210°C",
+    tag: "Kalender Rotary Press 210°C",
+    caption: "“Kalender rotary 210°C mengubah tinta dispersi menjadi gas yang mengunci sempurna di dalam serat benang.”",
+  },
+];
 
 /** Organic wave divider between charcoal and alabaster sections (PRD V3 §4). */
 function OrganicDivider({ flip = false, fill }: { flip?: boolean; fill: string }) {
@@ -93,6 +129,20 @@ export default function HomePage() {
   const [calcMeters, setCalcMeters] = useState(150);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
+  // Auto-rotating Hero Image Slider (per-7.5 detik)
+  const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
+  const [isHeroPaused, setIsHeroPaused] = useState(false);
+
+  useEffect(() => {
+    if (isHeroPaused) return;
+    const timer = setInterval(() => {
+      setCurrentHeroIndex((prev) => (prev + 1) % HERO_SLIDES.length);
+    }, 7500);
+    return () => clearInterval(timer);
+  }, [isHeroPaused]);
+
+  const activeHero = HERO_SLIDES[currentHeroIndex];
+
   const fabric = MOCK_FABRICS.find((f) => f.id === calcFabricId) || MOCK_FABRICS[0];
   const tier =
     fabric.priceTiers.find((t) =>
@@ -163,36 +213,163 @@ export default function HomePage() {
             </dl>
           </motion.div>
 
-          {/* Asymmetric image composition with offset brass frame */}
+          {/* Asymmetric image composition with auto-rotating slider & brass frame */}
           <motion.div
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1.1, ease, delay: 0.15 }}
-            className="lg:col-span-6 xl:col-span-7 relative"
+            className="lg:col-span-6 xl:col-span-7 relative group/hero"
+            onMouseEnter={() => setIsHeroPaused(true)}
+            onMouseLeave={() => setIsHeroPaused(false)}
           >
+            {/* Background offset brass frame */}
             <div className="absolute -top-4 -right-4 lg:-right-6 w-3/4 h-full border border-brand-500/35 pointer-events-none" />
-            <div className="relative grid grid-cols-5 gap-2.5 max-w-xl mx-auto lg:max-w-none">
-              <div className="col-span-3 aspect-[4/5] max-h-[320px] sm:max-h-[360px] lg:max-h-[400px] xl:max-h-[460px] overflow-hidden">
-                <img
-                  src="https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=1000&q=80"
-                  alt="Makro tekstur kain poliester hasil sublimasi"
-                  className="h-full w-full object-cover hover:scale-105 transition-transform duration-[1200ms]"
-                />
+
+            {/* Slider header info & nav controls */}
+            <div className="flex items-center justify-between mb-2.5 px-1">
+              <div className="flex items-center gap-2">
+                <span className="inline-block w-2 h-2 rounded-full bg-brand-400 animate-pulse" />
+                <span className="text-[10px] uppercase tracking-[0.2em] text-brand-300 font-semibold">
+                  {activeHero.tag}
+                </span>
               </div>
-              <div className="col-span-2 flex flex-col gap-2.5 pt-10 sm:pt-14 lg:pt-10">
-                <div className="aspect-square overflow-hidden">
-                  <img
-                    src="https://images.unsplash.com/photo-1528459801416-a9e53bbf4e17?auto=format&fit=crop&w=600&q=80"
-                    alt="Detail anyaman kain"
-                    className="h-full w-full object-cover hover:scale-105 transition-transform duration-[1200ms]"
+
+              <div className="flex items-center gap-3">
+                {/* Indicator dots */}
+                <div className="flex items-center gap-1.5">
+                  {HERO_SLIDES.map((slide, idx) => (
+                    <button
+                      key={slide.id}
+                      onClick={() => setCurrentHeroIndex(idx)}
+                      aria-label={`Lihat gambar ${idx + 1}`}
+                      className={`h-1.5 transition-all duration-300 rounded-full ${
+                        idx === currentHeroIndex
+                          ? "w-6 bg-brand-400"
+                          : "w-1.5 bg-slate-700 hover:bg-brand-500/50"
+                      }`}
+                    />
+                  ))}
+                </div>
+
+                {/* Prev / Next controls */}
+                <div className="flex items-center gap-1 text-slate-400">
+                  <button
+                    onClick={() =>
+                      setCurrentHeroIndex(
+                        (prev) => (prev - 1 + HERO_SLIDES.length) % HERO_SLIDES.length
+                      )
+                    }
+                    className="p-1 hover:text-brand-400 hover:bg-brand-500/10 rounded transition-colors"
+                    aria-label="Gambar sebelumnya"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <span className="text-[10px] font-mono text-slate-500">
+                    0{currentHeroIndex + 1}/0{HERO_SLIDES.length}
+                  </span>
+                  <button
+                    onClick={() =>
+                      setCurrentHeroIndex((prev) => (prev + 1) % HERO_SLIDES.length)
+                    }
+                    className="p-1 hover:text-brand-400 hover:bg-brand-500/10 rounded transition-colors"
+                    aria-label="Gambar berikutnya"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Main Asymmetric Grid with Professional Stacked Smooth Crossfade */}
+            <div className="relative grid grid-cols-5 gap-3 max-w-xl mx-auto lg:max-w-none items-start">
+              {/* Primary Main Image Area (Enlarged +20%) */}
+              <div className="col-span-3 aspect-[4/5] max-h-[380px] sm:max-h-[440px] lg:max-h-[500px] xl:max-h-[560px] overflow-hidden relative rounded-xs shadow-2xl bg-ink/80 border border-brand-500/20">
+                {HERO_SLIDES.map((slide, idx) => {
+                  const isActive = idx === currentHeroIndex;
+                  return (
+                    <motion.img
+                      key={slide.id}
+                      src={slide.mainImage}
+                      alt={slide.alt}
+                      initial={false}
+                      animate={{
+                        opacity: isActive ? 1 : 0,
+                        scale: isActive ? 1 : 1.05,
+                        filter: isActive ? "blur(0px)" : "blur(6px)",
+                      }}
+                      transition={{
+                        opacity: { duration: 1.4, ease: [0.25, 1, 0.5, 1] },
+                        scale: { duration: 1.4, ease: [0.25, 1, 0.5, 1] },
+                        filter: { duration: 1.2, ease: "easeOut" },
+                      }}
+                      className={`absolute inset-0 h-full w-full object-cover ${
+                        isActive ? "pointer-events-auto z-10" : "pointer-events-none z-0"
+                      }`}
+                    />
+                  );
+                })}
+
+                {/* Progress bar at bottom of main image */}
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-950/80 overflow-hidden z-20">
+                  <motion.div
+                    key={`progress-${currentHeroIndex}-${isHeroPaused}`}
+                    initial={{ width: "0%" }}
+                    animate={{ width: "100%" }}
+                    transition={{
+                      duration: isHeroPaused ? 0 : 7.5,
+                      ease: "linear",
+                    }}
+                    className={`h-full ${isHeroPaused ? "bg-amber-400" : "bg-brand-400"}`}
                   />
                 </div>
-                <div className="bg-ink/90 border border-brand-500/30 p-3.5 backdrop-blur-sm">
-                  <p className="text-[9px] uppercase tracking-[0.18em] text-brand-400">Catatan pabrik</p>
-                  <p className="mt-1 font-display text-xs sm:text-sm lg:text-base italic text-alabaster leading-snug">
-                    “Tinta dispersi menguap pada 210°C dan mengunci di dalam benang.”
-                  </p>
+              </div>
+
+              {/* Secondary Detail Image & Caption Area */}
+              <div className="col-span-2 flex flex-col gap-3 pt-4 sm:pt-6 lg:pt-4">
+                <div className="aspect-square overflow-hidden relative rounded-xs shadow-xl bg-ink/80 border border-brand-500/15">
+                  {HERO_SLIDES.map((slide, idx) => {
+                    const isActive = idx === currentHeroIndex;
+                    return (
+                      <motion.img
+                        key={slide.id}
+                        src={slide.secondaryImage}
+                        alt="Detail anyaman & tekstur kain"
+                        initial={false}
+                        animate={{
+                          opacity: isActive ? 1 : 0,
+                          scale: isActive ? 1 : 1.05,
+                          filter: isActive ? "blur(0px)" : "blur(6px)",
+                        }}
+                        transition={{
+                          opacity: { duration: 1.4, delay: 0.12, ease: [0.25, 1, 0.5, 1] },
+                          scale: { duration: 1.4, delay: 0.12, ease: [0.25, 1, 0.5, 1] },
+                          filter: { duration: 1.2, delay: 0.12, ease: "easeOut" },
+                        }}
+                        className={`absolute inset-0 h-full w-full object-cover ${
+                          isActive ? "pointer-events-auto z-10" : "pointer-events-none z-0"
+                        }`}
+                      />
+                    );
+                  })}
                 </div>
+
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={activeHero.caption}
+                    initial={{ opacity: 0, y: 12, filter: "blur(4px)" }}
+                    animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                    exit={{ opacity: 0, y: -12, filter: "blur(4px)" }}
+                    transition={{ duration: 0.6, ease: [0.25, 1, 0.5, 1], delay: 0.1 }}
+                    className="bg-ink/90 border border-brand-500/30 p-4 backdrop-blur-md shadow-lg"
+                  >
+                    <p className="text-[9px] uppercase tracking-[0.18em] text-brand-400 font-semibold">
+                      Catatan pabrik
+                    </p>
+                    <p className="mt-1 font-display text-xs sm:text-sm lg:text-base italic text-alabaster leading-snug">
+                      {activeHero.caption}
+                    </p>
+                  </motion.div>
+                </AnimatePresence>
               </div>
             </div>
           </motion.div>
