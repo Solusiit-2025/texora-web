@@ -104,60 +104,60 @@ export default function HomePage() {
   const discountPct = Math.round((savings / baseTotal) * 100);
 
   const fabrics = category === "All" ? MOCK_FABRICS : MOCK_FABRICS.filter((f) => f.category === category);
-  const container = "w-full max-w-[1920px] mx-auto px-5 sm:px-10 lg:px-16 xl:px-24";
+  const container = "texora-container";
 
   return (
     <div className="overflow-hidden">
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
-      <section className={`${container} pt-14 pb-24 lg:pt-24 lg:pb-32`}>
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+      <section className={`${container} pt-4 pb-8 lg:pt-6 lg:pb-10 xl:pt-10 xl:pb-14`}>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 xl:gap-12 items-center">
           <motion.div
-            initial={{ opacity: 0, y: 28 }}
+            initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.9, ease }}
             className="lg:col-span-6 xl:col-span-5"
           >
-            <p className="text-[11px] uppercase tracking-[0.32em] text-brand-400 font-semibold">
+            <p className="text-[10px] xl:text-[11px] uppercase tracking-[0.28em] text-brand-400 font-semibold">
               Jakarta Utara · Manufaktur Cetak Sublimasi Industri
             </p>
-            <h1 className="mt-6 font-display text-5xl sm:text-6xl xl:text-7xl font-bold leading-[1.04] text-alabaster tracking-tight">
+            <h1 className="mt-3 lg:mt-4 font-display text-fluid-hero font-bold text-alabaster tracking-tight">
               Warna yang menyatu
               <br />
               <em className="animated-gradient-text not-italic font-extrabold">dengan serat,</em>
               <br />
               bukan sekadar menempel.
             </h1>
-            <p className="mt-8 max-w-lg text-base text-slate-300 leading-relaxed">
+            <p className="mt-3.5 lg:mt-4 max-w-lg text-xs sm:text-sm lg:text-[0.92rem] xl:text-base text-slate-300 leading-relaxed">
               PT. Texora Visi Prima memproduksi kain poliester siap sublimasi dan jasa cetak skala roll untuk
               brand sportswear, busana muslim, dan merchandise — dengan harga bertingkat dan proofing sebelum
               mesin berjalan.
             </p>
 
-            <div className="mt-10 flex flex-col sm:flex-row gap-3">
+            <div className="mt-5 lg:mt-6 flex flex-col sm:flex-row gap-2.5">
               <Link
                 href="/custom-sublimation"
-                className="group inline-flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-400 text-ink px-7 py-4 text-sm font-semibold transition-colors"
+                className="group inline-flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-400 text-ink px-6 py-3 text-xs sm:text-sm font-semibold transition-colors rounded-sm"
               >
                 Mulai cetak motif
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
               <Link
                 href="/catalog"
-                className="inline-flex items-center justify-center gap-2 border border-brand-500/40 hover:border-brand-500 text-alabaster px-7 py-4 text-sm font-medium transition-colors"
+                className="inline-flex items-center justify-center gap-2 border border-brand-500/40 hover:border-brand-500 text-alabaster px-6 py-3 text-xs sm:text-sm font-medium transition-colors rounded-sm"
               >
                 Lihat katalog kain
               </Link>
             </div>
 
-            <dl className="mt-14 grid grid-cols-3 border-t border-brand-500/20 pt-6">
+            <dl className="mt-6 lg:mt-8 grid grid-cols-3 border-t border-brand-500/20 pt-4 lg:pt-5">
               {[
                 { v: "10.000 m", k: "Kapasitas harian" },
                 { v: "6 jenis", k: "Kain siap sublim" },
                 { v: "400+", k: "Mitra garmen" },
               ].map((s) => (
                 <div key={s.k}>
-                  <dt className="font-display text-3xl text-alabaster">{s.v}</dt>
-                  <dd className="mt-1 text-[11px] uppercase tracking-[0.14em] text-slate-500">{s.k}</dd>
+                  <dt className="font-display text-lg sm:text-xl xl:text-2xl text-alabaster">{s.v}</dt>
+                  <dd className="mt-0.5 text-[10px] uppercase tracking-[0.12em] text-slate-500">{s.k}</dd>
                 </div>
               ))}
             </dl>
@@ -170,16 +170,16 @@ export default function HomePage() {
             transition={{ duration: 1.1, ease, delay: 0.15 }}
             className="lg:col-span-6 xl:col-span-7 relative"
           >
-            <div className="absolute -top-5 -right-5 lg:-right-8 w-3/4 h-full border border-brand-500/40 pointer-events-none" />
-            <div className="relative grid grid-cols-5 gap-3">
-              <div className="col-span-3 aspect-[3/4] overflow-hidden">
+            <div className="absolute -top-4 -right-4 lg:-right-6 w-3/4 h-full border border-brand-500/35 pointer-events-none" />
+            <div className="relative grid grid-cols-5 gap-2.5 max-w-xl mx-auto lg:max-w-none">
+              <div className="col-span-3 aspect-[4/5] max-h-[320px] sm:max-h-[360px] lg:max-h-[400px] xl:max-h-[460px] overflow-hidden">
                 <img
                   src="https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=1000&q=80"
                   alt="Makro tekstur kain poliester hasil sublimasi"
                   className="h-full w-full object-cover hover:scale-105 transition-transform duration-[1200ms]"
                 />
               </div>
-              <div className="col-span-2 flex flex-col gap-3 pt-16">
+              <div className="col-span-2 flex flex-col gap-2.5 pt-10 sm:pt-14 lg:pt-10">
                 <div className="aspect-square overflow-hidden">
                   <img
                     src="https://images.unsplash.com/photo-1528459801416-a9e53bbf4e17?auto=format&fit=crop&w=600&q=80"
@@ -187,9 +187,9 @@ export default function HomePage() {
                     className="h-full w-full object-cover hover:scale-105 transition-transform duration-[1200ms]"
                   />
                 </div>
-                <div className="bg-ink border border-brand-500/30 p-5">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-brand-400">Catatan pabrik</p>
-                  <p className="mt-2 font-display text-xl italic text-alabaster leading-snug">
+                <div className="bg-ink/90 border border-brand-500/30 p-3.5 backdrop-blur-sm">
+                  <p className="text-[9px] uppercase tracking-[0.18em] text-brand-400">Catatan pabrik</p>
+                  <p className="mt-1 font-display text-xs sm:text-sm lg:text-base italic text-alabaster leading-snug">
                     “Tinta dispersi menguap pada 210°C dan mengunci di dalam benang.”
                   </p>
                 </div>
@@ -200,12 +200,12 @@ export default function HomePage() {
       </section>
 
       {/* ── MARQUEE ──────────────────────────────────────────────────────── */}
-      <div className="border-y border-brand-500/20 py-4 overflow-hidden" aria-hidden="true">
-        <div className="marquee-track gap-10 items-center text-[11px] uppercase tracking-[0.28em] text-slate-400">
+      <div className="border-y border-brand-500/20 py-3.5 overflow-hidden" aria-hidden="true">
+        <div className="marquee-track gap-8 items-center text-[10px] xl:text-[11px] uppercase tracking-[0.25em] text-slate-400">
           {[...Array(2)].flatMap((_, r) =>
             ["Dryfit Milano", "Voal Ultrafine", "Satin Silk", "Scuba Neoprene", "Spandex Lycra", "Canvas 8oz", "Oeko-Tex Standard 100", "Rotary Heatpress"].map(
               (item, i) => (
-                <span key={`${r}-${i}`} className="flex items-center gap-10 whitespace-nowrap">
+                <span key={`${r}-${i}`} className="flex items-center gap-8 whitespace-nowrap">
                   {item}
                   <span className="text-brand-500">◆</span>
                 </span>
@@ -216,14 +216,14 @@ export default function HomePage() {
       </div>
 
       {/* ── CRAFTSMANSHIP & HERITAGE (PRD V3 §4) ─────────────────────────── */}
-      <div className="mt-24">
+      <div className="mt-14 lg:mt-20">
         <OrganicDivider fill="#F9FAFB" />
         <section className="surface-alabaster">
-          <div className={`${container} py-20 lg:py-28`}>
+          <div className={`${container} section-pad`}>
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
               <div className="lg:col-span-4">
                 <p className="text-[11px] uppercase tracking-[0.32em] text-brand-700">Keahlian &amp; Warisan</p>
-                <h2 className="mt-5 font-display text-4xl sm:text-5xl font-medium text-ink leading-tight">
+                <h2 className="mt-4 font-display text-fluid-h2 font-medium text-ink">
                   Bagaimana selembar kain putih menjadi motif yang tahan cuci.
                 </h2>
                 <p className="mt-6 text-sm text-slate-600 leading-relaxed max-w-sm">
@@ -242,7 +242,7 @@ export default function HomePage() {
                     transition={{ duration: 0.7, delay: i * 0.08, ease }}
                     className={`border-t border-ink/15 pt-6 ${i % 2 === 1 ? "sm:mt-12" : ""}`}
                   >
-                    <span className="font-display text-5xl text-brand-600">{s.no}</span>
+                    <span className="font-display text-4xl xl:text-5xl text-brand-600">{s.no}</span>
                     <h3 className="mt-3 font-display text-2xl font-semibold text-ink">{s.title}</h3>
                     <p className="mt-2 text-sm text-slate-600 leading-relaxed">{s.body}</p>
                   </motion.li>
@@ -255,11 +255,11 @@ export default function HomePage() {
       </div>
 
       {/* ── CATALOG ──────────────────────────────────────────────────────── */}
-      <section className={`${container} py-24`}>
+      <section className={`${container} section-pad`}>
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div>
             <p className="text-[11px] uppercase tracking-[0.32em] text-brand-400">Katalog</p>
-            <h2 className="mt-4 font-display text-4xl sm:text-5xl font-medium text-alabaster">Kain siap sublimasi</h2>
+            <h2 className="mt-3 font-display text-fluid-h2 font-medium text-alabaster">Kain siap sublimasi</h2>
             <p className="mt-3 text-sm text-slate-400">Arahkan kursor ke kain untuk melihat spesifikasi teknis.</p>
           </div>
           <div className="flex flex-wrap gap-2" role="tablist" aria-label="Filter kategori kain">
@@ -289,13 +289,13 @@ export default function HomePage() {
       </section>
 
       {/* ── TIER PRICING CALCULATOR ──────────────────────────────────────── */}
-      <section className={`${container} pb-24`}>
+      <section className={`${container} pb-16 lg:pb-20 xl:pb-24`}>
         <div className="brass-rule mb-14 text-xs">◆</div>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
           <div className="lg:col-span-7 space-y-8">
             <div>
               <p className="text-[11px] uppercase tracking-[0.32em] text-brand-400">Harga bertingkat</p>
-              <h2 className="mt-4 font-display text-4xl font-medium text-alabaster">
+              <h2 className="mt-3 font-display text-fluid-h2 font-medium text-alabaster">
                 Semakin panjang pesanan, semakin ringan harga per meter.
               </h2>
             </div>
@@ -370,7 +370,7 @@ export default function HomePage() {
               initial={{ opacity: 0.4, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.35 }}
-              className="mt-3 font-display text-5xl sm:text-6xl text-alabaster"
+              className="mt-3 font-display text-fluid-price text-alabaster"
             >
               {formatRupiah(tierTotal)}
             </motion.p>
@@ -415,7 +415,7 @@ export default function HomePage() {
       {/* ── TESTIMONIALS (alabaster) ─────────────────────────────────────── */}
       <OrganicDivider fill="#F9FAFB" />
       <section className="surface-alabaster">
-        <div className={`${container} py-20 lg:py-24`}>
+        <div className={`${container} section-pad`}>
           <p className="text-[11px] uppercase tracking-[0.32em] text-brand-700">Dari mitra kami</p>
           <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-10">
             {TESTIMONIALS.map((t, i) => (
@@ -427,7 +427,7 @@ export default function HomePage() {
                 transition={{ duration: 0.6, delay: i * 0.1, ease }}
                 className="border-l-2 border-brand-500 pl-6"
               >
-                <blockquote className="font-display text-2xl italic text-ink leading-snug">“{t.quote}”</blockquote>
+                <blockquote className="font-display text-xl xl:text-2xl italic text-ink leading-snug">“{t.quote}”</blockquote>
                 <figcaption className="mt-5 text-sm">
                   <span className="font-semibold text-ink">{t.name}</span>
                   <span className="block text-slate-500 text-xs mt-0.5">{t.org}</span>
@@ -440,11 +440,11 @@ export default function HomePage() {
       <OrganicDivider fill="#F9FAFB" flip />
 
       {/* ── FAQ ──────────────────────────────────────────────────────────── */}
-      <section className={`${container} py-24`}>
+      <section className={`${container} section-pad`}>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
           <div className="lg:col-span-4">
             <p className="text-[11px] uppercase tracking-[0.32em] text-brand-400">Pertanyaan umum</p>
-            <h2 className="mt-4 font-display text-4xl font-medium text-alabaster">Sebelum Anda memesan.</h2>
+            <h2 className="mt-3 font-display text-fluid-h2 font-medium text-alabaster">Sebelum Anda memesan.</h2>
           </div>
           <div className="lg:col-span-8 divide-y divide-brand-500/15 border-y border-brand-500/15">
             {FAQS.map((f, i) => {
@@ -475,12 +475,12 @@ export default function HomePage() {
       </section>
 
       {/* ── CTA ──────────────────────────────────────────────────────────── */}
-      <section className={`${container} pb-28`}>
+      <section className={`${container} pb-16 lg:pb-24 3xl:pb-28`}>
         <div className="relative border border-brand-500/40 px-8 py-14 sm:px-14 lg:px-20 grid grid-cols-1 lg:grid-cols-12 gap-8 items-end">
           <div className="absolute -bottom-3 -left-3 w-24 h-24 border-l border-b border-brand-500 pointer-events-none" />
           <div className="lg:col-span-8">
             <p className="text-[11px] uppercase tracking-[0.32em] text-brand-400">Kontrak B2B</p>
-            <h2 className="mt-4 font-display text-4xl sm:text-5xl font-medium text-alabaster leading-tight">
+            <h2 className="mt-3 font-display text-fluid-h2 font-medium text-alabaster">
               Butuh pasokan rutin di atas 5.000 meter per bulan?
             </h2>
             <p className="mt-4 text-sm text-slate-400 max-w-xl">

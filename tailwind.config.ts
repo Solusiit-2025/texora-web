@@ -15,6 +15,26 @@ const config: Config = {
   ],
   darkMode: "class",
   theme: {
+    screens: {
+      xs: '400px',
+      sm: '640px',
+      md: '768px',
+      lg: '1024px',
+      laptop: '1280px',
+      xl: '1440px',
+      '2xl': '1536px',
+      '3xl': '1920px',
+    },
+    container: {
+      center: true,
+      padding: {
+        DEFAULT: '1.25rem',
+        sm: '2rem',
+        lg: '2.5rem',
+        xl: '3rem',
+        '2xl': '4rem',
+      },
+    },
     extend: {
       colors: {
         // Themeable identity palette — resolved from CSS variables per
@@ -60,6 +80,16 @@ const config: Config = {
       fontFamily: {
         sans: ["var(--font-sans)", "var(--font-jakarta)", "Plus Jakarta Sans", "Inter", "sans-serif"],
         display: ["var(--font-display)", "var(--font-urbanist)", "Urbanist", "sans-serif"],
+      },
+      maxWidth: {
+        shell: '80rem',
+        'shell-lg': '88rem',
+        'shell-xl': '96rem',
+      },
+      fontSize: {
+        'fluid-hero': ['clamp(2.1rem, 1.35rem + 3.4vw, 4.25rem)', { lineHeight: '1.05', letterSpacing: '-0.02em' }],
+        'fluid-h2': ['clamp(1.65rem, 1.25rem + 1.8vw, 2.75rem)', { lineHeight: '1.15' }],
+        'fluid-price': ['clamp(2rem, 1.4rem + 2.6vw, 3.5rem)', { lineHeight: '1.05' }],
       },
       borderRadius: {
         organic: "28px 6px 28px 6px",

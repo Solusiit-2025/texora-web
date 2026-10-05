@@ -60,7 +60,7 @@ export default function CartPage() {
   const grandTotal = subtotal + taxPPN + estimatedShipping;
 
   return (
-    <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 py-10 space-y-8">
+    <div className="texora-container py-10 space-y-8">
       
       {/* Header */}
       <div className="border-b border-slate-800 pb-4">

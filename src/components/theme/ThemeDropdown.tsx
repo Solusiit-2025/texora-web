@@ -22,8 +22,8 @@ export function ThemeDropdown({ compact = false }: ThemeDropdownProps) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`flex items-center gap-2 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-slate-200 transition-colors ${
-          compact ? "p-2.5" : "px-3 py-1.5 text-xs font-medium"
+        className={`flex items-center gap-1.5 rounded-full bg-slate-800/80 hover:bg-slate-700/80 border border-transparent text-slate-200 transition-colors ${
+          compact ? "p-2" : "px-2.5 py-1 text-xs font-medium"
         }`}
         title={`Thema warna: ${active.label}`}
         aria-haspopup="listbox"

@@ -4,6 +4,12 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { FloatingSocial } from "@/components/common/FloatingSocial";
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 export const metadata: Metadata = {
   title: "PT. Texora Visi Prima — Sublimasi & Kain Industri",
   description:

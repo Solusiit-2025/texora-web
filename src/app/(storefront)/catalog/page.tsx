@@ -50,7 +50,7 @@ export default function CatalogPage() {
   });
 
   return (
-    <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 py-10 space-y-8">
+    <div className="texora-container py-10 space-y-8">
       
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-800 pb-6">

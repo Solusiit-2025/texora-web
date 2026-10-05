@@ -48,7 +48,7 @@ export default function CustomerDashboardPage() {
   };
 
   return (
-    <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 py-10 space-y-10">
+    <div className="texora-container py-10 space-y-10">
       
       {/* Top Welcome Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
@@ -287,7 +287,7 @@ export default function CustomerDashboardPage() {
 
               {/* Watermark Draft Overlay */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <span className="text-4xl sm:text-5xl font-black text-white/10 rotate-[-15deg] font-mono tracking-widest uppercase">
+                <span className="text-fluid-h2 font-black text-white/10 rotate-[-15deg] font-mono tracking-widest uppercase">
                   DIGITAL PROOF — PT. TEXORA
                 </span>
               </div>

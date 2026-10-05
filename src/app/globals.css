@@ -3,6 +3,44 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* ============================================================
+   PROPORTIONAL DISPLAY SCALING — laptop vs desktop hi-res
+   Masalah: di laptop 1366-1536px tampilan 100% terlihat kebesaran,
+   sedangkan di PC desktop 1920px+ terlihat pas.
+   Solusi: kecilkan root font-size di rentang laptop, karena semua
+   ukuran Tailwind (rem) mengikuti root. Desktop hi-res tetap 16px.
+   Hasil: proporsi visual sama di kedua layar tanpa ubah zoom.
+   ============================================================ */
+/* ============================================================
+   PROPORTIONAL DISPLAY SCALING — Adaptive fit for 1920x1080 & 1440x900
+   Secara otomatis mengadaptasi skala tampilan agar 1440x900 dan
+   1920x1080 terlihat identik & presisi proporsinya secara visual.
+   ============================================================ */
+html {
+  font-size: 14px;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+/* Mobile & Small screens (< 640px) */
+@media (max-width: 639.98px) {
+  html { font-size: 13px; }
+}
+/* Laptop & Monitor 1440x900 (Lebar <= 1440px ATAU Tinggi Viewport <= 840px) */
+@media (max-width: 1440px), (max-height: 840px) {
+  html { font-size: 12.75px; }
+}
+/* Desktop Compact HD (1441px - 1680px dengan Tinggi > 840px) */
+@media (min-width: 1441px) and (max-width: 1680px) and (min-height: 841px) {
+  html { font-size: 13.75px; }
+}
+/* Desktop Full HD (1681px - 1919px dengan Tinggi > 840px) */
+@media (min-width: 1681px) and (max-width: 1919px) and (min-height: 841px) {
+  html { font-size: 14.25px; }
+}
+/* Desktop Hi-Res / 1920x1080 & 2K/4K (Lebar >= 1920px dan Tinggi >= 850px) */
+@media (min-width: 1920px) and (min-height: 850px) {
+  html { font-size: 15px; }
+}
 
 :root {
   color-scheme: dark;
@@ -196,6 +234,38 @@ h1, h2, h3, h4, h5, h6 {
 @media (prefers-reduced-motion: reduce) {
   .marquee-track, .animated-gradient-text { animation: none; }
 }
+
+
+/* Shell konten proporsional — Hampir Full Width (94% - 96% Viewport) */
+.texora-container {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 110rem;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+}
+@media (min-width: 640px) {
+  .texora-container { padding-left: 1.75rem; padding-right: 1.75rem; }
+}
+@media (min-width: 1024px) {
+  .texora-container { max-width: 94%; padding-left: 2.5rem; padding-right: 2.5rem; }
+}
+@media (min-width: 1440px) {
+  .texora-container { max-width: 95%; padding-left: 3rem; padding-right: 3rem; }
+}
+@media (min-width: 1920px) {
+  .texora-container { max-width: 96%; padding-left: 4rem; padding-right: 4rem; }
+}
+/* Tipografi fluid — clamp presisi agar tidak meledak di laptop dan tetap gagah di desktop */
+.text-fluid-hero { font-size: clamp(1.75rem, 1.1rem + 2.1vw, 3.1rem); line-height: 1.1; letter-spacing: -0.025em; }
+.text-fluid-h2 { font-size: clamp(1.35rem, 1.05rem + 1.1vw, 2.15rem); line-height: 1.18; }
+.text-fluid-h3 { font-size: clamp(1.05rem, 0.95rem + 0.5vw, 1.45rem); line-height: 1.25; }
+.text-fluid-price { font-size: clamp(1.65rem, 1.15rem + 1.6vw, 2.6rem); line-height: 1.1; }
+/* Section spacing proporsional */
+.section-pad { padding-top: 2.5rem; padding-bottom: 2.5rem; }
+@media (min-width: 1024px) { .section-pad { padding-top: 3.5rem; padding-bottom: 3.5rem; } }
+@media (min-width: 1920px) { .section-pad { padding-top: 4.25rem; padding-bottom: 4.25rem; } }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 8px; height: 8px; }

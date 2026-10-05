@@ -30,7 +30,7 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 py-12 space-y-12">
+    <div className="texora-container py-12 space-y-12">
       
       {/* Header */}
       <div className="text-center max-w-2xl mx-auto space-y-3">

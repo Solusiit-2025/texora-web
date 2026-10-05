@@ -4,8 +4,8 @@ import { SocialLinks } from "./SocialLinks";
 
 export function Footer() {
   return (
-    <footer className="w-full bg-slate-950 border-t border-slate-800/80 pt-16 pb-12 mt-auto">
-      <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16">
+    <footer className="w-full bg-slate-950 border-t border-slate-800/80 pt-12 lg:pt-14 3xl:pt-16 pb-10 lg:pb-12 mt-auto">
+      <div className="texora-container">
         
         {/* Top Feature Badges */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 pb-12 border-b border-slate-800">
@@ -55,7 +55,7 @@ export function Footer() {
           
           <div className="md:col-span-2 space-y-4">
             <div className="flex items-center space-x-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-b from-slate-50 via-slate-100 to-slate-200 p-1.5 border border-brand-400/60 flex items-center justify-center shadow-lg shadow-black/40">
+              <div className="w-10 h-10 xl:w-11 xl:h-11 3xl:w-12 3xl:h-12 rounded-2xl bg-gradient-to-b from-slate-50 via-slate-100 to-slate-200 p-1.5 border border-brand-400/60 flex items-center justify-center shadow-lg shadow-black/40">
                 <img
                   src="/icons/texora-logo.png"
                   alt="PT. Texora Visi Prima"

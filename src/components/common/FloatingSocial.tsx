@@ -128,16 +128,16 @@ export function FloatingSocial() {
               animate={{ opacity: 1, scale: 1, x: 0 }}
               exit={{ opacity: 0, scale: 0.9, x: 30 }}
               transition={{ duration: 0.25, ease: "easeOut" }}
-              className="relative flex flex-col items-center p-2 rounded-2xl bg-slate-950/85 backdrop-blur-2xl border border-white/10 shadow-[0_12px_45px_rgba(0,0,0,0.65)] ring-1 ring-white/5"
+              className="relative flex flex-col items-center p-1.5 rounded-xl bg-slate-950/85 backdrop-blur-2xl border border-white/10 shadow-[0_10px_35px_rgba(0,0,0,0.65)] ring-1 ring-white/5"
             >
               {/* Top Accent Pill / Header */}
-              <div className="flex items-center justify-between w-full px-1.5 pb-2 mb-1 border-b border-white/5">
-                <div className="flex items-center gap-1.5">
-                  <span className="relative flex h-2 w-2">
+              <div className="flex items-center justify-between w-full px-1 pb-1.5 mb-1 border-b border-white/5">
+                <div className="flex items-center gap-1">
+                  <span className="relative flex h-1.5 w-1.5">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
                   </span>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
                     Connect
                   </span>
                 </div>
@@ -147,14 +147,14 @@ export function FloatingSocial() {
                   onClick={toggleCollapse}
                   title="Sembunyikan Menu"
                   aria-label="Sembunyikan Menu Sosial"
-                  className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                  className="p-0.5 rounded text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
                 >
-                  <ChevronRight className="w-3.5 h-3.5" />
+                  <ChevronRight className="w-3 h-3" />
                 </button>
               </div>
 
               {/* Social Channels List */}
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-1.5">
                 {SOCIAL_LINKS.map((s) => {
                   const Icon = SOCIAL_ICONS[s.id];
                   const brand = SOCIAL_BRAND[s.id];
@@ -183,7 +183,7 @@ export function FloatingSocial() {
                         rel="noopener noreferrer"
                         aria-label={meta.title}
                         title={meta.title}
-                        whileHover={{ scale: 1.12, x: -3 }}
+                        whileHover={{ scale: 1.1, x: -2 }}
                         whileTap={{ scale: 0.95 }}
                         transition={{ type: "spring", stiffness: 400, damping: 20 }}
                         style={{
@@ -195,10 +195,10 @@ export function FloatingSocial() {
                             ? brand.border
                             : "rgba(255, 255, 255, 0.08)",
                           boxShadow: isHovered
-                            ? `0 0 20px -2px ${brand.glow}, inset 0 1px 1px rgba(255,255,255,0.2)`
+                            ? `0 0 16px -2px ${brand.glow}, inset 0 1px 1px rgba(255,255,255,0.2)`
                             : "inset 0 1px 1px rgba(255,255,255,0.05)",
                         }}
-                        className={`relative w-11 h-11 rounded-xl border flex items-center justify-center transition-colors duration-200 group ${
+                        className={`relative w-9 h-9 rounded-lg border flex items-center justify-center transition-colors duration-200 group ${
                           isWhatsApp ? "ring-1 ring-emerald-500/30" : ""
                         }`}
                       >
@@ -214,14 +214,14 @@ export function FloatingSocial() {
                               : undefined
                           }
                         >
-                          <Icon className="w-5 h-5" />
+                          <Icon className="w-4 h-4" />
                         </span>
 
                         {/* Special Live Ping Beacon for WhatsApp */}
                         {isWhatsApp && (
-                          <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                          <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-80" />
-                            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 border-2 border-slate-950" />
+                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 border-2 border-slate-950" />
                           </span>
                         )}
                       </motion.a>

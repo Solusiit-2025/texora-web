@@ -1,0 +1,108 @@
+
+> web-texora@1.0.0 dev
+> next dev
+
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3000
+  - Environments: .env.local, .env
+
+ ✓ Starting...
+ ✓ Ready in 1844ms
+ ○ Compiling /portal/dashboard ...
+ ✓ Compiled /portal/dashboard in 2.9s (1354 modules)
+ ✓ Compiled in 420ms (676 modules)
+ GET /portal/dashboard 200 in 3406ms
+ ✓ Compiled /portal/crm/leads in 473ms (1350 modules)
+ ✓ Compiled /portal/crm/customers in 204ms (1364 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 754ms (1422 modules)
+ GET /portal/dashboard 200 in 175ms
+ ✓ Compiled /api/social in 376ms (717 modules)
+ GET /api/social 200 in 1391ms
+ ✓ Compiled /portal/social-media in 332ms (1414 modules)
+ GET /portal/social-media 200 in 491ms
+ ✓ Compiled in 721ms (1428 modules)
+ ✓ Compiled in 507ms (1428 modules)
+ GET /api/social?platform=TIKTOK&limit=2 200 in 118ms
+ GET /portal/social-media 200 in 101ms
+ ✓ Compiled in 335ms (707 modules)
+ ✓ Compiled in 233ms (707 modules)
+ ○ Compiling /api/webhooks/social/tiktok ...
+ ✓ Compiled /api/webhooks/social/tiktok in 1191ms (884 modules)
+[Webhook Mock] TIKTOK_WEBHOOK_SECRET kosong, verifikasi dilewati.
+ POST /api/webhooks/social/tiktok 200 in 1319ms
+ GET /portal/dashboard 200 in 174ms
+ ✓ Compiled /portal/crm/leads in 450ms (884 modules)
+ ○ Compiling /portal/oms/orders ...
+ ✓ Compiled /portal/oms/orders in 818ms (1590 modules)
+ ✓ Compiled /portal/oms/custom-orders in 335ms (1600 modules)
+ ✓ Compiled in 171ms (898 modules)
+ ✓ Compiled /portal/oms/invoices in 318ms (1611 modules)
+ GET /portal/oms/invoices 200 in 160ms
+ GET /portal/oms/invoices 200 in 58ms
+ GET /portal/oms/invoices 200 in 57ms
+ ✓ Compiled in 259ms (720 modules)
+ GET /portal/crm/customers 200 in 77ms
+ ⨯ ./node_modules/recharts/es6/util/ReactUtils.js:3:1
+Module not found: Can't resolve 'react-is'
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./node_modules/recharts/es6/cartesian/Area.js
+__barrel_optimize__?names=Area,AreaChart,Bar,BarChart,CartesianGrid,Cell,Legend,Pie,PieChart,ResponsiveContainer,Tooltip,XAxis,YAxis!=!./node_modules/recharts/es6/index.js
+./src/app/portal/social-media/page.tsx
+ ○ Compiling /_error ...
+ ⨯ ./node_modules/recharts/es6/util/ReactUtils.js:3:1
+Module not found: Can't resolve 'react-is'
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./node_modules/recharts/es6/cartesian/Area.js
+__barrel_optimize__?names=Area,AreaChart,Bar,BarChart,CartesianGrid,Cell,Legend,Pie,PieChart,ResponsiveContainer,Tooltip,XAxis,YAxis!=!./node_modules/recharts/es6/index.js
+./src/app/portal/social-media/page.tsx
+ GET /portal/crm/customers 500 in 4264ms
+ GET /portal/crm/customers 500 in 24ms
+ ✓ Compiled /api/social in 278ms (779 modules)
+ GET /api/social?limit=1 500 in 327ms
+ GET /portal/crm/customers 500 in 23ms
+ ○ Compiling /portal/social-media ...
+ ⨯ ./node_modules/recharts/es6/util/ReactUtils.js:3:1
+Module not found: Can't resolve 'react-is'
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./node_modules/recharts/es6/cartesian/Area.js
+__barrel_optimize__?names=Area,AreaChart,Bar,BarChart,CartesianGrid,Cell,Legend,Pie,PieChart,ResponsiveContainer,Tooltip,XAxis,YAxis!=!./node_modules/recharts/es6/index.js
+./src/app/portal/social-media/page.tsx
+ ⨯ ./node_modules/recharts/es6/util/ReactUtils.js:3:1
+Module not found: Can't resolve 'react-is'
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./node_modules/recharts/es6/cartesian/Area.js
+__barrel_optimize__?names=Area,AreaChart,Bar,BarChart,CartesianGrid,Cell,Legend,Pie,PieChart,ResponsiveContainer,Tooltip,XAxis,YAxis!=!./node_modules/recharts/es6/index.js
+./src/app/portal/social-media/page.tsx
+ GET /portal/social-media 500 in 2425ms
+ GET /portal/crm/customers 500 in 538ms
+ GET /portal/crm/customers 500 in 105ms
+ GET /portal/crm/customers 500 in 12ms
+ ✓ Compiled /_not-found in 864ms (2674 modules)
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET /_next/static/webpack/3f1ceddc93976cea.webpack.hot-update.json 404 in 168ms
+ GET /portal/crm/customers 200 in 182ms
+ GET /portal/crm/customers 200 in 85ms
+ ○ Compiling /portal/crm/leads ...
+ ✓ Compiled /portal/crm/leads in 770ms (1282 modules)
+ GET /api/social?limit=1 200 in 139ms
+ GET /portal/social-media 200 in 248ms
+ ○ Compiling / ...
+ ✓ Compiled / in 509ms (1320 modules)
+ GET / 200 in 141ms
+ GET /portal/social-media 200 in 152ms
+ GET /api/social?limit=200 200 in 127ms
+ GET /api/social?limit=200 200 in 29ms
+[?25h
