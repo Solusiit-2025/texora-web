@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getWhatsAppConfig } from "@/lib/settings";
 
+export const dynamic = "force-dynamic";
+
 type Provider = "fonnte" | "meta";
 
 // -----------------------------------------------------------
@@ -187,12 +189,39 @@ export async function GET(req: Request) {
 // -----------------------------------------------------------
 export async function POST(req: Request) {
   try {
-    const rawBody = (await req.json().catch(() => ({}))) as Record<string, any>;
+    let rawBody: Record<string, any> = {};
+    const contentType = req.headers.get("content-type") || "";
+
+    if (contentType.includes("application/json")) {
+      rawBody = await req.json().catch(() => ({}));
+    } else if (contentType.includes("application/x-www-form-urlencoded") || contentType.includes("multipart/form-data")) {
+      const formData = await req.formData().catch(() => null);
+      if (formData) {
+        formData.forEach((val, key) => {
+          rawBody[key] = typeof val === "string" ? val : val.name || "";
+        });
+      }
+    } else {
+      rawBody = await req.json().catch(async () => {
+        try {
+          const rawText = await req.text();
+          return Object.fromEntries(new URLSearchParams(rawText));
+        } catch {
+          return {};
+        }
+      });
+    }
+
     const { action, target, from, sender, text, message, name, ...body } = rawBody;
 
     // 1. Webhook Masuk dari Fonnte (payload: sender, message, name, device, dll.)
     if (!action && sender && (message || text)) {
       return handleInbound(sender, (message || text || "").toString(), name);
+    }
+
+    // 1b. Webhook Connect / Message Status / Heartbeat dari Fonnte (tanpa pesan teks)
+    if (!action && !sender && !message && !text && (rawBody.device || rawBody.status || rawBody.id)) {
+      return NextResponse.json({ status: "ok", received: true, event: rawBody.status || "ack" });
     }
 
     // 2. Webhook Masuk dari Meta Cloud API (payload: entry[0].changes[0].value.messages[0])
@@ -298,6 +327,17 @@ export async function POST(req: Request) {
         const digits = contactNumber.replace(/[^0-9]/g, "");
         const waNumber = digits.startsWith("0") ? `+62${digits.slice(1)}` : `+${digits}`;
 
+        // Pastikan customerId valid sebagai User ID sebelum memasukkannya ke database
+        let validCustomerId: string | null = null;
+        if (customerId) {
+          try {
+            const user = await prisma.user.findUnique({ where: { id: customerId } });
+            if (user) validCustomerId = customerId;
+          } catch {
+            validCustomerId = null;
+          }
+        }
+
         let conversation = await prisma.whatsAppConversation.findFirst({
           where: { contactNumber: waNumber },
         });
@@ -308,7 +348,7 @@ export async function POST(req: Request) {
               contactName: contactName?.trim() || waNumber,
               contactNumber: waNumber,
               companyName: companyName?.trim() || null,
-              customerId: customerId || null,
+              customerId: validCustomerId,
               unreadCount: 0,
             },
           });
@@ -318,7 +358,7 @@ export async function POST(req: Request) {
             data: {
               ...(contactName ? { contactName: contactName.trim() } : {}),
               ...(companyName ? { companyName: companyName.trim() } : {}),
-              ...(customerId ? { customerId } : {}),
+              ...(validCustomerId ? { customerId: validCustomerId } : {}),
               updatedAt: new Date(),
             },
           });

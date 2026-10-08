@@ -1,14 +1,25 @@
 import { prisma } from "@/lib/prisma";
 
+const memorySettings = new Map<string, string>();
+
 /**
- * Baca setting dari database, fallback ke env var.
+ * Baca setting dari database, fallback ke memory / env var.
  */
 export async function getSetting(key: string, envFallback = ""): Promise<string> {
+  if (memorySettings.has(key)) {
+    return memorySettings.get(key)!;
+  }
+  if (!process.env.DATABASE_URL) {
+    return envFallback;
+  }
   try {
     const row = await prisma.systemSetting.findUnique({ where: { key } });
-    if (row && row.value) return row.value;
+    if (row && row.value) {
+      memorySettings.set(key, row.value);
+      return row.value;
+    }
   } catch {
-    // DB tidak reachable — fallback ke env
+    // DB tidak reachable / DATABASE_URL belum diatur — fallback ke env
   }
   return envFallback;
 }
@@ -38,11 +49,19 @@ export async function getWhatsAppConfig() {
 }
 
 export async function setSetting(key: string, value: string) {
-  await prisma.systemSetting.upsert({
-    where: { key },
-    create: { key, value },
-    update: { value },
-  });
+  memorySettings.set(key, value);
+  if (!process.env.DATABASE_URL) {
+    return;
+  }
+  try {
+    await prisma.systemSetting.upsert({
+      where: { key },
+      create: { key, value },
+      update: { value },
+    });
+  } catch (err) {
+    console.warn("[Texora Settings] Database not reachable or DATABASE_URL invalid. Setting cached in memory:", err);
+  }
 }
 
 export async function getWhatsAppSettingsMasked() {

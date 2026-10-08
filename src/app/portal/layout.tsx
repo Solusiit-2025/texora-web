@@ -22,6 +22,7 @@ import {
   Inbox,
   MessagesSquare,
   MessageCircle,
+  Mail,
   Menu,
   X,
 } from "lucide-react";
@@ -58,6 +59,7 @@ export default function PortalLayout({
       items: [
         { name: "Social Listening & Prospek", href: "/portal/social-media", icon: MessagesSquare, highlight: true, badge: "NEW" },
         { name: "WhatsApp", href: "/portal/crm/inbox", icon: MessageCircle },
+        { name: "Webmail Sales", href: "/portal/crm/webmail", icon: Mail },
         { name: "Pipeline Leads & Deals", href: "/portal/crm/leads", icon: TrendingUp },
         { name: "Database Pelanggan 360°", href: "/portal/crm/customers", icon: Users },
         { name: "Rekap Penjualan & Sales Order", href: "/portal/sales-report", icon: BarChart3 },

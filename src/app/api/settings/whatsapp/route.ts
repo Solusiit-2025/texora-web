@@ -5,15 +5,25 @@ import {
   getWhatsAppConfig,
 } from "@/lib/settings";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const settings = await getWhatsAppSettingsMasked();
     return NextResponse.json({ settings });
   } catch (err: any) {
-    return NextResponse.json(
-      { error: err.message || "Gagal memuat pengaturan" },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      settings: {
+        provider: "fonnte",
+        fonnteApiKey: "",
+        fonnteDeviceId: "",
+        metaToken: "",
+        metaPhoneId: "",
+        webhookToken: "texora_whatsapp_2026",
+        hasFonnteToken: false,
+        hasMetaToken: false,
+      },
+    });
   }
 }
 
