@@ -323,7 +323,7 @@ export default function PurchasingPage() {
             <span className="px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-amber-500/15 text-amber-300 border border-amber-500/40 flex items-center gap-1.5">
               <ShoppingCart className="w-3 h-3" /> Purchasing • Pengadaan & Supplier
             </span>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700 font-mono">Mockup v1.0 — Data Sample</span>
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700 font-mono">Data Sample</span>
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-500/10 text-sky-300 border border-sky-500/40 font-mono">Tanpa Database</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-white font-display tracking-tight">Purchasing & Pengadaan Bahan Baku</h1>
