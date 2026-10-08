@@ -89,17 +89,30 @@ async function sendMessage(to: string, text: string) {
 // -----------------------------------------------------------
 async function handleInbound(from: string, text: string, name?: string) {
   const digits = from.replace(/[^0-9]/g, "");
-  const waNumber = digits.startsWith("0") ? `+62${digits.slice(1)}` : `+${digits}`;
+  const normalizedDigits = digits.startsWith("0")
+    ? `62${digits.slice(1)}`
+    : digits.startsWith("62")
+    ? digits
+    : `62${digits}`;
+  const waNumberPlus = `+${normalizedDigits}`;
+  const localZeroNumber = `0${normalizedDigits.slice(2)}`;
 
   let conversation = await prisma.whatsAppConversation.findFirst({
-    where: { contactNumber: waNumber },
+    where: {
+      OR: [
+        { contactNumber: waNumberPlus },
+        { contactNumber: normalizedDigits },
+        { contactNumber: localZeroNumber },
+        { contactNumber: { contains: normalizedDigits.slice(2) } },
+      ],
+    },
   });
 
   if (!conversation) {
     conversation = await prisma.whatsAppConversation.create({
       data: {
-        contactName: name?.trim() || waNumber,
-        contactNumber: waNumber,
+        contactName: name?.trim() || waNumberPlus,
+        contactNumber: waNumberPlus,
         unreadCount: 1,
       },
     });
@@ -109,7 +122,7 @@ async function handleInbound(from: string, text: string, name?: string) {
       data: {
         unreadCount: { increment: 1 },
         updatedAt: new Date(),
-        ...(name && (conversation.contactName === waNumber || !conversation.contactName)
+        ...(name && (conversation.contactName === waNumberPlus || !conversation.contactName)
           ? { contactName: name.trim() }
           : {}),
       },
@@ -119,7 +132,7 @@ async function handleInbound(from: string, text: string, name?: string) {
   const message = await prisma.whatsAppMessage.create({
     data: {
       conversationId: conversation.id,
-      from: waNumber,
+      from: waNumberPlus,
       to: "sales",
       text,
       direction: "inbound",
@@ -214,9 +227,13 @@ export async function POST(req: Request) {
 
     const { action, target, from, sender, text, message, name, ...body } = rawBody;
 
-    // 1. Webhook Masuk dari Fonnte (payload: sender, message, name, device, dll.)
-    if (!action && sender && (message || text)) {
-      return handleInbound(sender, (message || text || "").toString(), name);
+    // 1. Webhook Masuk dari Fonnte (payload: sender, message, name, pushname, dll.)
+    const inboundSender = sender || from || target || rawBody.phone || rawBody.senderNumber;
+    const inboundText = message ?? text ?? rawBody.msg ?? rawBody.body;
+    const inboundName = name || rawBody.pushname || rawBody.contactName;
+
+    if (!action && inboundSender && inboundText) {
+      return handleInbound(inboundSender.toString(), inboundText.toString(), inboundName?.toString());
     }
 
     // 1b. Webhook Connect / Message Status / Heartbeat dari Fonnte (tanpa pesan teks)
