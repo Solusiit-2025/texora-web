@@ -614,6 +614,38 @@ export const MOCK_ORDERS: Order[] = [
 
 export const MOCK_LEADS: Lead[] = [
   {
+    id: "lead-intech",
+    title: "Repeat Order Kain Dryfit Milano 135 GSM (1.500 Meter)",
+    companyName: "PT. Intech Mitra Abadi",
+    contactPerson: "Ir. Bambang Trihatmojo (Procurement)",
+    email: "procurement@intechmitra.co.id",
+    phone: "+6281280212068",
+    estimatedValue: 48000000,
+    estimatedMeters: 1500,
+    fabricInterest: "Dryfit Milano 135 GSM (Plant Cikarang)",
+    stage: "NEGOTIATION",
+    assignedSalesName: "Dian Permata",
+    updatedAt: "Baru saja",
+    activities: [
+      {
+        id: "act-intech-1",
+        leadId: "lead-intech",
+        authorName: "Dian Permata",
+        type: "WHATSAPP_MESSAGE",
+        description: "Diskusi penawaran harga tier B2B Rp 32.000/meter dan konfirmasi termin pembayaran TOP 30 hari via WhatsApp Gateway.",
+        createdAt: "Hari ini 21:01",
+      },
+      {
+        id: "act-intech-2",
+        leadId: "lead-intech",
+        authorName: "Dian Permata",
+        type: "EMAIL",
+        description: "Surat Penawaran Resmi (SPH) #SPH-2026-X102 dan jadwal pengiriman bertahap 3x 500m dikirimkan via Webmail.",
+        createdAt: "Hari ini 21:40",
+      },
+    ],
+  },
+  {
     id: "lead-1",
     title: "Pengadaan Kain Sublimasi Jersey Tim Liga 3 (2.500 Meter)",
     companyName: "PT. Apparel Prima Olahraga",

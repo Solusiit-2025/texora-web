@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { MOCK_LEADS } from "@/lib/mock-data";
 import { Lead, LeadStage, ActivityType } from "@/types";
@@ -10,6 +11,7 @@ import {
   Phone, 
   Mail, 
   MessageSquare, 
+  MessageCircle,
   FileText, 
   ChevronRight, 
   ChevronLeft, 
@@ -18,6 +20,8 @@ import {
   DollarSign, 
   Building2,
   Calendar,
+  ExternalLink,
+  Sparkles,
   X
 } from "lucide-react";
 
@@ -184,6 +188,41 @@ export default function CrmLeadsPage() {
         </div>
       </div>
 
+      {/* Omnichannel CRM Quick Hub */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-md">
+        <div className="flex items-center gap-2 text-xs">
+          <Sparkles className="w-4 h-4 text-brand-400 shrink-0" />
+          <span className="text-slate-300 font-semibold">Saluran Komunikasi CRM Terpadu:</span>
+          <span className="text-slate-500 hidden sm:inline">• Hubungi prospek langsung via WhatsApp & Webmail</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Link
+            href="/portal/crm/inbox"
+            className="px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm"
+          >
+            <MessageCircle className="w-3.5 h-3.5 text-emerald-400" />
+            <span>WhatsApp CRM</span>
+          </Link>
+
+          <Link
+            href="/portal/crm/webmail"
+            className="px-3 py-1.5 rounded-xl bg-brand-500/10 hover:bg-brand-500/20 text-brand-300 border border-brand-500/30 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm"
+          >
+            <Mail className="w-3.5 h-3.5 text-brand-400" />
+            <span>Webmail Sales & SPH</span>
+          </Link>
+
+          <Link
+            href="/portal/crm/customers"
+            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 border border-slate-700 transition-colors"
+          >
+            <Building2 className="w-3.5 h-3.5 text-slate-400" />
+            <span className="hidden sm:inline">Database 360°</span>
+          </Link>
+        </div>
+      </div>
+
       {/* Kanban Board Columns Container */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 overflow-x-auto pb-4">
         {stages.map((stage) => {
@@ -248,14 +287,33 @@ export default function CrmLeadsPage() {
 
                       {/* Action Bar */}
                       <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-[10px]">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedLeadForActivity(lead)}
-                          className="px-2 py-1 rounded bg-slate-800 hover:bg-brand-600 text-slate-300 hover:text-white transition-colors flex items-center gap-1 font-semibold"
-                        >
-                          <Plus className="w-3 h-3" />
-                          <span>Aktivitas ({lead.activities.length})</span>
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedLeadForActivity(lead)}
+                            className="px-2 py-1 rounded bg-slate-800 hover:bg-brand-600 text-slate-300 hover:text-white transition-colors flex items-center gap-1 font-semibold"
+                            title="Buka & Tambah Log Aktivitas"
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>Log ({lead.activities.length})</span>
+                          </button>
+
+                          <Link
+                            href="/portal/crm/inbox"
+                            className="p-1 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-colors"
+                            title={`Chat WhatsApp dengan ${lead.contactPerson || lead.companyName}`}
+                          >
+                            <MessageCircle className="w-3 h-3" />
+                          </Link>
+
+                          <Link
+                            href="/portal/crm/webmail"
+                            className="p-1 rounded bg-brand-500/10 hover:bg-brand-500/20 text-brand-300 border border-brand-500/30 transition-colors"
+                            title={`Kirim Webmail / SPH ke ${lead.email || lead.companyName}`}
+                          >
+                            <Mail className="w-3 h-3" />
+                          </Link>
+                        </div>
 
                         <div className="flex items-center gap-1">
                           {stage.key !== "NEW_INQUIRY" && (
@@ -308,14 +366,35 @@ export default function CrmLeadsPage() {
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div>
                 <h3 className="text-base font-bold text-white">Log Riwayat & Follow-up CRM</h3>
-                <p className="text-xs text-slate-400">{selectedLeadForActivity.companyName}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-xs font-semibold text-brand-400">{selectedLeadForActivity.companyName}</span>
+                  <span className="text-[11px] text-slate-400">({selectedLeadForActivity.contactPerson})</span>
+                </div>
               </div>
-              <button
-                onClick={() => setSelectedLeadForActivity(null)}
-                className="text-slate-400 hover:text-white p-1"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/portal/crm/inbox"
+                  className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[11px] font-semibold flex items-center gap-1 transition-colors"
+                  title="Buka Chat WhatsApp"
+                >
+                  <MessageCircle className="w-3 h-3 text-emerald-400" />
+                  <span>WhatsApp</span>
+                </Link>
+                <Link
+                  href="/portal/crm/webmail"
+                  className="px-2.5 py-1 rounded-lg bg-brand-500/10 hover:bg-brand-500/20 text-brand-300 border border-brand-500/30 text-[11px] font-semibold flex items-center gap-1 transition-colors"
+                  title="Kirim Webmail / SPH"
+                >
+                  <Mail className="w-3 h-3 text-brand-400" />
+                  <span>Webmail</span>
+                </Link>
+                <button
+                  onClick={() => setSelectedLeadForActivity(null)}
+                  className="text-slate-400 hover:text-white p-1 ml-1"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             {/* List of Previous Activities */}
@@ -341,10 +420,11 @@ export default function CrmLeadsPage() {
             <form onSubmit={handleAddActivity} className="space-y-3 pt-3 border-t border-slate-800 text-xs">
               <label className="font-bold text-slate-300 block">Tambah Catatan Interaksi Baru:</label>
               
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {[
                   { key: "PHONE_CALL", label: "Telepon" },
                   { key: "WHATSAPP_MESSAGE", label: "WhatsApp" },
+                  { key: "EMAIL", label: "Email / SPH" },
                   { key: "SAMPLE_FABRIC_SENT", label: "Kirim Sampel" },
                   { key: "MEETING", label: "Meeting" },
                 ].map((item) => (
