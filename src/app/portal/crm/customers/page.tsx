@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { MOCK_USERS, MOCK_ORDERS } from "@/lib/mock-data";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { MOCK_CUSTOMERS } from "@/lib/mock-data";
 import { formatRupiah } from "@/lib/utils";
 import { 
   Users, 
@@ -16,62 +18,10 @@ import {
 } from "lucide-react";
 
 export default function CustomersDirectoryPage() {
+  const router = useRouter();
   const [search, setSearch] = useState("");
 
-  const customers = [
-    {
-      id: "cust-1",
-      name: "Hendra Wijaya",
-      company: "PT. Garment Kreatif Nusantara",
-      taxId: "01.234.567.8-012.000",
-      email: "hendra@garmentkreatif.com",
-      phone: "081234567890",
-      tier: "Enterprise B2B (TOP 30)",
-      totalMeters: 4500,
-      totalSpent: 162500000,
-      favoriteFabric: "Dryfit Milano 135 GSM",
-      status: "Aktif",
-    },
-    {
-      id: "cust-2",
-      name: "Sarah Alatas",
-      company: "Alatas Scarves Signature",
-      taxId: "02.987.654.3-011.000",
-      email: "sarah@alatashijab.id",
-      phone: "081822334411",
-      tier: "Reguler B2B",
-      totalMeters: 1850,
-      totalSpent: 64750000,
-      favoriteFabric: "Voal Ultrafine 85 GSM",
-      status: "Aktif",
-    },
-    {
-      id: "cust-3",
-      name: "Kevin Suryadi",
-      company: "Runners United Club",
-      taxId: "-",
-      email: "kevin@runnersunited.org",
-      phone: "087799112233",
-      tier: "Komunitas / B2C",
-      totalMeters: 600,
-      totalSpent: 21600000,
-      favoriteFabric: "Dryfit Heavy 155 GSM",
-      status: "Aktif",
-    },
-    {
-      id: "cust-4",
-      name: "Budi Setiawan",
-      company: "CV. Kreasi Promosi Mandiri",
-      taxId: "03.112.334.5-015.000",
-      email: "budi@kreasipromosi.com",
-      phone: "085611223344",
-      tier: "Reguler B2B",
-      totalMeters: 2200,
-      totalSpent: 77000000,
-      favoriteFabric: "Canvas Polyester 8oz",
-      status: "Aktif",
-    },
-  ];
+  const customers = MOCK_CUSTOMERS;
 
   const filtered = customers.filter(
     c => c.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -127,9 +77,18 @@ export default function CustomersDirectoryPage() {
             </thead>
             <tbody className="divide-y divide-slate-800/80">
               {filtered.map((c) => (
-                <tr key={c.id} className="hover:bg-slate-900/50 transition-colors">
+                <tr
+                  key={c.id}
+                  onClick={() => router.push(`/portal/crm/customers/${c.id}`)}
+                  className="hover:bg-slate-900/50 transition-colors cursor-pointer"
+                >
                   <td className="py-3.5 px-4">
-                    <div className="font-bold text-white text-sm">{c.company}</div>
+                    <Link
+                      href={`/portal/crm/customers/${c.id}`}
+                      className="font-bold text-white text-sm hover:text-brand-300 transition-colors"
+                    >
+                      {c.company}
+                    </Link>
                     <div className="text-slate-400 text-[11px] mt-0.5">PIC: {c.name}</div>
                     <div className="text-slate-500 font-mono text-[10px]">NPWP: {c.taxId}</div>
                   </td>

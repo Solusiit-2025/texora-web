@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatRupiah, formatNumber } from "@/lib/utils";
+import { loadCart, saveCart, type CartLineItem } from "@/lib/cart";
 import { 
   Trash2, 
   ArrowRight, 
@@ -14,40 +15,54 @@ import {
   CheckCircle2
 } from "lucide-react";
 
+const DEFAULT_CART: CartLineItem[] = [
+  {
+    id: "cart-1",
+    fabricName: "Dryfit Milano Premium",
+    gsm: 135,
+    widthInch: 60,
+    meters: 100,
+    unitPrice: 32500,
+    sublimationPrintFeePerMeter: 18000,
+    customDesignTitle: "Phoenix_Esport_Jersey_AllOver_Pattern.ai",
+    customDesignDpi: 300,
+  },
+  {
+    id: "cart-2",
+    fabricName: "Voal Ultrafine Premium Hijab",
+    gsm: 85,
+    widthInch: 46,
+    meters: 50,
+    unitPrice: 28000,
+    sublimationPrintFeePerMeter: 18000,
+    customDesignTitle: "Monogram_Botanical_Hijab_Voal.tiff",
+    customDesignDpi: 240,
+  },
+];
+
 export default function CartPage() {
-  const [cartItems, setCartItems] = useState([
-    {
-      id: "cart-1",
-      fabricName: "Dryfit Milano Premium",
-      gsm: 135,
-      widthInch: 60,
-      meters: 100,
-      unitPrice: 32500,
-      sublimationPrintFeePerMeter: 18000,
-      customDesignTitle: "Phoenix_Esport_Jersey_AllOver_Pattern.ai",
-      customDesignDpi: 300,
-    },
-    {
-      id: "cart-2",
-      fabricName: "Voal Ultrafine Premium Hijab",
-      gsm: 85,
-      widthInch: 46,
-      meters: 50,
-      unitPrice: 28000,
-      sublimationPrintFeePerMeter: 18000,
-      customDesignTitle: "Monogram_Botanical_Hijab_Voal.tiff",
-      customDesignDpi: 240,
-    },
-  ]);
+  const [cartItems, setCartItems] = useState<CartLineItem[]>(DEFAULT_CART);
+
+  // Muat isi keranjang tersimpan (termasuk item dari Kustom Sublimasi)
+  useEffect(() => {
+    const saved = loadCart();
+    if (saved.length) setCartItems(saved);
+  }, []);
 
   const updateMeters = (id: string, newMeters: number) => {
-    setCartItems(prev =>
-      prev.map(item => item.id === id ? { ...item, meters: Math.max(1, newMeters) } : item)
-    );
+    setCartItems(prev => {
+      const next = prev.map(item => item.id === id ? { ...item, meters: Math.max(1, newMeters) } : item);
+      saveCart(next);
+      return next;
+    });
   };
 
   const removeItem = (id: string) => {
-    setCartItems(prev => prev.filter(item => item.id !== id));
+    setCartItems(prev => {
+      const next = prev.filter(item => item.id !== id);
+      saveCart(next);
+      return next;
+    });
   };
 
   const subtotal = cartItems.reduce((acc, item) => {

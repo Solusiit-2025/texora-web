@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ThemeDropdown } from "../theme/ThemeDropdown";
 import { 
   Home,
+  Building2,
   Layers, 
   Palette, 
   Search, 
@@ -28,6 +29,7 @@ interface NavbarProps {
 const NAV_LINKS = [
   { name: "Home", href: "/", icon: Home },
   { name: "Katalog Kain", href: "/catalog", icon: Layers },
+  { name: "Tentang Kami", href: "/about", icon: Building2 },
   { 
     name: "Kustom Sublimasi", 
     href: "/custom-sublimation", 
@@ -48,7 +50,7 @@ export function Navbar({ cartCount = 2 }: NavbarProps) {
 
   return (
     <header className="sticky top-0 z-50 w-full glass-panel border-b border-white/10 backdrop-blur-xl">
-      <div className="w-full max-w-[96%] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
+      <div className="texora-container">
         <div className="flex items-center justify-between h-16 lg:h-[4.25rem] xl:h-[4.5rem]">
           
           {/* Brand Logo */}

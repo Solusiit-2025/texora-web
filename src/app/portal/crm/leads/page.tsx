@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MOCK_LEADS } from "@/lib/mock-data";
 import { Lead, LeadStage, ActivityType } from "@/types";
 import { formatRupiah, formatNumber } from "@/lib/utils";
@@ -28,6 +28,68 @@ export default function CrmLeadsPage() {
   // New activity form state
   const [activityType, setActivityType] = useState<ActivityType>("PHONE_CALL");
   const [activityDesc, setActivityDesc] = useState("");
+
+  // New lead form state
+  const [showNewLeadModal, setShowNewLeadModal] = useState(false);
+  const [newLeadForm, setNewLeadForm] = useState({
+    companyName: "",
+    contactPerson: "",
+    title: "",
+    fabricInterest: "",
+    estimatedMeters: 0,
+  });
+
+  // Auto-prefill dari Social Listening (comment -> lead)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const sosmed = params.get("sosmed");
+    const pesan = params.get("pesan");
+    if (sosmed || pesan) {
+      setNewLeadForm({
+        companyName: sosmed ? `@${sosmed} (Sosial Media)` : "Prospek Sosial Media",
+        contactPerson: sosmed ? `@${sosmed}` : "",
+        title: pesan || "",
+        fabricInterest: "",
+        estimatedMeters: 0,
+      });
+      setShowNewLeadModal(true);
+    }
+  }, []);
+
+  const handleAddLead = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newLeadForm.companyName.trim() || !newLeadForm.title.trim()) return;
+    const id = `lead-${Date.now()}`;
+    const meters = newLeadForm.estimatedMeters || 0;
+    const newLead: Lead = {
+      id,
+      title: newLeadForm.title.trim(),
+      companyName: newLeadForm.companyName.trim(),
+      contactPerson: newLeadForm.contactPerson.trim() || "-",
+      email: "",
+      phone: "",
+      estimatedValue: meters * 28000,
+      estimatedMeters: meters,
+      fabricInterest: newLeadForm.fabricInterest.trim() || "Belum ditentukan",
+      stage: "NEW_INQUIRY",
+      assignedSalesName: "Rian Pratama",
+      updatedAt: "Baru saja",
+      activities: [
+        {
+          id: `act-${Date.now()}`,
+          leadId: id,
+          authorName: "Sales (Social Listening)",
+          type: "NOTE",
+          description: `Sumber: Social Listening — ${newLeadForm.title.trim()}`,
+          createdAt: "Baru saja",
+        },
+      ],
+    };
+    setLeads((prev) => [newLead, ...prev]);
+    setNewLeadForm({ companyName: "", contactPerson: "", title: "", fabricInterest: "", estimatedMeters: 0 });
+    setShowNewLeadModal(false);
+  };
 
   const stages: { key: LeadStage; label: string; color: string }[] = [
     { key: "NEW_INQUIRY", label: "Inkuiri Baru", color: "border-slate-700 bg-slate-900/40" },
@@ -112,6 +174,13 @@ export default function CrmLeadsPage() {
               {formatRupiah(leads.reduce((sum, l) => sum + l.estimatedValue, 0))}
             </span>
           </div>
+          <button
+            onClick={() => setShowNewLeadModal(true)}
+            className="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs shadow-lg transition-colors flex items-center gap-1.5"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Tambah Lead</span>
+          </button>
         </div>
       </div>
 
@@ -318,6 +387,100 @@ export default function CrmLeadsPage() {
               </div>
             </form>
 
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Tambah Lead Baru (termasuk dari Social Listening) */}
+      {showNewLeadModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-lg rounded-2xl glass-panel border border-slate-800 p-6 shadow-2xl bg-slate-900 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div>
+                <h3 className="text-base font-bold text-white">Tambah Lead Prospek Baru</h3>
+                <p className="text-xs text-slate-400">Lead akan masuk ke tahap Inkuiri Baru di kanban</p>
+              </div>
+              <button
+                onClick={() => setShowNewLeadModal(false)}
+                className="text-slate-400 hover:text-white p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddLead} className="space-y-3 text-xs">
+              <div>
+                <label className="font-bold text-slate-300 block mb-1">Perusahaan / Akun</label>
+                <input
+                  required
+                  value={newLeadForm.companyName}
+                  onChange={(e) => setNewLeadForm((p) => ({ ...p, companyName: e.target.value }))}
+                  placeholder="Contoh: PT. Apparel Prima / @username"
+                  className="w-full px-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-300 block mb-1">PIC / Kontak Person</label>
+                <input
+                  value={newLeadForm.contactPerson}
+                  onChange={(e) => setNewLeadForm((p) => ({ ...p, contactPerson: e.target.value }))}
+                  placeholder="Contoh: Dimas Anggara / @username"
+                  className="w-full px-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-300 block mb-1">Kebutuhan / Catatan Prospek</label>
+                <textarea
+                  required
+                  rows={2}
+                  value={newLeadForm.title}
+                  onChange={(e) => setNewLeadForm((p) => ({ ...p, title: e.target.value }))}
+                  placeholder="Contoh: Cari kain dryfit 500 meter untuk jersey tim..."
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-300 block mb-1">Minat Kain</label>
+                  <input
+                    value={newLeadForm.fabricInterest}
+                    onChange={(e) => setNewLeadForm((p) => ({ ...p, fabricInterest: e.target.value }))}
+                    placeholder="Contoh: Dryfit Milano 135 GSM"
+                    className="w-full px-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-300 block mb-1">Estimasi Meter</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={newLeadForm.estimatedMeters || ""}
+                    onChange={(e) => setNewLeadForm((p) => ({ ...p, estimatedMeters: Number(e.target.value) }))}
+                    placeholder="Contoh: 500"
+                    className="w-full px-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowNewLeadModal(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-semibold"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold"
+                >
+                  Simpan Lead
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

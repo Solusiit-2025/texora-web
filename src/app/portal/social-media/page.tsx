@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { type SocialComment } from '@prisma/client';
 import {
   ResponsiveContainer,
@@ -25,6 +26,7 @@ import {
   Sparkles,
   TrendingUp,
   TrendingDown,
+  UserPlus,
   ShieldCheck,
   AlertTriangle,
   Flame,
@@ -45,6 +47,7 @@ import {
   Zap,
   SlidersHorizontal,
   Check,
+  X,
 } from 'lucide-react';
 
 type ApiResponse = {
@@ -77,6 +80,7 @@ const DARK_TOOLTIP = {
 };
 
 export default function SocialMediaDashboard() {
+  const router = useRouter();
   const [data, setData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'analytics' | 'comments'>('overview');
@@ -88,6 +92,15 @@ export default function SocialMediaDashboard() {
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedTopicFilter, setSelectedTopicFilter] = useState<string | null>(null);
+  const [repliedIds, setRepliedIds] = useState<Record<string, boolean>>({});
+  const [replyToast, setReplyToast] = useState<string>("");
+  const [replyModal, setReplyModal] = useState<{
+    id: string;
+    platform: string;
+    username: string;
+    message: string;
+    replyText: string;
+  } | null>(null);
 
   const ROWS_PER_PAGE = 20;
   const [currentPage, setCurrentPage] = useState(1);
@@ -233,18 +246,48 @@ export default function SocialMediaDashboard() {
     setTimeout(() => setCopiedId(null), 2500);
   };
 
+  const handleCreateLead = (username: string, message: string) => {
+    router.push(
+      `/portal/crm/leads?sosmed=${encodeURIComponent(username)}&pesan=${encodeURIComponent(message)}`
+    );
+  };
+
+  const openReplyModal = (comment: SocialComment) => {
+    setReplyModal({
+      id: comment.id,
+      platform: comment.platform,
+      username: comment.username,
+      message: comment.message,
+      replyText: comment.aiReply ?? "",
+    });
+  };
+
+  const handleSendReply = () => {
+    if (!replyModal) return;
+    setRepliedIds((prev) => ({ ...prev, [replyModal.id]: true }));
+    setReplyToast(`Balasan terkirim ke ${replyModal.platform} (simulasi)`);
+    setReplyModal(null);
+    setTimeout(() => setReplyToast(""), 2500);
+  };
+
   const handlePrintReport = () => {
     window.print();
   };
 
   return (
     <div className="space-y-8 pb-12">
+      {replyToast && (
+        <div className="fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-2xl flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4" />
+          {replyToast}
+        </div>
+      )}
       {/* TOP EXECUTIVE HEADER */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-slate-800/80 pb-6">
         <div>
           <div className="flex items-center gap-2 mb-2">
             <span className="px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-brand-500/20 text-brand-300 border border-brand-500/40 flex items-center gap-1.5 shadow-sm shadow-brand-500/10">
-              <Sparkles className="w-3 h-3 text-brand-400 animate-pulse" /> C-Level Intelligence Radar
+              <Sparkles className="w-3 h-3 text-brand-400 animate-pulse" /> CRM · Social Listening & Prospek
             </span>
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700 font-mono">
               Live AI Sentiment Engine v2.4
@@ -263,10 +306,10 @@ export default function SocialMediaDashboard() {
             )}
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-white font-display tracking-tight flex items-center gap-3">
-            Social Media Intelligence & Brand Health
+            Social Listening & Intelijen Penjualan
           </h1>
           <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
-            Pusat pemantauan reputasi brand, persepsi publik di TikTok, Instagram & Facebook, serta simulasi respon otomatis bertenaga AI.
+            Pantau komentar TikTok, Instagram & Facebook untuk menangkap prospek, keluhan, dan tren pembelian — lalu ubah komentar ber-intensi beli menjadi lead di pipeline CRM.
           </p>
         </div>
 
@@ -304,7 +347,7 @@ export default function SocialMediaDashboard() {
             className="px-4 py-2 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-brand-600/20 transition-all flex items-center gap-2"
           >
             <Printer className="w-3.5 h-3.5" />
-            <span>Cetak Ringkasan Executive</span>
+            <span>Cetak Ringkasan</span>
           </button>
         </div>
       </div>
@@ -414,9 +457,9 @@ export default function SocialMediaDashboard() {
             </div>
             <div>
               <h3 className="text-base font-extrabold text-white flex items-center gap-2">
-                Executive AI Sentiment Briefing
+                Ringkasan Intelijen Penjualan
               </h3>
-              <p className="text-xs text-slate-400">Rangkuman otomatis untuk kebutuhan analisa Direksi & Manajemen C-Level</p>
+              <p className="text-xs text-slate-400">Rangkuman otomatis untuk tim Sales & Marketing dalam menindaklanjuti prospek dan keluhan</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -450,7 +493,7 @@ export default function SocialMediaDashboard() {
           {/* Briefing Item 3 */}
           <div className="space-y-2 p-4 rounded-xl bg-slate-950/50 border border-slate-800/60">
             <div className="flex items-center gap-2 text-xs font-bold text-brand-400 uppercase tracking-wider">
-              <Zap className="w-4 h-4" /> 3. Rekomendasi Aksi C-Level
+              <Zap className="w-4 h-4" /> 3. Rekomendasi Aksi Sales
             </div>
             <p className="text-xs text-slate-300 leading-relaxed">
               Instruksikan tim CS untuk membalas <b className="text-white">{negativeCount} komentar negatif</b> menggunakan templat AI Reply agar menurunkan potensi krisis reputasi sebelum menjadi viral.
@@ -933,20 +976,45 @@ export default function SocialMediaDashboard() {
                         })}
                       </td>
                       <td className="p-4 align-top text-right whitespace-nowrap">
-                        {c.aiReply && (
+                        <div className="flex flex-col items-end gap-1.5">
+                          {c.aiReply && (
+                            <button
+                              onClick={() => openReplyModal(c)}
+                              disabled={!!repliedIds[c.id]}
+                              className={`p-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
+                                repliedIds[c.id]
+                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 cursor-default'
+                                  : 'bg-brand-600 hover:bg-brand-500 text-white border border-brand-500'
+                              }`}
+                              title={repliedIds[c.id] ? 'Balasan sudah terkirim' : `Balas komentar ini di ${c.platform} (simulasi)`}
+                            >
+                              {repliedIds[c.id] ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Send className="w-3.5 h-3.5" />}
+                              <span>{repliedIds[c.id] ? 'Terkirim' : 'Balas'}</span>
+                            </button>
+                          )}
                           <button
-                            onClick={() => handleCopyReply(c.id, c.aiReply ?? '')}
-                            className={`p-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
-                              isCopied
-                                ? 'bg-emerald-500 text-white'
-                                : 'bg-slate-800 hover:bg-brand-600 text-slate-300 hover:text-white border border-slate-700'
-                            }`}
-                            title="Salin Balasan AI"
+                            onClick={() => handleCreateLead(c.username, c.message)}
+                            className="p-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40"
+                            title="Ubah komentar ini menjadi prospek di Pipeline CRM"
                           >
-                            {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                            <span>{isCopied ? 'Tersalin' : 'Copy'}</span>
+                            <UserPlus className="w-3.5 h-3.5" />
+                            <span>Jadikan Lead</span>
                           </button>
-                        )}
+                          {c.aiReply && (
+                            <button
+                              onClick={() => handleCopyReply(c.id, c.aiReply ?? '')}
+                              className={`p-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
+                                isCopied
+                                  ? 'bg-emerald-500 text-white'
+                                  : 'bg-slate-800 hover:bg-brand-600 text-slate-300 hover:text-white border border-slate-700'
+                              }`}
+                              title="Salin Balasan AI"
+                            >
+                              {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                              <span>{isCopied ? 'Tersalin' : 'Copy'}</span>
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -1006,6 +1074,64 @@ export default function SocialMediaDashboard() {
           </div>
         </div>
       </div>
+
+      {/* MODAL: Balas Komentar — edit AI reply sebelum kirim */}
+      {replyModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-lg rounded-2xl glass-panel border border-brand-500/40 p-6 shadow-2xl bg-slate-900 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <Send className="w-4 h-4 text-brand-400" /> Balas Komentar
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  @{replyModal.username} · Platform: {replyModal.platform}
+                </p>
+              </div>
+              <button
+                onClick={() => setReplyModal(null)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg bg-slate-800"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300">
+              <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Komentar Netizen</span>
+              <p className="leading-relaxed">{replyModal.message}</p>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5 mb-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-brand-400" /> Balasan (Rekomendasi AI — boleh diedit)
+              </label>
+              <textarea
+                rows={4}
+                value={replyModal.replyText}
+                onChange={(e) => setReplyModal((p) => (p ? { ...p, replyText: e.target.value } : p))}
+                className="w-full px-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white leading-relaxed focus:outline-none focus:border-brand-500"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setReplyModal(null)}
+                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleSendReply}
+                disabled={!replyModal.replyText.trim()}
+                className="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-white font-bold text-xs flex items-center gap-1.5"
+              >
+                <Send className="w-4 h-4" />
+                <span>Kirim Balasan</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

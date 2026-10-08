@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Shell(npx tsc --noEmit)",
+      "Shell(npx next build)",
+      "Shell(if:*)",
+      "Shell(Test-Path:*)",
+      "Shell({:*)",
+      "Shell(Get-ChildItem:*)",
+      "Shell(Select-Object:*)",
+      "Shell(else:*)",
+      "Shell(node -e \"const p=require('./node_modules/react-is/package.json'); console.log('react-is', p.version); const n=require('./node_modules/next/package.json'); console.log('next', n.version); const r=require('./node_modules/react/package.json'); console.log('react', r.version); const rc=require('./node_modules/recharts/package.json'); console.log('recharts', rc.version);\")",
+      "Shell(node -e \"const rc=require('./node_modules/recharts/package.json'); console.log(JSON.stringify({peer:rc.peerDependencies, deps:rc.dependencies}, null, 2));\")",
+      "Shell(npm:*)",
+      "Shell(rmdir /s /q .next 2>nul & npx next build)",
+      "Shell(tasklist:*)",
+      "Shell(findstr:*)",
+      "powershell",
+      "Shell(taskkill /PID 21436 /T /F 2>nul & taskkill /PID 27564 /T /F 2>nul & taskkill /PID 27708 /T /F 2>nul & echo DONE)",
+      "Shell(rmdir /s /q .next 2>nul & echo CLEANED & npx next build)",
+      "Shell(rmdir:*)",
+      "Shell(dir:*)",
+      "Shell(rmdir /s /q .next 2>nul & npx next build > build-log.txt 2>&1 & type build-log.txt)",
+      "Shell(type:*)",
+      "Shell(git:*)",
+      "Shell(taskkill /PID 17432 /T /F 2>nul & taskkill /PID 26088 /T /F 2>nul & echo KILLED)",
+      "Shell(taskkill /PID 30240 /T /F 2>nul & echo DONE)",
+      "Shell(taskkill /PID 18488 /T /F 2>nul & taskkill /PID 9876 /T /F 2>nul & taskkill /PID 29076 /T /F 2>nul & echo KILLED)"
+    ],
+    "deny": [],
+    "defaultMode": "default"
+  }
+}

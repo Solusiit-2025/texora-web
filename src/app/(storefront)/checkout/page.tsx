@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatRupiah } from "@/lib/utils";
+import { loadCart, type CartLineItem } from "@/lib/cart";
+import { saveLastOrder } from "@/lib/order";
 import { 
   Building2, 
   User, 
@@ -20,7 +22,12 @@ import {
 
 export default function CheckoutPage() {
   const router = useRouter();
-  
+  const [cartItems, setCartItems] = useState<CartLineItem[]>([]);
+
+  useEffect(() => {
+    setCartItems(loadCart());
+  }, []);
+
   // Step state (1: Info, 2: Shipping, 3: Payment, 4: Success)
   const [currentStep, setCurrentStep] = useState<number>(1);
 
@@ -42,19 +49,49 @@ export default function CheckoutPage() {
 
   const [orderCreatedNumber, setOrderCreatedNumber] = useState<string>("");
 
-  const subtotal = 7700000;
+  const subtotal = cartItems.reduce(
+    (sum, item) => sum + (item.unitPrice + item.sublimationPrintFeePerMeter) * item.meters,
+    0
+  );
   const taxPPN = Math.round(subtotal * 0.11);
   const shippingCost = formData.shippingCarrier === "texora_fleet" ? 450000 : 250000;
   const grandTotal = subtotal + taxPPN + shippingCost;
 
   const handleSubmitOrder = () => {
-    const generatedOrder = `TEX-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, "0")}-005`;
+    const now = new Date();
+    const yyyymm = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const seq = String(1000 + Math.floor(Math.random() * 9000));
+    const generatedOrder = `TEX-${yyyymm}-${seq}`;
     setOrderCreatedNumber(generatedOrder);
+
+    saveLastOrder({
+      orderNumber: generatedOrder,
+      customerName: formData.fullName,
+      customerCompany: formData.accountType === "B2B" ? formData.companyName : undefined,
+      totalAmount: grandTotal,
+      taxAmount: taxPPN,
+      shippingAmount: shippingCost,
+      status: "PENDING_PAYMENT",
+      paymentStatus: "UNPAID",
+      paymentMethod: formData.paymentMethod,
+      createdAt: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
+      notes: formData.orderNotes,
+      items: cartItems.map((item, i) => ({
+        id: `item-${i + 1}`,
+        fabricName: item.fabricName,
+        gsm: item.gsm,
+        lengthMeters: item.meters,
+        unitPrice: item.unitPrice + item.sublimationPrintFeePerMeter,
+        subtotal: (item.unitPrice + item.sublimationPrintFeePerMeter) * item.meters,
+        customDesignTitle: item.customDesignTitle,
+      })),
+    });
+
     setCurrentStep(4);
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-10 space-y-8">
+    <div className="texora-container py-10 space-y-8">
       
       {/* Header */}
       <div className="border-b border-slate-800 pb-4 flex items-center justify-between">
@@ -394,6 +431,23 @@ export default function CheckoutPage() {
                 Ringkasan Biaya Checkout
               </h3>
 
+              <div className="space-y-2 border-b border-slate-800 pb-3">
+                {cartItems.map((item) => (
+                  <div key={item.id} className="flex justify-between gap-3 text-xs">
+                    <div className="min-w-0">
+                      <div className="font-semibold text-white truncate">{item.fabricName}</div>
+                      <div className="text-slate-400">{item.meters} m · {item.gsm} GSM{item.customDesignTitle ? " · custom" : ""}</div>
+                    </div>
+                    <div className="font-mono text-white shrink-0">
+                      {formatRupiah((item.unitPrice + item.sublimationPrintFeePerMeter) * item.meters)}
+                    </div>
+                  </div>
+                ))}
+                {cartItems.length === 0 && (
+                  <p className="text-slate-500 text-xs">Belum ada item pesanan.</p>
+                )}
+              </div>
+
               <div className="space-y-2 text-xs text-slate-300">
                 <div className="flex justify-between">
                   <span>Subtotal Kain & Sublimasi:</span>
@@ -427,7 +481,7 @@ export default function CheckoutPage() {
         </div>
       ) : (
         /* STEP 4: ORDER SUCCESS / CONFIRMATION SCREEN */
-        <div className="max-w-2xl mx-auto p-8 rounded-3xl glass-panel border border-emerald-500/40 text-center space-y-6 shadow-2xl bg-gradient-to-b from-slate-900 to-slate-950">
+        <div className="max-w-4xl mx-auto p-8 rounded-3xl glass-panel border border-emerald-500/40 text-center space-y-6 shadow-2xl bg-gradient-to-b from-slate-900 to-slate-950">
           
           <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/30">
             <CheckCircle2 className="w-10 h-10" />
@@ -449,6 +503,19 @@ export default function CheckoutPage() {
           </div>
 
           <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 text-left text-xs space-y-2">
+            <div className="space-y-1.5 border-b border-slate-800 pb-2.5 mb-1">
+              {cartItems.map((item) => (
+                <div key={item.id} className="flex justify-between gap-3">
+                  <div className="min-w-0 text-slate-300">
+                    <span className="text-white font-semibold">{item.fabricName}</span>
+                    <span className="text-slate-500"> · {item.meters} m</span>
+                  </div>
+                  <span className="text-slate-300 font-mono shrink-0">
+                    {formatRupiah((item.unitPrice + item.sublimationPrintFeePerMeter) * item.meters)}
+                  </span>
+                </div>
+              ))}
+            </div>
             <div className="flex justify-between text-slate-400">
               <span>Metode Pembayaran:</span>
               <span className="font-semibold text-white uppercase">{formData.paymentMethod.replace("_", " ")}</span>

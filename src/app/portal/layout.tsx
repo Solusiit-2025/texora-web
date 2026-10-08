@@ -14,11 +14,14 @@ import {
   ArrowLeft,
   ShieldAlert,
   TrendingUp,
+  BarChart3,
   Scissors,
   FileCheck,
   Sliders,
   ClipboardList,
+  Inbox,
   MessagesSquare,
+  MessageCircle,
   Menu,
   X,
 } from "lucide-react";
@@ -53,8 +56,11 @@ export default function PortalLayout({
     {
       title: "CRM & Penjualan (PRD §3.3)",
       items: [
+        { name: "Social Listening & Prospek", href: "/portal/social-media", icon: MessagesSquare, highlight: true, badge: "NEW" },
+        { name: "WhatsApp", href: "/portal/crm/inbox", icon: MessageCircle },
         { name: "Pipeline Leads & Deals", href: "/portal/crm/leads", icon: TrendingUp },
         { name: "Database Pelanggan 360°", href: "/portal/crm/customers", icon: Users },
+        { name: "Rekap Penjualan & Sales Order", href: "/portal/sales-report", icon: BarChart3 },
       ],
     },
     {
@@ -73,13 +79,6 @@ export default function PortalLayout({
       ],
     },
     {
-      title: "Social Media AI (Mockup)",
-      highlightGroup: true,
-      items: [
-        { name: "Comment Analytics", href: "/portal/social-media", icon: MessagesSquare, highlight: true, badge: "NEW" },
-      ],
-    },
-    {
       title: "Katalog & Pengaturan",
       items: [
         { name: "Katalog Kain & Pricing", href: "/portal/catalog-management", icon: Sliders },
@@ -94,17 +93,7 @@ export default function PortalLayout({
       {navigation.map((group, idx) => (
         <div key={idx} className="space-y-1">
           <div className="px-3 text-[10px] uppercase font-bold tracking-wider flex items-center gap-1.5">
-            {(group as any).highlightGroup ? (
-              <span className="flex items-center gap-1.5 text-fuchsia-400">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-fuchsia-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-fuchsia-500" />
-                </span>
-                {group.title}
-              </span>
-            ) : (
-              <span className="text-slate-500">{group.title}</span>
-            )}
+            <span className="text-slate-500">{group.title}</span>
           </div>
           {group.items.map((item) => {
             const Icon = item.icon;
@@ -119,19 +108,17 @@ export default function PortalLayout({
                   onClick={onNavigate}
                   className={`relative flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all overflow-hidden border ${
                     isActive
-                      ? "bg-gradient-to-r from-fuchsia-600 via-purple-600 to-brand-600 text-white border-fuchsia-400/60 shadow-[0_0_20px_rgba(217,70,239,0.45)]"
-                      : "bg-gradient-to-r from-fuchsia-600/15 via-purple-600/10 to-brand-600/15 text-white border-fuchsia-500/40 shadow-[0_0_14px_rgba(217,70,239,0.25)] hover:shadow-[0_0_22px_rgba(217,70,239,0.5)] hover:border-fuchsia-400/70 hover:from-fuchsia-600/25 hover:to-brand-600/25"
+                      ? "bg-gradient-to-r from-emerald-600 via-brand-600 to-brand-600 text-white border-emerald-400/50 shadow-[0_0_18px_rgba(16,185,129,0.35)]"
+                      : "bg-emerald-500/10 text-white border-emerald-500/30 hover:bg-emerald-500/20 hover:border-emerald-400/60"
                   }`}
                 >
-                  {/* kilau sweep */}
-                  <span className="pointer-events-none absolute inset-0 -translate-x-full animate-[shimmer_2.4s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
                   <span className="relative flex h-2 w-2 shrink-0">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-fuchsia-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-fuchsia-400" />
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
                   </span>
-                  <Icon className="w-4 h-4 text-fuchsia-300 shrink-0" />
+                  <Icon className="w-4 h-4 text-emerald-300 shrink-0" />
                   <span className="flex-1 truncate">{item.name}</span>
-                  <span className="animate-pulse px-1.5 py-0.5 rounded-md bg-fuchsia-500 text-white text-[9px] font-black tracking-wider shadow shrink-0">
+                  <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/90 text-white text-[9px] font-black tracking-wider shadow shrink-0">
                     {(item as any).badge ?? "NEW"}
                   </span>
                 </Link>
@@ -290,7 +277,7 @@ export default function PortalLayout({
         </header>
 
         {/* Portal Page Content */}
-        <main className="flex-1 w-full max-w-[100rem] mx-auto p-3 sm:p-6 lg:p-8 overflow-x-hidden">
+        <main className="flex-1 w-full mx-auto p-3 sm:p-6 lg:p-8 overflow-x-hidden">
           {children}
         </main>
       </div>

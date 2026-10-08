@@ -582,6 +582,34 @@ export const MOCK_ORDERS: Order[] = [
       },
     ],
   },
+  {
+    id: "ord-105",
+    orderNumber: "TEX-202610-005",
+    customerName: "Ir. Bambang Trihatmojo (Procurement)",
+    customerCompany: "PT. INTECH Mitra Abadi",
+    customerEmail: "purchasing@intechmitra.co.id",
+    customerPhone: "081280212068",
+    totalAmount: 48000000,
+    taxAmount: 5280000,
+    shippingAmount: 650000,
+    status: "IN_PRODUCTION",
+    paymentStatus: "PAID",
+    paymentMethod: "Bank Transfer Mandiri (TOP 30)",
+    trackingNumber: "TEX-TRUCK-CKR-01",
+    createdAt: "2026-10-06 10:30",
+    notes: "Pengadaan repeat order 1.500 meter kain Dryfit Milano korporasi.",
+    items: [
+      {
+        id: "item-7",
+        fabricName: "Dryfit Milano Premium 135 GSM",
+        gsm: 135,
+        lengthMeters: 1500,
+        unitPrice: 32000,
+        subtotal: 48000000,
+        customDesignTitle: "INTECH_Corporate_Jersey_Milano_2026.tiff",
+      },
+    ],
+  },
 ];
 
 export const MOCK_LEADS: Lead[] = [
@@ -763,3 +791,225 @@ export const MOCK_INVENTORY: InventoryRoll[] = [
     receivedDate: "2026-10-01",
   },
 ];
+
+// =====================================================================
+// INBOX / UNIFIED COMMUNICATION (WhatsApp, Email, Sosial Media)
+// =====================================================================
+
+export type ChannelType = "WHATSAPP" | "EMAIL" | "SOCIAL_MEDIA";
+
+export interface Conversation {
+  id: string;
+  customerId?: string;
+  contactName: string;
+  contactCompany?: string;
+  channel: ChannelType;
+  unreadCount: number;
+}
+
+export interface ConversationMessage {
+  id: string;
+  from: "customer" | "sales";
+  text: string;
+  timestamp: string;
+  status: "sent" | "delivered" | "read";
+}
+
+export const MOCK_CONVERSATIONS: Conversation[] = [
+  {
+    id: "conv-1",
+    customerId: "cust-1",
+    contactName: "Hendra Wijaya",
+    contactCompany: "PT. Garment Kreatif Nusantara",
+    channel: "WHATSAPP",
+    unreadCount: 0,
+  },
+  {
+    id: "conv-2",
+    customerId: "cust-2",
+    contactName: "Sarah Alatas",
+    contactCompany: "Alatas Scarves Signature",
+    channel: "WHATSAPP",
+    unreadCount: 1,
+  },
+  {
+    id: "conv-3",
+    customerId: "cust-3",
+    contactName: "Kevin Suryadi",
+    contactCompany: "Runners United Club",
+    channel: "EMAIL",
+    unreadCount: 0,
+  },
+  {
+    id: "conv-4",
+    customerId: "cust-4",
+    contactName: "Budi Setiawan",
+    contactCompany: "CV. Kreasi Promosi Mandiri",
+    channel: "WHATSAPP",
+    unreadCount: 1,
+  },
+  {
+    id: "conv-5",
+    contactName: "@kevin_runs",
+    channel: "SOCIAL_MEDIA",
+    unreadCount: 0,
+  },
+];
+
+export const MOCK_MESSAGES: Record<string, ConversationMessage[]> = {
+  "conv-1": [
+    { id: "m1-1", from: "sales", text: "Selamat siang Bapak Hendra, berikut proofing warna yang kami kirimkan kemarin. Mohon review ya.", timestamp: "2026-10-02T14:00:00", status: "read" },
+    { id: "m1-2", from: "customer", text: "Trimakasih. Warna biru sudah sesuai, tapi merah terlalu pudar.", timestamp: "2026-10-02T15:30:00", status: "read" },
+    { id: "m1-3", from: "sales", text: "Terima kasih feedbacknya. Kami revisi nilai merah dan kirim proofing ulang hari ini.", timestamp: "2026-10-05T09:00:00", status: "delivered" },
+    { id: "m1-4", from: "customer", text: "Siap bro, warna sudah sesuai mantap 👍 Terima kasih.", timestamp: "2026-10-08T09:12:00", status: "read" },
+  ],
+  "conv-2": [
+    { id: "m2-1", from: "sales", text: "Selamat siang Bu Sarah, perihitungan biaya Voal Ultrafine 300 meter sudah kami kirim lewat email tadi siang.", timestamp: "2026-10-01T16:00:00", status: "read" },
+    { id: "m2-2", from: "customer", text: "Siang, saya cek email belum ada ya.", timestamp: "2026-10-06T09:15:00", status: "read" },
+    { id: "m2-3", from: "customer", text: "Berapa harga Voal Ultrafine 300 meter ya? Belum lihat di email.", timestamp: "2026-10-08T08:30:00", status: "sent" },
+  ],
+  "conv-3": [
+    { id: "m3-1", from: "sales", text: "Bapak Kevin, order Anda (TEX-202610-003) sudah masuk ke produksi. Berikut dokumen proofing dan tracking.", timestamp: "2026-10-06T09:00:00", status: "sent" },
+    { id: "m3-2", from: "customer", text: "Mohon confirm receipt & jadwal pengiriman.", timestamp: "2026-10-06T11:00:00", status: "read" },
+    { id: "m3-3", from: "sales", text: "Terima kasih. Jadwal pengiriman Sabtu ini pukul 10.00.", timestamp: "2026-10-07T14:00:00", status: "read" },
+  ],
+  "conv-4": [
+    { id: "m4-1", from: "sales", text: "Selamat pagi Pak Budi, kami akan kirimkan sampel warna ke kebiasan pabrik.", timestamp: "2026-10-08T08:00:00", status: "sent" },
+    { id: "m4-2", from: "customer", text: "Konfirmasi WARNA sampel sudah sampai?", timestamp: "2026-10-08T10:05:00", status: "sent" },
+  ],
+  "conv-5": [
+    { id: "m5-1", from: "sales", text: "Halo @kevin_runs, terima kasih feedbacknya. Kami sudah update motif sesuai review.", timestamp: "2026-10-07T10:00:00", status: "sent" },
+    { id: "m5-2", from: "customer", text: "Sudah review kan motifnya?", timestamp: "2026-10-07T11:20:00", status: "read" },
+    { id: "m5-3", from: "sales", text: "Siap, sudah kami upload versi final. Cek di tautan proofing.", timestamp: "2026-10-07T14:30:00", status: "read" },
+    { id: "m5-4", from: "customer", text: "Mantul, lanjutkan produksi!", timestamp: "2026-10-08T07:45:00", status: "sent" },
+  ],
+};
+
+export interface CustomerProfile {
+  id: string;
+  name: string;
+  company: string;
+  taxId: string;
+  email: string;
+  phone: string;
+  tier: string;
+  totalMeters: number;
+  totalSpent: number;
+  favoriteFabric: string;
+  status: string;
+  address: string;
+  joinedAt: string;
+}
+
+export const MOCK_CUSTOMERS: CustomerProfile[] = [
+  {
+    id: "cust-1",
+    name: "Hendra Wijaya",
+    company: "PT. Garment Kreatif Nusantara",
+    taxId: "01.234.567.8-012.000",
+    email: "hendra@garmentkreatif.com",
+    phone: "081234567890",
+    tier: "Enterprise B2B (TOP 30)",
+    totalMeters: 4500,
+    totalSpent: 162500000,
+    favoriteFabric: "Dryfit Milano 135 GSM",
+    status: "Aktif",
+    address: "Jl. Industri Tekstil No. 45, Kawasan Rancaekek, Bandung",
+    joinedAt: "2024-03-12",
+  },
+  {
+    id: "cust-2",
+    name: "Sarah Alatas",
+    company: "Alatas Scarves Signature",
+    taxId: "02.987.654.3-011.000",
+    email: "sarah@alatashijab.id",
+    phone: "081822334411",
+    tier: "Reguler B2B",
+    totalMeters: 1850,
+    totalSpent: 64750000,
+    favoriteFabric: "Voal Ultrafine 85 GSM",
+    status: "Aktif",
+    address: "Jl. Kertajaya No. 12, Surabaya",
+    joinedAt: "2024-08-02",
+  },
+  {
+    id: "cust-3",
+    name: "Kevin Suryadi",
+    company: "Runners United Club",
+    taxId: "-",
+    email: "kevin@runnersunited.org",
+    phone: "087799112233",
+    tier: "Komunitas / B2C",
+    totalMeters: 600,
+    totalSpent: 21600000,
+    favoriteFabric: "Dryfit Heavy 155 GSM",
+    status: "Aktif",
+    address: "Jl. Senayan Raya No. 8, Jakarta Selatan",
+    joinedAt: "2025-01-20",
+  },
+  {
+    id: "cust-4",
+    name: "Budi Setiawan",
+    company: "CV. Kreasi Promosi Mandiri",
+    taxId: "03.112.334.5-015.000",
+    email: "budi@kreasipromosi.com",
+    phone: "085611223344",
+    tier: "Reguler B2B",
+    totalMeters: 2200,
+    totalSpent: 77000000,
+    favoriteFabric: "Canvas Polyester 8oz",
+    status: "Aktif",
+    address: "Jl. Raya Serpong KM 7, Tangerang Selatan",
+    joinedAt: "2024-06-15",
+  },
+  {
+    id: "cust-5",
+    name: "Ir. Bambang Trihatmojo (Procurement)",
+    company: "PT. INTECH Mitra Abadi",
+    taxId: "01.889.345.6-054.000",
+    email: "purchasing@intechmitra.co.id",
+    phone: "081280212068",
+    tier: "Enterprise B2B (TOP 30)",
+    totalMeters: 3800,
+    totalSpent: 121600000,
+    favoriteFabric: "Dryfit Milano 135 GSM",
+    status: "Aktif",
+    address: "Kawasan Industri Jababeka II Blok C-12, Cikarang, Jawa Barat",
+    joinedAt: "2024-05-18",
+  },
+];
+
+export interface CustomerActivity {
+  id: string;
+  authorName: string;
+  type: string;
+  description: string;
+  createdAt: string;
+}
+
+export const MOCK_CUSTOMER_ACTIVITIES: Record<string, CustomerActivity[]> = {
+  "cust-1": [
+    { id: "ca-1", authorName: "Rian Pratama", type: "SAMPLE_FABRIC_SENT", description: "Mengirim 3 swatch Dryfit Milano + hasil tes warna neon ke kantor Bandung.", createdAt: "2026-10-02" },
+    { id: "ca-2", authorName: "Rian Pratama", type: "PHONE_CALL", description: "Konfirmasi warna cyan & magenta sudah sesuai panduan pantone klien.", createdAt: "2026-10-03" },
+    { id: "ca-3", authorName: "Rian Pratama", type: "MEETING", description: "Review digital proofing jersey esport sebelum mesin heatpress berjalan.", createdAt: "2026-10-05" },
+    { id: "ca-4", authorName: "Rian Pratama", type: "WHATSAPP_MESSAGE", description: "Update status produksi SPK TEX-202610-001 (tahap cetak kertas transfer).", createdAt: "2026-10-06" },
+  ],
+  "cust-2": [
+    { id: "ca-5", authorName: "Rian Pratama", type: "EMAIL", description: "Kirim penawaran koleksi Raya Edition (voal & satin).", createdAt: "2026-09-28" },
+    { id: "ca-6", authorName: "Rian Pratama", type: "MEETING", description: "Diskusi palet warna floral islami untuk scarf signature.", createdAt: "2026-09-30" },
+    { id: "ca-7", authorName: "Rian Pratama", type: "WHATSAPP_MESSAGE", description: "Konfirmasi laser cut packaging untuk order 300 meter voal.", createdAt: "2026-10-04" },
+  ],
+  "cust-3": [
+    { id: "ca-8", authorName: "Rian Pratama", type: "WHATSAPP_MESSAGE", description: "Follow-up kebutuhan jersey 10K Fun Run 100 meter.", createdAt: "2026-10-01" },
+    { id: "ca-9", authorName: "Rian Pratama", type: "PHONE_CALL", description: "Menunggu konfirmasi transfer bendahara untuk uang muka.", createdAt: "2026-10-03" },
+  ],
+  "cust-4": [
+    { id: "ca-10", authorName: "Rian Pratama", type: "PHONE_CALL", description: "Konfirmasi PO totebag exhibition merchandise 450 meter.", createdAt: "2026-09-26" },
+    { id: "ca-11", authorName: "Rian Pratama", type: "EMAIL", description: "Kirim invoice & bukti serah terima ke kargo Dakota.", createdAt: "2026-09-29" },
+  ],
+  "cust-5": [
+    { id: "ca-12", authorName: "Rian Pratama", type: "WHATSAPP_MESSAGE", description: "Inkuiri repeat order 1.500m Dryfit Milano untuk event korporasi INTECH.", createdAt: "2026-10-08" },
+    { id: "ca-13", authorName: "Rian Pratama", type: "SAMPLE_FABRIC_SENT", description: "Kirim swatch sample Milano 135 GSM ke kantor Cikarang.", createdAt: "2026-10-05" },
+    { id: "ca-14", authorName: "Rian Pratama", type: "PHONE_CALL", description: "Diskusi kesepakatan TOP 30 hari & estimasi slot jadwal heatpress.", createdAt: "2026-10-07" },
+  ],
+};

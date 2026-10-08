@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { MOCK_ORDERS } from "@/lib/mock-data";
 import { formatRupiah } from "@/lib/utils";
+import { loadLastOrder, type PlacedOrder } from "@/lib/order";
+import type { Order } from "@/types";
 import { 
   Search, 
   CheckCircle2, 
@@ -17,17 +19,27 @@ import {
   Palette
 } from "lucide-react";
 
+type TrackableOrder = Order | PlacedOrder;
+
 function TrackOrderContent() {
   const searchParams = useSearchParams();
-  const initialQuery = searchParams.get("orderId") || "TEX-202610-001";
-  const [query, setQuery] = useState(initialQuery);
-  const [searchedOrder, setSearchedOrder] = useState(() => {
-    return MOCK_ORDERS.find(o => o.orderNumber === initialQuery) || MOCK_ORDERS[0];
-  });
+  const initialQuery = searchParams.get("orderId") || "";
+  const [query, setQuery] = useState(initialQuery || "TEX-202610-001");
+  const [allOrders, setAllOrders] = useState<TrackableOrder[]>(MOCK_ORDERS);
+  const [searchedOrder, setSearchedOrder] = useState<TrackableOrder>(MOCK_ORDERS[0]);
+
+  useEffect(() => {
+    const last = loadLastOrder();
+    const combined: TrackableOrder[] = last ? [last, ...MOCK_ORDERS] : MOCK_ORDERS;
+    setAllOrders(combined);
+    const target = initialQuery || "TEX-202610-001";
+    const found = combined.find(o => o.orderNumber.toLowerCase() === target.toLowerCase());
+    setSearchedOrder(found || combined[0]);
+  }, [initialQuery]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const found = MOCK_ORDERS.find(
+    const found = allOrders.find(
       o => o.orderNumber.toLowerCase() === query.trim().toLowerCase()
     );
     if (found) {
@@ -62,7 +74,7 @@ function TrackOrderContent() {
   const currentStepIdx = getStepIndex(searchedOrder.status);
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-10 space-y-10">
+    <div className="texora-container py-10 space-y-10">
       
       {/* Header & Search Bar */}
       <div className="text-center space-y-4 max-w-2xl mx-auto">

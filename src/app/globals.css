@@ -236,26 +236,25 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 
-/* Shell konten proporsional — Hampir Full Width (94% - 96% Viewport) */
+/* Shell konten fullwidth — lebar penuh dengan padding responsif konsisten */
 .texora-container {
   width: 100%;
   margin-left: auto;
   margin-right: auto;
-  max-width: 110rem;
   padding-left: 1.25rem;
   padding-right: 1.25rem;
 }
 @media (min-width: 640px) {
-  .texora-container { padding-left: 1.75rem; padding-right: 1.75rem; }
+  .texora-container { padding-left: 2rem; padding-right: 2rem; }
 }
 @media (min-width: 1024px) {
-  .texora-container { max-width: 94%; padding-left: 2.5rem; padding-right: 2.5rem; }
+  .texora-container { padding-left: 2.5rem; padding-right: 2.5rem; }
 }
 @media (min-width: 1440px) {
-  .texora-container { max-width: 95%; padding-left: 3rem; padding-right: 3rem; }
+  .texora-container { padding-left: 3rem; padding-right: 3rem; }
 }
 @media (min-width: 1920px) {
-  .texora-container { max-width: 96%; padding-left: 4rem; padding-right: 4rem; }
+  .texora-container { padding-left: 3.5rem; padding-right: 3.5rem; }
 }
 /* Tipografi fluid — clamp presisi agar tidak meledak di laptop dan tetap gagah di desktop */
 .text-fluid-hero { font-size: clamp(1.75rem, 1.1rem + 2.1vw, 3.1rem); line-height: 1.1; letter-spacing: -0.025em; }

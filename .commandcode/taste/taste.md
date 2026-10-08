@@ -1,0 +1,13 @@
+- Communicates in Bahasa Indonesia with a casual, friendly tone (e.g., "bro"). Confidence: 0.8
+- Prioritizes professional, presentation-ready UI/UX for client-facing demos, even when using sample/mock data. Confidence: 0.8
+- Wants thorough gap analysis — checks what is missing or incomplete so the app is easy to understand and comfortable to use. Confidence: 0.8
+- Prefers to discuss and align on direction before implementation rather than the assistant assuming and acting unilaterally (e.g., "Kita discus dahulu bro"). Confidence: 0.8
+- Prefers explicit, complete Indonesian labels in UI navigation (e.g., "Tentang Kami" over the shorter "Tentang"). Confidence: 0.5
+- Expects user-selected/entered data to persist and stay consistent through the full flow (e.g., custom-sublimation → cart → checkout); dislikes hardcoded/mock data silently replacing real input. Confidence: 0.75
+- Prefers fullwidth page layouts rather than constrained max-width containers. Confidence: 0.9
+- Prefers consistent layout and container width across pages, especially the transaction flow (custom-sublimation → cart → checkout → track-order). Confidence: 0.7
+- Requires pages to be responsive and usable on mobile and tablet. Confidence: 0.8
+- When offered a choice between minimal and complete implementations, prefers the complete/feature-rich version (e.g., full sales report with KPI cards + charts over a lightweight table-only version). Confidence: 0.7
+- Wants to understand the real-world technical feasibility and per-platform limitations of planned features (what is genuinely implementable vs. mock/simulated), not just a convincing demo, so they can answer customer questions confidently. Confidence: 0.5
+- Prefers real API integrations over mock/simulated data for client-facing features, especially communication channels (e.g., WhatsApp Business API over a mock inbox). Wants to know how to test with real data. Confidence: 0.85
+- Likes a written guide/notes (e.g., PANDUAN_PRESENTASI.md) capturing the demo flow and key talking points so they can reference it before/during client meetings and not forget. Confidence: 0.6

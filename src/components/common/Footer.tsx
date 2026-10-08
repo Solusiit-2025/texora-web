@@ -98,6 +98,7 @@ export function Footer() {
           <div>
             <h4 className="text-sm font-semibold text-white mb-4 uppercase tracking-wider">Layanan & Fitur</h4>
             <ul className="space-y-2.5 text-xs text-slate-400">
+              <li><Link href="/about" className="hover:text-brand-300 font-medium">Tentang Kami & Kapasitas Pabrik</Link></li>
               <li><Link href="/custom-sublimation" className="hover:text-accent-cyan font-medium">Unggah Desain & Visualizer</Link></li>
               <li><Link href="/track-order" className="hover:text-brand-300">Lacak Status Pesanan (SPK)</Link></li>
               <li><Link href="/contact" className="hover:text-brand-300">Permintaan Sampel Kain</Link></li>

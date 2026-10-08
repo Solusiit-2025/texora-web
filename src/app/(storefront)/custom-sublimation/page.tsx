@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MOCK_FABRICS } from "@/lib/mock-data";
 import { formatRupiah, formatNumber } from "@/lib/utils";
+import { addToCart } from "@/lib/cart";
 import { 
   UploadCloud, 
   Layers, 
@@ -90,8 +91,32 @@ export default function CustomSublimationPage() {
     }
   };
 
+  // Baca param masuk dari landing page ("Cetak dengan kain ini")
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const fabricId = params.get("fabric");
+    const meters = params.get("meters");
+    if (fabricId && MOCK_FABRICS.some((f) => f.id === fabricId)) {
+      setSelectedFabricId(fabricId);
+    }
+    if (meters) {
+      setRequiredMeters(Math.max(1, Number(meters)));
+    }
+  }, []);
+
   const handleCheckout = () => {
     setIsSubmitting(true);
+    addToCart({
+      fabricName: activeFabric.name,
+      gsm: activeFabric.variants[0]?.gsm ?? 0,
+      widthInch: activeFabric.widthInch,
+      meters: requiredMeters,
+      unitPrice: activeTier.unitPrice,
+      sublimationPrintFeePerMeter: SUBLIMATION_PRINT_FEE_PER_METER,
+      customDesignTitle: artworkFile?.name,
+      customDesignDpi: artworkFile?.dpi,
+    });
     setTimeout(() => {
       router.push("/cart");
     }, 800);

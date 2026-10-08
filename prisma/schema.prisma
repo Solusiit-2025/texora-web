@@ -33,12 +33,13 @@ model User {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
-   orders        Order[]
+  orders        Order[]
   designs       CustomDesign[]
   assignedLeads Lead[]         @relation("AssignedSalesRep")
   activities    ActivityLog[]
   customerLeads Lead[]         @relation("CustomerLeads")
   auditLogs     AuditLog[]
+  whatsAppConversations WhatsAppConversation[]
 
   @@map("users")
 }
@@ -268,6 +269,60 @@ enum SocialPlatform {
   TIKTOK
   INSTAGRAM
   FACEBOOK
+}
+
+// -----------------------------------------------------------
+// 8. WHATSAPP BUSINESS INBOX
+// -----------------------------------------------------------
+
+enum WhatsAppStatus {
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+model WhatsAppConversation {
+  id            String          @id @default(cuid())
+  customerId    String?
+  customer      User?           @relation(fields: [customerId], references: [id])
+  contactName   String
+  contactNumber String          // international format e.g. "+6287889856066"
+  companyName   String?
+  unreadCount   Int             @default(0)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  messages      WhatsAppMessage[]
+
+  @@map("whatsapp_conversations")
+}
+
+model WhatsAppMessage {
+  id          String           @id @default(cuid())
+  conversationId String
+  conversation WhatsAppConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  from        String           // sender phone number
+  to          String           // recipient phone number
+  text        String
+  direction   String           // "inbound" | "outbound"
+  status      WhatsAppStatus   @default(SENT)
+  createdAt   DateTime         @default(now())
+
+  @@map("whatsapp_messages")
+}
+
+// -----------------------------------------------------------
+// 9. SYSTEM SETTINGS (runtime-editable configuration)
+// -----------------------------------------------------------
+
+model SystemSetting {
+  id    String @id @default(cuid())
+  key   String @unique // e.g. "whatsapp.fonnte_api_key"
+  value String
+  updatedAt DateTime @updatedAt
+
+  @@map("system_settings")
 }
 
 enum CommentSentiment {

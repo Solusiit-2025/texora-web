@@ -16,8 +16,8 @@ export const metadata: Metadata = {
     "Manufaktur kain poliester dan cetak sublimasi skala industri di Jakarta Utara. Katalog kain, visualizer motif, harga bertingkat, dan portal B2B terintegrasi.",
   keywords: ["sublimasi kain", "dryfit milano", "kain jersey", "sublimasi jakarta", "tekstil industri", "voal ultrafine", "texora"],
   icons: {
-    icon: "/icons/texora-logo.png",
-    shortcut: "/icons/texora-logo.png",
+    icon: "/icons/logo-texora.ico",
+    shortcut: "/icons/logo-texora.ico",
     apple: "/icons/texora-logo.png",
   },
 };
