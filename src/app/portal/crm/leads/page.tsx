@@ -868,10 +868,12 @@ export default function CrmLeadsPage() {
                   {/* Kop Surat Texora */}
                   <div className="flex items-start justify-between border-b-2 border-slate-900 pb-4">
                     <div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white font-black flex items-center justify-center text-lg tracking-wider">
-                          TX
-                        </div>
+                      <div className="flex items-center gap-3">
+                        <img 
+                          src="/icons/texora-logo.png" 
+                          alt="PT. Texora Visi Prima" 
+                          className="h-11 w-auto object-contain" 
+                        />
                         <div>
                           <h2 className="text-lg font-black tracking-tight text-slate-900 uppercase">PT. TEXORA VISI PRIMA</h2>
                           <p className="text-[10px] text-slate-600 font-medium">Textile Manufacturer, Dyeing, Finishing & Sublimation Specialist</p>
@@ -1269,13 +1271,30 @@ export default function CrmLeadsPage() {
                 <div id="contract-print-area" className="p-8 bg-white text-slate-900 rounded-xl shadow-lg font-serif text-[11px] space-y-5 leading-relaxed">
                   
                   {/* Header Kontrak */}
-                  <div className="text-center border-b-2 border-slate-900 pb-4">
-                    <h2 className="text-base font-black tracking-wider uppercase font-sans text-slate-950">
-                      SURAT PERJANJIAN JUAL BELI KAIN TEKSTIL (B2B SALES CONTRACT)
-                    </h2>
-                    <p className="font-mono text-[10px] text-slate-700 mt-1">
-                      Nomor: {contractForm.contractNumber}
-                    </p>
+                  <div className="flex items-center justify-between border-b-2 border-slate-900 pb-4">
+                    <div className="flex items-center gap-3">
+                      <img 
+                        src="/icons/texora-logo.png" 
+                        alt="PT. Texora Visi Prima" 
+                        className="h-10 w-auto object-contain" 
+                      />
+                      <div>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-700 block font-sans">
+                          PT. TEXORA VISI PRIMA
+                        </span>
+                        <span className="text-[9px] text-slate-500 font-sans block">
+                          Departemen Komersial & Legal Industri B2B
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <h2 className="text-xs sm:text-sm font-black tracking-wider uppercase font-sans text-slate-950">
+                        SURAT PERJANJIAN JUAL BELI TEKSTIL
+                      </h2>
+                      <p className="font-mono text-[10px] text-slate-700 mt-0.5">
+                        Nomor: {contractForm.contractNumber}
+                      </p>
+                    </div>
                   </div>
 
                   {/* Pendahuluan */}
