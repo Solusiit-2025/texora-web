@@ -25,6 +25,8 @@ import {
   Mail,
   Menu,
   X,
+  ShoppingCart,
+  Landmark,
 } from "lucide-react";
 
 export default function PortalLayout({
@@ -78,6 +80,18 @@ export default function PortalLayout({
       items: [
         { name: "Stok Roll & Barcode", href: "/portal/warehouse/inventory", icon: Barcode },
         { name: "Pemotongan & Ekspedisi", href: "/portal/warehouse/fulfillment", icon: Scissors },
+      ],
+    },
+    {
+      title: "Finance & Akuntansi (Executive)",
+      items: [
+        { name: "Laporan Keuangan & Laba Rugi", href: "/portal/finance", icon: Landmark, highlight: true, badge: "NEW" },
+      ],
+    },
+    {
+      title: "Purchasing & Pengadaan (Mockup)",
+      items: [
+        { name: "Purchasing & Supplier", href: "/portal/purchasing", icon: ShoppingCart, highlight: true, badge: "MOCKUP" },
       ],
     },
     {

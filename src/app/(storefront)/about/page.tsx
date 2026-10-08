@@ -224,12 +224,12 @@ export default function AboutPage() {
       </section>
 
       {/* ── KAPASITAS & MESIN ─────────────────────────────────────────── */}
-      <section className={`${container} pb-16 lg:pb-20`}>
-        <div className="brass-rule mb-10 text-xs">◆</div>
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
+      <section className={`${container} py-8 lg:py-12`}>
+        <div className="brass-rule mb-8 text-xs">◆</div>
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
           <div>
             <p className="text-[11px] uppercase tracking-[0.32em] text-brand-400">Kapasitas Produksi</p>
-            <h2 className="mt-3 font-display text-fluid-h2 font-medium text-alabaster">
+            <h2 className="mt-2 font-display text-fluid-h2 font-medium text-alabaster">
               Mesin & alur kerja di lantai produksi.
             </h2>
           </div>
@@ -238,7 +238,7 @@ export default function AboutPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
           {MACHINES.map((m, i) => (
             <motion.div
               key={m.title}
@@ -246,7 +246,7 @@ export default function AboutPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.6, delay: i * 0.08, ease }}
-              className="glass-panel rounded-2xl p-6 flex gap-4"
+              className="glass-panel rounded-2xl p-5 lg:p-6 flex gap-4"
             >
               <div className="p-3 rounded-xl bg-brand-500/10 text-brand-400 h-fit shrink-0">
                 <m.icon className="w-5 h-5" />
@@ -261,8 +261,8 @@ export default function AboutPage() {
       </section>
 
       {/* ── SERTIFIKASI & JAMINAN ─────────────────────────────────────── */}
-      <section className={`${container} pb-16 lg:pb-20`}>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <section className={`${container} py-8 lg:py-12`}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-5">
           {CERTIFICATIONS.map((c, i) => (
             <motion.div
               key={c.title}
@@ -270,7 +270,7 @@ export default function AboutPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.6, delay: i * 0.08, ease }}
-              className="border border-brand-500/20 rounded-2xl p-6 space-y-3"
+              className="border border-brand-500/20 rounded-2xl p-5 lg:p-6 space-y-3 bg-slate-900/30"
             >
               <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 w-fit">
                 <c.icon className="w-5 h-5" />
@@ -283,15 +283,15 @@ export default function AboutPage() {
       </section>
 
       {/* ── INDUSTRI YANG DILAYANI ────────────────────────────────────── */}
-      <section className={`${container} pb-16 lg:pb-20`}>
-        <div className="text-center max-w-2xl mx-auto mb-12">
+      <section className={`${container} py-8 lg:py-12`}>
+        <div className="text-center max-w-2xl mx-auto mb-8">
           <p className="text-[11px] uppercase tracking-[0.32em] text-brand-400">Pasar yang Kami Layani</p>
-          <h2 className="mt-3 font-display text-fluid-h2 font-medium text-alabaster">
+          <h2 className="mt-2 font-display text-fluid-h2 font-medium text-alabaster">
             Satu mesin, empat kategori produk.
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5">
           {INDUSTRIES.map((ind, i) => (
             <motion.div
               key={ind.title}
@@ -299,7 +299,7 @@ export default function AboutPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.6, delay: i * 0.08, ease }}
-              className="glass-panel rounded-2xl p-6 space-y-3"
+              className="glass-panel rounded-2xl p-5 lg:p-6 space-y-3"
             >
               <div className="p-3 rounded-xl bg-accent-cyan/10 text-accent-cyan w-fit">
                 <ind.icon className="w-5 h-5" />
@@ -312,8 +312,8 @@ export default function AboutPage() {
       </section>
 
       {/* ── NILAI KAMI ────────────────────────────────────────────────── */}
-      <section className={`${container} pb-16 lg:pb-20`}>
-        <div className="brass-rule mb-10 text-xs">◆</div>
+      <section className={`${container} py-8 lg:py-12`}>
+        <div className="brass-rule mb-8 text-xs">◆</div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
           {VALUES.map((val, i) => (
             <motion.div
@@ -322,26 +322,26 @@ export default function AboutPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.6, delay: i * 0.08, ease }}
-              className="border-l-2 border-brand-500 pl-5"
+              className="border-l-2 border-brand-500 pl-4 py-1"
             >
               <val.icon className="w-5 h-5 text-brand-400" />
-              <h3 className="mt-3 font-display text-base font-semibold text-alabaster">{val.title}</h3>
-              <p className="mt-1.5 text-sm text-slate-400 leading-relaxed">{val.desc}</p>
+              <h3 className="mt-2.5 font-display text-base font-semibold text-alabaster">{val.title}</h3>
+              <p className="mt-1 text-sm text-slate-400 leading-relaxed">{val.desc}</p>
             </motion.div>
           ))}
         </div>
       </section>
 
       {/* ── CTA ───────────────────────────────────────────────────────── */}
-      <section className={`${container} pb-16 lg:pb-24`}>
-        <div className="relative border border-brand-500/40 px-8 py-14 sm:px-14 lg:px-20 grid grid-cols-1 lg:grid-cols-12 gap-8 items-end">
-          <div className="absolute -bottom-3 -left-3 w-24 h-24 border-l border-b border-brand-500 pointer-events-none" />
+      <section className={`${container} pt-4 pb-10 lg:pb-14`}>
+        <div className="relative border border-brand-500/40 p-6 sm:p-10 lg:p-12 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center rounded-2xl bg-gradient-to-r from-slate-900/80 via-slate-900/60 to-slate-950/80">
+          <div className="absolute -bottom-2 -left-2 w-16 h-16 border-l border-b border-brand-500 pointer-events-none" />
           <div className="lg:col-span-8">
-            <p className="text-[11px] uppercase tracking-[0.32em] text-brand-400">Kerja Sama B2B</p>
-            <h2 className="mt-3 font-display text-fluid-h2 font-medium text-alabaster">
+            <p className="text-[11px] uppercase tracking-[0.32em] text-brand-400 font-semibold">Kerja Sama B2B</p>
+            <h2 className="mt-2 font-display text-fluid-h2 font-medium text-alabaster">
               Ingin lihat hasilnya di kain Anda sendiri?
             </h2>
-            <p className="mt-4 text-sm text-slate-400 max-w-xl">
+            <p className="mt-3 text-sm text-slate-400 max-w-xl">
               Kirimkan artwork atau minta sampel swatch gratis. Tim kami akan bantu kalibrasi warna dan estimasi
               kebutuhan meter lari sebelum Anda berkomitmen.
             </p>
@@ -349,7 +349,7 @@ export default function AboutPage() {
           <div className="lg:col-span-4 flex lg:justify-end">
             <Link
               href="/contact"
-              className="group inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-400 text-ink px-7 py-4 text-sm font-semibold transition-colors"
+              className="group inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-400 text-ink px-6 py-3.5 text-sm font-semibold transition-colors rounded-xl shadow-lg shadow-brand-500/20"
             >
               Minta penawaran <ArrowUpRight className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
             </Link>
