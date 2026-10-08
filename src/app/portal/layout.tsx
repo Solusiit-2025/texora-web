@@ -59,7 +59,7 @@ export default function PortalLayout({
     {
       title: "CRM & Penjualan (PRD §3.3)",
       items: [
-        { name: "Social Listening & Prospek", href: "/portal/social-media", icon: MessagesSquare, highlight: true, badge: "NEW" },
+        { name: "Social Listening & Prospek", href: "/portal/social-media", icon: MessagesSquare },
         { name: "WhatsApp", href: "/portal/crm/inbox", icon: MessageCircle },
         { name: "Webmail Sales", href: "/portal/crm/webmail", icon: Mail },
         { name: "Pipeline Leads & Deals", href: "/portal/crm/leads", icon: TrendingUp },
@@ -85,13 +85,13 @@ export default function PortalLayout({
     {
       title: "Finance & Akuntansi (Executive)",
       items: [
-        { name: "Laporan Keuangan & Laba Rugi", href: "/portal/finance", icon: Landmark, highlight: true, badge: "NEW" },
+        { name: "Laporan Keuangan & Laba Rugi", href: "/portal/finance", icon: Landmark },
       ],
     },
     {
-      title: "Purchasing & Pengadaan (Mockup)",
+      title: "Purchasing & Pengadaan",
       items: [
-        { name: "Purchasing & Supplier", href: "/portal/purchasing", icon: ShoppingCart, highlight: true, badge: "MOCKUP" },
+        { name: "Purchasing & Supplier", href: "/portal/purchasing", icon: ShoppingCart },
       ],
     },
     {
