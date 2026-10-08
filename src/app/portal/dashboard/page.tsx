@@ -63,12 +63,12 @@ const PURCHASE_ORDERS = [
 ];
 
 const ACTIVITY_FEED = [
+  { time: "09:05", icon: ShoppingCart, color: "text-emerald-400", text: "Checkout Web Storefront: Pesanan Baru #ORD-2026-X104 (PT. Garment Kreatif) senilai Rp 48.500.000 diterima" },
   { time: "08:42", icon: MessageCircle, color: "text-emerald-400", text: "WhatsApp masuk dari PT. Intech Mitra Abadi — konfirmasi PO 1.500 m" },
   { time: "08:30", icon: FileCheck, color: "text-cyan-400", text: "Digital proof motif jersey Garuda FC disetujui klien" },
   { time: "08:15", icon: Landmark, color: "text-emerald-400", text: "Pelunasan invoice INV-2026-X092 Rp 48.000.000 diterima (BCA)" },
   { time: "07:58", icon: Mail, color: "text-brand-400", text: "SPH/TXR/2026/10-742 terkirim via Webmail ke procurement@intechmitra.co.id" },
   { time: "07:40", icon: Scissors, color: "text-amber-400", text: "Roll RL-DRY-0921 dipotong 320 m & siap ekspedisi JNE Cargo" },
-  { time: "07:12", icon: MessagesSquare, color: "text-violet-400", text: "12 prospek baru terdeteksi dari Social Listening (Instagram & TikTok)" },
 ];
 
 const STAGE_META: { key: LeadStage; label: string; color: string }[] = [
