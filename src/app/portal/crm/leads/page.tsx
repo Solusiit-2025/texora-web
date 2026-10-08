@@ -880,7 +880,7 @@ export default function CrmLeadsPage() {
                         </div>
                       </div>
                       <p className="text-[9px] text-slate-500 mt-1">
-                        Kawasan Industri Jababeka Tahap III, Jl. Tekstil Raya Blok C-18, Cikarang - Jawa Barat 17530<br/>
+                        Jl. Walang Baru VI Blok B1/2, RT 04 / RW 07, Tugu Utara, Tanjung Priok, Jakarta Utara<br/>
                         Telp: +62 21-8983-TEXORA | Email: sales@texora.co.id | Website: www.texora.co.id
                       </p>
                     </div>
@@ -1304,7 +1304,7 @@ export default function CrmLeadsPage() {
 
                   <div className="space-y-3 pl-4">
                     <div>
-                      <strong>1. {contractForm.partyOneCompany}</strong>, berkedudukan di Kawasan Industri Jababeka, Cikarang, dalam hal ini diwakili oleh <strong>{contractForm.partyOneRep}</strong>, bertindak dalam kapasitasnya sebagai {contractForm.partyOneRole}, selanjutnya disebut sebagai <strong>"PIHAK PERTAMA" (PENJUAL)</strong>.
+                      <strong>1. {contractForm.partyOneCompany}</strong>, berkedudukan di Jl. Walang Baru VI Blok B1/2, RT 04 / RW 07, Tugu Utara, Tanjung Priok, Jakarta Utara, dalam hal ini diwakili oleh <strong>{contractForm.partyOneRep}</strong>, bertindak dalam kapasitasnya sebagai {contractForm.partyOneRole}, selanjutnya disebut sebagai <strong>"PIHAK PERTAMA" (PENJUAL)</strong>.
                     </div>
                     <div>
                       <strong>2. {contractForm.partyTwoCompany}</strong>, berkedudukan di {contractForm.partyTwoAddress}, dalam hal ini diwakili oleh <strong>{contractForm.partyTwoRep}</strong>, bertindak dalam kapasitasnya sebagai {contractForm.partyTwoRole}, selanjutnya disebut sebagai <strong>"PIHAK KEDUA" (PEMBELI)</strong>.
