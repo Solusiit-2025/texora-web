@@ -84,7 +84,7 @@ export default function CrmLeadsPage() {
     leadId: "",
     contractNumber: "KTR/TXR-B2B/2026/10-188",
     date: new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }),
-    partyOneCompany: "PT. TEXORA EKSPOR INDUSTRI",
+    partyOneCompany: "PT. TEXORA VISI PRIMA",
     partyOneRep: "Hendra Wijaya, S.T.",
     partyOneRole: "Direktur Komersial & Operasional B2B",
     partyTwoCompany: "PT. Intech Mitra Abadi",
@@ -97,7 +97,7 @@ export default function CrmLeadsPage() {
     totalValue: 48000000,
     deliverySchedule: "Bertahap 3x Pengiriman (500 meter per tahap) dari Pabrik Texora",
     paymentTerms: "DP 30% saat kontrak ditandatangani, Pelunasan termin TOP 30 hari via Transfer BCA",
-    bankAccount: "BCA No. Rek. 128-300-8899 a.n PT TEXORA EKSPOR INDUSTRI (KCP Cikarang)",
+    bankAccount: "BCA No. Rek. 128-300-8899 a.n PT TEXORA VISI PRIMA (KCP Cikarang)",
     penaltyClause: "0.1% per hari keterlambatan pengiriman / pembayaran maksimal 5%",
     qualityStandard: "Grade A Tekstil Ekspor, Toleransi susut maksimal 2.5%, garansi retur roll cacat dalam 7 hari kerja",
   });
@@ -254,7 +254,7 @@ export default function CrmLeadsPage() {
       leadId: lead.id,
       contractNumber: `KTR/TXR-B2B/2026/10-${randomCode}`,
       date: new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }),
-      partyOneCompany: "PT. TEXORA EKSPOR INDUSTRI",
+      partyOneCompany: "PT. TEXORA VISI PRIMA",
       partyOneRep: "Hendra Wijaya, S.T.",
       partyOneRole: "Direktur Komersial & Operasional B2B",
       partyTwoCompany: lead.companyName,
@@ -267,7 +267,7 @@ export default function CrmLeadsPage() {
       totalValue: totalVal,
       deliverySchedule: "Bertahap sesuai jadwal produksi buyer dari Gudang Texora Cikarang",
       paymentTerms: "DP 30% saat kontrak ditandatangani, Pelunasan termin TOP 30 hari via Transfer BCA",
-      bankAccount: "BCA No. Rek. 128-300-8899 a.n PT TEXORA EKSPOR INDUSTRI (KCP Cikarang)",
+      bankAccount: "BCA No. Rek. 128-300-8899 a.n PT TEXORA VISI PRIMA (KCP Cikarang)",
       penaltyClause: "0.1% per hari keterlambatan pengiriman / pembayaran maksimal 5%",
       qualityStandard: "Grade A Tekstil Ekspor, Toleransi susut maksimal 2.5%, garansi ganti roll cacat dalam 7 hari",
     });
@@ -873,7 +873,7 @@ export default function CrmLeadsPage() {
                           TX
                         </div>
                         <div>
-                          <h2 className="text-lg font-black tracking-tight text-slate-900 uppercase">PT. TEXORA EKSPOR INDUSTRI</h2>
+                          <h2 className="text-lg font-black tracking-tight text-slate-900 uppercase">PT. TEXORA VISI PRIMA</h2>
                           <p className="text-[10px] text-slate-600 font-medium">Textile Manufacturer, Dyeing, Finishing & Sublimation Specialist</p>
                         </div>
                       </div>
@@ -916,7 +916,7 @@ export default function CrmLeadsPage() {
                   {/* Kata Pengantar */}
                   <p className="text-[11px] text-slate-700 leading-relaxed">
                     Dengan hormat,<br/>
-                    Menindaklanjuti permintaan kebutuhan kain sublimasi dan garmen, perkenankan kami dari <strong>PT. Texora Ekspor Industri</strong> mengajukan surat penawaran harga terbaik dengan rincian spesifikasi sebagai berikut:
+                    Menindaklanjuti permintaan kebutuhan kain sublimasi dan garmen, perkenankan kami dari <strong>PT. Texora Visi Prima</strong> mengajukan surat penawaran harga terbaik dengan rincian spesifikasi sebagai berikut:
                   </p>
 
                   {/* Tabel Barang */}
@@ -988,7 +988,7 @@ export default function CrmLeadsPage() {
 
                     <div className="text-right flex flex-col items-end">
                       <p className="text-slate-600">Hormat Kami,</p>
-                      <strong className="block text-slate-900 mt-0.5">PT. TEXORA EKSPOR INDUSTRI</strong>
+                      <strong className="block text-slate-900 mt-0.5">PT. TEXORA VISI PRIMA</strong>
                       <div className="h-16 flex items-center justify-end pr-8">
                         <div className="px-3 py-1 rounded border-2 border-emerald-600 text-emerald-700 font-black text-[10px] uppercase tracking-wider transform -rotate-6">
                           TEXORA COMMERCIAL
