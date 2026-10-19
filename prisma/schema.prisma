@@ -26,6 +26,7 @@ model User {
   name          String
   email         String         @unique
   passwordHash  String?
+  refreshToken  String?
   phoneNumber   String?
   companyName   String?
   taxId         String?        // NPWP untuk B2B
@@ -59,6 +60,7 @@ model FabricProduct {
   isSublimationReady Boolean       @default(true)
   basePricePerMeter Decimal        @db.Decimal(12, 2)
   thumbnailUrl     String?
+  category         String          @default("Sportswear")
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
@@ -174,10 +176,13 @@ model OrderItem {
   id              String         @id @default(cuid())
   orderId         String
   order           Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  fabricVariantId String
-  fabricVariant   FabricVariant  @relation(fields: [fabricVariantId], references: [id])
+  fabricVariantId String?
+  fabricVariant   FabricVariant? @relation(fields: [fabricVariantId], references: [id])
+  fabricName      String?
+  gsm             Int?
   customDesignId  String?
   customDesign    CustomDesign?  @relation(fields: [customDesignId], references: [id])
+  customDesignTitle String?
   lengthMeters    Float
   unitPrice       Decimal        @db.Decimal(12, 2)
   subtotal        Decimal        @db.Decimal(12, 2)
@@ -208,6 +213,8 @@ model Lead {
   email            String
   phone            String
   estimatedValue   Decimal?     @db.Decimal(12, 2)
+  estimatedMeters  Float?
+  fabricInterest   String?
   stage            LeadStage    @default(NEW_INQUIRY)
   assignedSalesId  String?
   assignedSales    User?        @relation("AssignedSalesRep", fields: [assignedSalesId], references: [id])
@@ -249,14 +256,17 @@ model ActivityLog {
 // -----------------------------------------------------------
 
 model InventoryRoll {
-  id              String        @id @default(cuid())
-  rollBarcode     String        @unique // e.g., "ROL-DRYFIT-00129"
-  fabricVariantId String
-  fabricVariant   FabricVariant @relation(fields: [fabricVariantId], references: [id])
+  id              String         @id @default(cuid())
+  rollBarcode     String         @unique // e.g., "ROL-DRYFIT-00129"
+  fabricVariantId String?
+  fabricVariant   FabricVariant? @relation(fields: [fabricVariantId], references: [id])
+  fabricName      String?
+  gsm             Int?
+  batchLot        String?
   initialMeters   Float
   currentMeters   Float
-  warehouseLocation String      // e.g., "Rak B-03, Gudang Utama"
-  receivedDate    DateTime      @default(now())
+  warehouseLocation String       // e.g., "Rak B-03, Gudang Utama"
+  receivedDate    DateTime       @default(now())
 
   @@map("inventory_rolls")
 }
@@ -363,3 +373,59 @@ model AuditLog {
 
   @@map("audit_logs")
 }
+
+// -----------------------------------------------------------
+// 10. CMS & KONTEN WEBSITE (Storefront Dynamic Content)
+// -----------------------------------------------------------
+
+model HeroSlide {
+  id             String   @id @default(cuid())
+  order          Int      @default(0)
+  tag            String   // e.g. "Mesin Cetak Sublim Digital"
+  caption        String   // Quote or highlight note
+  alt            String   // SEO alt description
+  mainImage      String   // Primary image URL
+  secondaryImage String   // Texture / detail image URL
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("cms_hero_slides")
+}
+
+model Testimonial {
+  id        String   @id @default(cuid())
+  name      String   // e.g. "Budi Kurniawan"
+  org       String   // e.g. "Apex Athletic Apparel, Bandung"
+  quote     String   // Testimonial quote
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("cms_testimonials")
+}
+
+model FaqItem {
+  id        String   @id @default(cuid())
+  question  String
+  answer    String
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("cms_faq_items")
+}
+
+model SiteContent {
+  id        String   @id @default(cuid())
+  key       String   @unique // e.g. "homepage.stats", "homepage.cta", "about.company_profile"
+  value     String   @db.Text
+  group     String   @default("general") // "homepage", "about", "contact", "seo"
+  label     String   // Friendly label for admin UI
+  updatedAt DateTime @updatedAt
+
+  @@map("cms_site_content")
+}
+

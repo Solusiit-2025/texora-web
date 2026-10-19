@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatRupiah } from "@/lib/utils";
-import { loadCart, type CartLineItem } from "@/lib/cart";
+import { loadCart, clearCart, type CartLineItem } from "@/lib/cart";
 import { saveLastOrder } from "@/lib/order";
 import { 
   Building2, 
@@ -17,56 +17,101 @@ import {
   ArrowLeft,
   FileCheck,
   ShieldCheck,
-  QrCode
+  QrCode,
+  Sparkles,
+  Loader2
 } from "lucide-react";
 
 export default function CheckoutPage() {
   const router = useRouter();
   const [cartItems, setCartItems] = useState<CartLineItem[]>([]);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [authProfile, setAuthProfile] = useState<{
+    id: string;
+    name: string;
+    email: string;
+    companyName: string | null;
+    phoneNumber?: string | null;
+    taxId?: string | null;
+  } | null>(null);
 
   useEffect(() => {
     setCartItems(loadCart());
-  }, []);
+
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((res) => {
+        if (!res.authenticated || !res.user) {
+          router.push("/login?redirect=/checkout&reason=auth_required");
+          return;
+        }
+        setAuthProfile(res.user);
+        setFormData((prev) => ({
+          ...prev,
+          fullName: res.user.name || prev.fullName,
+          email: res.user.email || prev.email,
+          phone: res.user.phoneNumber || prev.phone,
+          companyName: res.user.companyName || prev.companyName,
+          taxId: res.user.taxId || prev.taxId,
+          accountType: res.user.companyName ? "B2B" : "B2C",
+        }));
+        setAuthChecked(true);
+      })
+      .catch(() => {
+        router.push("/login?redirect=/checkout&reason=auth_required");
+      });
+  }, [router]);
 
   // Step state (1: Info, 2: Shipping, 3: Payment, 4: Success)
   const [currentStep, setCurrentStep] = useState<number>(1);
 
-  // Form State
+  // Form State — Clean initial state (no hardcoded mock address/tax)
   const [formData, setFormData] = useState({
-    fullName: "Hendra Wijaya",
-    email: "hendra@garmentkreatif.com",
-    phone: "081234567890",
+    fullName: "",
+    email: "",
+    phone: "",
     accountType: "B2B", // B2B or B2C
-    companyName: "PT. Garment Kreatif Nusantara",
-    taxId: "01.234.567.8-012.000",
-    address: "Jl. Industri Tekstil No. 45, Kawasan Rancaekek",
-    city: "Bandung",
-    postalCode: "40394",
+    companyName: "",
+    taxId: "",
+    address: "",
+    city: "",
+    postalCode: "",
     shippingCarrier: "dakota", // dakota, jtr, texora_fleet
     paymentMethod: "bca_va", // bca_va, mandiri_bill, qris, invoice_top30
-    orderNotes: "Prioritaskan roll Dryfit Milano warna cyan pekat sesuai proofing.",
+    orderNotes: "",
   });
 
   const [orderCreatedNumber, setOrderCreatedNumber] = useState<string>("");
 
-  const subtotal = cartItems.reduce(
+  const totalFabricAndPrint = cartItems.reduce(
     (sum, item) => sum + (item.unitPrice + item.sublimationPrintFeePerMeter) * item.meters,
     0
   );
+  const totalDesignFee = cartItems.reduce(
+    (sum, item) => sum + (item.designServiceFee || 0),
+    0
+  );
+  const subtotal = totalFabricAndPrint + totalDesignFee;
   const taxPPN = Math.round(subtotal * 0.11);
   const shippingCost = formData.shippingCarrier === "texora_fleet" ? 450000 : 250000;
   const grandTotal = subtotal + taxPPN + shippingCost;
 
-  const handleSubmitOrder = () => {
+  const [submittingOrder, setSubmittingOrder] = useState(false);
+
+  const handleSubmitOrder = async () => {
+    if (submittingOrder) return;
+    setSubmittingOrder(true);
     const now = new Date();
     const yyyymm = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}`;
     const seq = String(1000 + Math.floor(Math.random() * 9000));
     const generatedOrder = `TEX-${yyyymm}-${seq}`;
     setOrderCreatedNumber(generatedOrder);
 
-    saveLastOrder({
+    const orderPayload = {
       orderNumber: generatedOrder,
       customerName: formData.fullName,
+      customerEmail: formData.email,
+      customerPhone: formData.phone,
       customerCompany: formData.accountType === "B2B" ? formData.companyName : undefined,
       totalAmount: grandTotal,
       taxAmount: taxPPN,
@@ -74,25 +119,59 @@ export default function CheckoutPage() {
       status: "PENDING_PAYMENT",
       paymentStatus: "UNPAID",
       paymentMethod: formData.paymentMethod,
-      createdAt: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
       notes: formData.orderNotes,
-      items: cartItems.map((item, i) => ({
-        id: `item-${i + 1}`,
-        fabricName: item.fabricName,
-        gsm: item.gsm,
-        lengthMeters: item.meters,
-        unitPrice: item.unitPrice + item.sublimationPrintFeePerMeter,
-        subtotal: (item.unitPrice + item.sublimationPrintFeePerMeter) * item.meters,
-        customDesignTitle: item.customDesignTitle,
-      })),
-    });
+      items: cartItems.map((item, i) => {
+        const itemDesignFee = item.designServiceFee || 0;
+        const printAndFabric = (item.unitPrice + item.sublimationPrintFeePerMeter) * item.meters;
+        return {
+          id: `item-${i + 1}`,
+          fabricName: item.fabricName,
+          gsm: item.gsm,
+          lengthMeters: item.meters,
+          unitPrice: item.unitPrice + item.sublimationPrintFeePerMeter,
+          subtotal: printAndFabric + itemDesignFee,
+          customDesignTitle: item.customDesignTitle,
+          designServiceType: item.designServiceType,
+          designServiceFee: itemDesignFee,
+          designNotes: item.designNotes,
+        };
+      }),
+    };
 
-    setCurrentStep(4);
+    try {
+      await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(orderPayload),
+      });
+    } catch (err) {
+      console.warn("Error posting order to server:", err);
+    } finally {
+      saveLastOrder({
+        ...orderPayload,
+        createdAt: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
+      });
+      clearCart();
+      setCartItems([]);
+      setSubmittingOrder(false);
+      setCurrentStep(4);
+    }
   };
+
+  if (!authChecked) {
+    return (
+      <div className="texora-container py-24 flex flex-col items-center justify-center min-h-[50vh] text-center space-y-4">
+        <div className="w-12 h-12 rounded-full border-2 border-brand-500 border-t-transparent animate-spin" />
+        <h2 className="text-lg font-bold text-white">Memverifikasi Sesi Akun...</h2>
+        <p className="text-xs text-slate-400 max-w-sm">
+          Sistem sedang memverifikasi otentikasi login Anda untuk melanjutkan proses transaksi B2B/B2C.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="texora-container py-10 space-y-8">
-      
       {/* Header */}
       <div className="border-b border-slate-800 pb-4 flex items-center justify-between">
         <div>
@@ -171,6 +250,7 @@ export default function CheckoutPage() {
                     <label className="text-slate-300 font-medium block mb-1">Nama Lengkap Penanggung Jawab *</label>
                     <input
                       type="text"
+                      placeholder="Contoh: Hendra Wijaya"
                       value={formData.fullName}
                       onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                       className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-brand-500"
@@ -181,6 +261,7 @@ export default function CheckoutPage() {
                     <label className="text-slate-300 font-medium block mb-1">Nomor WhatsApp Aktif *</label>
                     <input
                       type="text"
+                      placeholder="Contoh: 081234567890"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-brand-500"
@@ -193,6 +274,7 @@ export default function CheckoutPage() {
                         <label className="text-slate-300 font-medium block mb-1">Nama Perusahaan / PT / CV *</label>
                         <input
                           type="text"
+                          placeholder="Contoh: PT. Kreasi Tekstil Nusantara"
                           value={formData.companyName}
                           onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
                           className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-brand-500"
@@ -203,6 +285,7 @@ export default function CheckoutPage() {
                         <label className="text-slate-300 font-medium block mb-1">NPWP Perusahaan (Untuk Faktur Pajak)</label>
                         <input
                           type="text"
+                          placeholder="Contoh: 01.234.567.8-012.000"
                           value={formData.taxId}
                           onChange={(e) => setFormData({ ...formData, taxId: e.target.value })}
                           className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white font-mono focus:outline-none focus:border-brand-500"
@@ -215,6 +298,7 @@ export default function CheckoutPage() {
                     <label className="text-slate-300 font-medium block mb-1">Alamat Gudang / Pabrik Tujuan Pengiriman *</label>
                     <textarea
                       rows={2}
+                      placeholder="Alamat lengkap tujuan kirim roll kain (Nama jalan, nomor gudang/pabrik, kelurahan, kecamatan)"
                       value={formData.address}
                       onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                       className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-brand-500"
@@ -225,6 +309,7 @@ export default function CheckoutPage() {
                     <label className="text-slate-300 font-medium block mb-1">Kota / Kabupaten *</label>
                     <input
                       type="text"
+                      placeholder="Contoh: Bandung Barat / Jakarta Utara"
                       value={formData.city}
                       onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                       className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-brand-500"
@@ -235,8 +320,20 @@ export default function CheckoutPage() {
                     <label className="text-slate-300 font-medium block mb-1">Kode Pos *</label>
                     <input
                       type="text"
+                      placeholder="Contoh: 40223"
                       value={formData.postalCode}
                       onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="text-slate-300 font-medium block mb-1">Catatan Tambahan untuk Pabrik / QC (Opsional)</label>
+                    <textarea
+                      rows={2}
+                      placeholder="Misal: Harap pastikan ketajaman warna cyan dan packing plastik ekstra tebal."
+                      value={formData.orderNotes}
+                      onChange={(e) => setFormData({ ...formData, orderNotes: e.target.value })}
                       className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-brand-500"
                     />
                   </div>
@@ -412,11 +509,21 @@ export default function CheckoutPage() {
                   </button>
                   <button
                     type="button"
+                    disabled={submittingOrder}
                     onClick={handleSubmitOrder}
-                    className="px-7 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-brand-600 hover:brightness-110 text-white font-bold text-xs shadow-xl transition-all flex items-center gap-1.5"
+                    className="px-7 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-brand-600 hover:brightness-110 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-xs shadow-xl transition-all flex items-center gap-2"
                   >
-                    <span>Konfirmasi & Terbitkan SPK Pesanan</span>
-                    <CheckCircle2 className="w-4 h-4" />
+                    {submittingOrder ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-white" />
+                        <span>Menerbitkan SPK Pesanan...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Konfirmasi &amp; Terbitkan SPK Pesanan</span>
+                        <CheckCircle2 className="w-4 h-4" />
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
@@ -432,17 +539,28 @@ export default function CheckoutPage() {
               </h3>
 
               <div className="space-y-2 border-b border-slate-800 pb-3">
-                {cartItems.map((item) => (
-                  <div key={item.id} className="flex justify-between gap-3 text-xs">
-                    <div className="min-w-0">
-                      <div className="font-semibold text-white truncate">{item.fabricName}</div>
-                      <div className="text-slate-400">{item.meters} m · {item.gsm} GSM{item.customDesignTitle ? " · custom" : ""}</div>
+                {cartItems.map((item) => {
+                  const itemDesignFee = item.designServiceFee || 0;
+                  const itemTotal = (item.unitPrice + item.sublimationPrintFeePerMeter) * item.meters + itemDesignFee;
+                  return (
+                    <div key={item.id} className="flex justify-between gap-3 text-xs">
+                      <div className="min-w-0">
+                        <div className="font-semibold text-white truncate">{item.fabricName}</div>
+                        <div className="text-slate-400">
+                          {item.meters} m · {item.gsm} GSM
+                          {item.designServiceType === "TEXORA_DESIGN_SERVICE" ? (
+                            <span className="text-brand-300 font-medium"> · +Jasa Desain</span>
+                          ) : item.customDesignTitle ? (
+                            <span> · custom</span>
+                          ) : null}
+                        </div>
+                      </div>
+                      <div className="font-mono text-white shrink-0">
+                        {formatRupiah(itemTotal)}
+                      </div>
                     </div>
-                    <div className="font-mono text-white shrink-0">
-                      {formatRupiah((item.unitPrice + item.sublimationPrintFeePerMeter) * item.meters)}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
                 {cartItems.length === 0 && (
                   <p className="text-slate-500 text-xs">Belum ada item pesanan.</p>
                 )}
@@ -450,9 +568,18 @@ export default function CheckoutPage() {
 
               <div className="space-y-2 text-xs text-slate-300">
                 <div className="flex justify-between">
-                  <span>Subtotal Kain & Sublimasi:</span>
-                  <span className="font-mono text-white">{formatRupiah(subtotal)}</span>
+                  <span>Subtotal Kain &amp; Sublimasi:</span>
+                  <span className="font-mono text-white">{formatRupiah(totalFabricAndPrint)}</span>
                 </div>
+                {totalDesignFee > 0 && (
+                  <div className="flex justify-between text-brand-300 font-medium">
+                    <span className="flex items-center gap-1">
+                      <Sparkles className="w-3.5 h-3.5 text-brand-400" />
+                      <span>Jasa Desain Tim Texora:</span>
+                    </span>
+                    <span className="font-mono font-bold">{formatRupiah(totalDesignFee)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span>PPN 11% (Faktur Elektronik):</span>
                   <span className="font-mono text-white">{formatRupiah(taxPPN)}</span>

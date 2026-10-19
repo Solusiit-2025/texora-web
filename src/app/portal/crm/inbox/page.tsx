@@ -102,6 +102,18 @@ export default function InboxPage() {
     initialMessage: "Halo PT. Intech Mitra Abadi, ini tim Sales Texora.",
   });
   const [startingChat, setStartingChat] = useState(false);
+  const [customerPresets, setCustomerPresets] = useState<any[]>(MOCK_CUSTOMERS);
+
+  useEffect(() => {
+    fetch("/api/crm/customers")
+      .then((r) => r.json())
+      .then((j) => {
+        if (j?.success && Array.isArray(j.data) && j.data.length > 0) {
+          setCustomerPresets(j.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -695,7 +707,7 @@ export default function InboxPage() {
                 Pilih Cepat dari Pelanggan Terdaftar:
               </label>
               <div className="flex flex-wrap gap-1.5">
-                {MOCK_CUSTOMERS.map((cust) => (
+                {customerPresets.map((cust) => (
                   <button
                     key={cust.id}
                     type="button"

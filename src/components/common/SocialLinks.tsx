@@ -1,5 +1,12 @@
-import { Facebook, Instagram, Youtube } from "lucide-react";
-import { SOCIAL_LINKS, type SocialLink } from "@/config/social";
+"use client";
+
+import { Facebook, Instagram, Linkedin, Youtube, Share2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  DEFAULT_SOCIAL_LINKS,
+  type SocialId,
+  type SocialLink,
+} from "@/config/social";
 
 function TikTokIcon({ className }: { className?: string }) {
   return (
@@ -17,20 +24,22 @@ function WhatsAppIcon({ className }: { className?: string }) {
   );
 }
 
-export const SOCIAL_ICONS: Record<SocialLink["id"], (props: { className?: string }) => JSX.Element> = {
+export const SOCIAL_ICONS: Record<SocialId, (props: { className?: string }) => JSX.Element> = {
   tiktok: TikTokIcon,
   instagram: (p) => <Instagram className={p.className} />,
   facebook: (p) => <Facebook className={p.className} />,
   youtube: (p) => <Youtube className={p.className} />,
   whatsapp: WhatsAppIcon,
+  linkedin: (p) => <Linkedin className={p.className} />,
 };
 
-export const SOCIAL_HOVER: Record<SocialLink["id"], string> = {
+export const SOCIAL_HOVER: Record<SocialId, string> = {
   tiktok: "hover:border-white/50 hover:text-white",
   instagram: "hover:border-pink-500/60 hover:text-pink-400",
   facebook: "hover:border-blue-500/60 hover:text-blue-400",
   youtube: "hover:border-red-500/60 hover:text-red-400",
   whatsapp: "hover:border-emerald-500/60 hover:text-emerald-400",
+  linkedin: "hover:border-sky-500/60 hover:text-sky-400",
 };
 
 export interface SocialBrand {
@@ -47,7 +56,7 @@ export interface SocialBrand {
 }
 
 /** Official-ish brand colors tuned for the dark UI. */
-export const SOCIAL_BRAND: Record<SocialLink["id"], SocialBrand> = {
+export const SOCIAL_BRAND: Record<SocialId, SocialBrand> = {
   tiktok: {
     color: "#FFFFFF",
     bg: "rgba(255,255,255,0.07)",
@@ -79,15 +88,46 @@ export const SOCIAL_BRAND: Record<SocialLink["id"], SocialBrand> = {
     border: "rgba(46,224,111,0.35)",
     glow: "rgba(46,224,111,0.40)",
   },
+  linkedin: {
+    color: "#38BDF8",
+    bg: "rgba(56,189,248,0.10)",
+    border: "rgba(56,189,248,0.35)",
+    glow: "rgba(56,189,248,0.40)",
+  },
 };
 
-/** Social media icon buttons (TikTok, Instagram, Facebook, YouTube, WhatsApp). */
+/** Social media icon buttons — URL dibaca dari database (/api/social-links). */
 export function SocialLinks() {
+  const [links, setLinks] = useState<SocialLink[]>(DEFAULT_SOCIAL_LINKS);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/social-links", { cache: "no-store" });
+        const json = await res.json();
+        if (!cancelled && json.success && Array.isArray(json.data) && json.data.length > 0) {
+          setLinks(json.data);
+        }
+      } catch {
+        // fallback ke default bila API/DB offline
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <div className="flex items-center gap-2.5 group/social">
-      {SOCIAL_LINKS.map((s) => {
-        const Icon = SOCIAL_ICONS[s.id];
-        const brand = SOCIAL_BRAND[s.id];
+      {links.map((s) => {
+        const Icon = SOCIAL_ICONS[s.id] || Share2;
+        const brand = SOCIAL_BRAND[s.id] || {
+          color: "#38BDF8",
+          bg: "rgba(56,189,248,0.10)",
+          border: "rgba(56,189,248,0.35)",
+          glow: "rgba(56,189,248,0.40)",
+        };
         return (
           <a
             key={s.id}

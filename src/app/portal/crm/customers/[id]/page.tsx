@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MOCK_CUSTOMERS, MOCK_ORDERS, MOCK_CUSTOMER_ACTIVITIES } from "@/lib/mock-data";
 import { formatRupiah } from "@/lib/utils";
@@ -36,9 +36,26 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
   const router = useRouter();
   const id = (params as any)?.id || (typeof (params as any)?.then === "function" ? use(params as Promise<{ id: string }>).id : "");
 
-  const customer = MOCK_CUSTOMERS.find(c => c.id === id);
-  const activities = MOCK_CUSTOMER_ACTIVITIES[id] || [];
-  const orders = MOCK_ORDERS.filter(o => o.customerCompany === customer?.company);
+  const initialCustomer = MOCK_CUSTOMERS.find(c => c.id === id) || MOCK_CUSTOMERS[0];
+  const [customer, setCustomer] = useState(initialCustomer);
+  const [activities, setActivities] = useState<any[]>(MOCK_CUSTOMER_ACTIVITIES[id] || []);
+  const [orders, setOrders] = useState<any[]>(MOCK_ORDERS.filter(o => o.customerCompany === initialCustomer?.company));
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id) return;
+    fetch(`/api/crm/customers/${id}`)
+      .then(res => res.json())
+      .then(json => {
+        if (json?.success && json.data) {
+          if (json.data.customer) setCustomer(json.data.customer);
+          if (json.data.orders) setOrders(json.data.orders);
+          if (json.data.activities) setActivities(json.data.activities);
+        }
+      })
+      .catch(err => console.warn("Fallback customer used:", err))
+      .finally(() => setLoading(false));
+  }, [id]);
 
   if (!customer) {
     return (
@@ -48,6 +65,9 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
       </div>
     );
   }
+
+  const totalSpent = orders.reduce((s, o) => s + (Number(o.totalAmount) || 0), 0);
+  const totalMeters = orders.reduce((s, o) => s + (o.items || []).reduce((s2: number, it: any) => s2 + (Number(it.lengthMeters) || 0), 0), 0);
 
   return (
     <div className="space-y-6">
@@ -124,10 +144,10 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
                     {orders.map(o => (
                       <tr key={o.id} className="hover:bg-slate-900/40 transition-colors">
                         <td className="py-2.5 px-3 text-brand-300 font-mono font-bold">{o.orderNumber}</td>
-                        <td className="py-2.5 px-3 text-slate-300">{o.items.map(it => it.fabricName).join(", ")} × {o.items.reduce((s, it) => s + it.lengthMeters, 0)}m</td>
+                        <td className="py-2.5 px-3 text-slate-300">{(o.items || []).map((it: any) => it.fabricName).join(", ")} × {(o.items || []).reduce((s: number, it: any) => s + (Number(it.lengthMeters) || 0), 0)}m</td>
                         <td className="py-2.5 px-3 text-white font-semibold">{formatRupiah(o.totalAmount)}</td>
                         <td className="py-2.5 px-3">
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-500/15 text-sky-400">{o.status.replace("_", " ")}</span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-500/15 text-sky-400">{(o.status || "").replace("_", " ")}</span>
                         </td>
                       </tr>
                     ))}
@@ -151,8 +171,8 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
                   return (
                     <div key={i} className="relative pl-5 pb-5">
                       <span className="absolute -left-[7px] top-1 w-3 h-3 rounded-full border-2 bg-slate-900 border-brand-400" />
-                      <div className="text-[11px] text-slate-500">{a.createdAt}</div>
-                      <div className="text-xs text-white font-semibold mt-0.5 flex items-center gap-1"><Icon className="w-3 h-3 text-brand-400" /> {a.type.replace("_", " ")}</div>
+                      <div className="text-[11px] text-slate-500">{a.date || a.createdAt}</div>
+                      <div className="text-xs text-white font-semibold mt-0.5 flex items-center gap-1"><Icon className="w-3 h-3 text-brand-400" /> {(a.type || "").replace("_", " ")}</div>
                       <div className="text-xs text-slate-400 mt-0.5">{a.description}</div>
                     </div>
                   );
@@ -172,11 +192,11 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
             <div className="space-y-4">
               <div className="flex justify-between items-baseline">
                 <span className="text-[11px] text-slate-400">Total Belanja</span>
-                <span className="text-lg font-extrabold text-white">{formatRupiah(orders.reduce((s, o) => s + o.totalAmount, 0))}</span>
+                <span className="text-lg font-extrabold text-white">{formatRupiah(totalSpent)}</span>
               </div>
               <div className="flex justify-between items-baseline">
                 <span className="text-[11px] text-slate-400">Total Meter</span>
-                <span className="text-lg font-extrabold text-white">{orders.reduce((s, o) => s + o.items.reduce((s2, it) => s2 + it.lengthMeters, 0), 0).toLocaleString("id-ID")} m</span>
+                <span className="text-lg font-extrabold text-white">{totalMeters.toLocaleString("id-ID")} m</span>
               </div>
               <div className="flex justify-between items-baseline">
                 <span className="text-[11px] text-slate-400">Jumlah SO</span>
@@ -210,15 +230,15 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
               <FileText className="w-4 h-4 text-brand-400" /> Dokumen
             </h2>
             <div className="space-y-2">
-              <button className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 transition-colors text-xs text-slate-300">
+              <button onClick={() => alert(`Mengunduh Faktur Pajak untuk ${customer.company}`)} className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 transition-colors text-xs text-slate-300">
                 <span className="flex items-center gap-2"><FileDown className="w-3.5 h-3.5 text-brand-400" /> Faktur Pajak</span>
                 <span className="text-[10px] text-slate-500">PDF</span>
               </button>
-              <button className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 transition-colors text-xs text-slate-300">
+              <button onClick={() => alert(`Mengunduh Quotation SPH untuk ${customer.company}`)} className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 transition-colors text-xs text-slate-300">
                 <span className="flex items-center gap-2"><FileDown className="w-3.5 h-3.5 text-brand-400" /> Quotation</span>
                 <span className="text-[10px] text-slate-500">PDF</span>
               </button>
-              <button className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 transition-colors text-xs text-slate-300">
+              <button onClick={() => alert(`Mengunduh Bukti Sampel Swatch untuk ${customer.company}`)} className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 transition-colors text-xs text-slate-300">
                 <span className="flex items-center gap-2"><FileDown className="w-3.5 h-3.5 text-brand-400" /> Sampel Swatch</span>
                 <span className="text-[10px] text-slate-500">PDF</span>
               </button>

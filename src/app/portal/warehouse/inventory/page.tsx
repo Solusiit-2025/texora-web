@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MOCK_INVENTORY } from "@/lib/mock-data";
 import { InventoryRoll } from "@/types";
 import { formatNumber } from "@/lib/utils";
@@ -18,8 +18,28 @@ import {
 
 export default function WarehouseInventoryPage() {
   const [inventory, setInventory] = useState<InventoryRoll[]>(MOCK_INVENTORY);
+  const [loading, setLoading] = useState(true);
   const [scannedBarcode, setScannedBarcode] = useState("");
   const [activeScanResult, setActiveScanResult] = useState<InventoryRoll | null>(null);
+
+  const fetchInventory = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/warehouse/inventory");
+      const json = await res.json();
+      if (json?.success && json.data) {
+        setInventory(json.data);
+      }
+    } catch (err) {
+      console.warn("Using fallback inventory:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInventory();
+  }, []);
 
   const handleSimulateScan = (barcode: string) => {
     setScannedBarcode(barcode);

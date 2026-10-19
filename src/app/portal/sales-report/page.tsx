@@ -1,7 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
-import { MOCK_ORDERS } from "@/lib/mock-data";
+import { useMemo, useState, useEffect } from "react";
 import { formatRupiah, formatNumber } from "@/lib/utils";
 import {
   ResponsiveContainer,
@@ -71,45 +70,66 @@ const TOP_CUSTOMERS = [
 const formatJt = (v: number) => `${Math.round(v / 1_000_000)}jt`;
 
 export default function SalesReportPage() {
+  const [orders, setOrders] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch("/api/orders")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json?.success && Array.isArray(json.data) && json.data.length > 0) {
+          setOrders(json.data);
+        }
+      })
+      .catch((err) => console.warn("Using offline order cache:", err));
+  }, []);
+
+  const totalRevenue = useMemo(
+    () => orders.reduce((sum, o) => sum + (Number(o.totalAmount) || 0), 0),
+    [orders]
+  );
+  const totalMeterSample = useMemo(
+    () => orders.reduce((sum, o) => sum + (o.items || []).reduce((s: number, i: any) => s + (Number(i.lengthMeters) || 0), 0), 0),
+    [orders]
+  );
+  const avgOrderValue = useMemo(
+    () => orders.length > 0 ? Math.round(totalRevenue / orders.length) : 0,
+    [orders, totalRevenue]
+  );
+
   const latest = MONTHLY_REVENUE[MONTHLY_REVENUE.length - 1];
   const previous = MONTHLY_REVENUE[MONTHLY_REVENUE.length - 2];
   const growthPct = Math.round(((latest.omzet - previous.omzet) / previous.omzet) * 1000) / 10;
 
   const kpis = [
     {
-      label: "Total Omzet (Bulan Ini)",
-      value: formatRupiah(latest.omzet),
+      label: "Total Omzet (Database Real-time)",
+      value: formatRupiah(totalRevenue > 0 ? totalRevenue : latest.omzet),
       sub: `+${growthPct}% dibanding bulan lalu`,
       icon: TrendingUp,
       tone: "text-emerald-400 bg-emerald-500/10",
     },
     {
       label: "Total Sales Order",
-      value: `${latest.order} SO`,
-      sub: "SPK diterbitkan bulan ini",
+      value: `${orders.length} SO`,
+      sub: "SPK aktif di database",
       icon: ShoppingCart,
       tone: "text-brand-400 bg-brand-500/10",
     },
     {
       label: "Rata-rata Nilai Order",
-      value: formatRupiah(Math.round(latest.omzet / latest.order)),
+      value: formatRupiah(avgOrderValue > 0 ? avgOrderValue : Math.round(latest.omzet / latest.order)),
       sub: "Per sales order",
       icon: Receipt,
       tone: "text-accent-cyan bg-accent-cyan/10",
     },
     {
       label: "Total Meter Terjual",
-      value: "14.850 m",
-      sub: "Dryfit, voal, satin & lainnya",
+      value: `${totalMeterSample.toLocaleString("id-ID")} m`,
+      sub: "Dryfit, voal, satin & scuba",
       icon: Ruler,
       tone: "text-accent-amber bg-accent-amber/10",
     },
   ];
-
-  const totalMeterSample = useMemo(
-    () => MOCK_ORDERS.reduce((sum, o) => sum + o.items.reduce((s, i) => s + i.lengthMeters, 0), 0),
-    []
-  );
 
   return (
     <div className="space-y-5 sm:space-y-6 lg:space-y-8 min-w-0">
@@ -258,7 +278,7 @@ export default function SalesReportPage() {
             </span>
           </div>
           <span className="text-xs text-slate-400 font-mono hidden sm:block">
-            Total: {MOCK_ORDERS.length} SO · {formatNumber(totalMeterSample)} m
+            Total: {orders.length} SO · {formatNumber(totalMeterSample)} m
           </span>
         </div>
 
@@ -275,8 +295,8 @@ export default function SalesReportPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/70">
-              {MOCK_ORDERS.map((order) => {
-                const meters = order.items.reduce((s, i) => s + i.lengthMeters, 0);
+              {orders.map((order: any) => {
+                const meters = (order.items || []).reduce((s: number, i: any) => s + (Number(i.lengthMeters) || 0), 0);
                 return (
                   <tr key={order.id} className="hover:bg-slate-800/40 transition-colors">
                     <td className="p-4 align-top">
@@ -288,7 +308,7 @@ export default function SalesReportPage() {
                       <div className="text-slate-400 text-[10px]">{order.customerName}</div>
                     </td>
                     <td className="p-4 align-top">
-                      {order.items.map((item) => (
+                      {(order.items || []).map((item: any) => (
                         <div key={item.id} className="text-slate-300">
                           {item.fabricName} · <span className="text-white font-mono">{item.lengthMeters} m</span>
                         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   Sparkles, 
@@ -118,6 +118,43 @@ export default function CustomOrdersProofingPage() {
 
   const [proofs, setProofs] = useState<CustomProofItem[]>(initialProofs);
 
+  useEffect(() => {
+    fetch("/api/orders")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json?.success && Array.isArray(json.data) && json.data.length > 0) {
+          const liveProofs: CustomProofItem[] = [];
+          json.data.forEach((o: any) => {
+            (o.items || []).forEach((it: any, idx: number) => {
+              if (it.customDesignTitle) {
+                liveProofs.push({
+                  id: `proof-${o.id}-${idx}`,
+                  orderNumber: o.orderNumber,
+                  customerName: o.customerName || "Customer Texora",
+                  companyName: o.customerCompany || "PT Mitra Texora",
+                  designTitle: it.customDesignTitle,
+                  fileFormat: "Adobe Illustrator (.AI) / Vector",
+                  fileSizeBytes: "62.4 MB",
+                  dpi: 300,
+                  colorProfile: "CMYK (Japan Color 2001 Coated)",
+                  fabricName: it.fabricName || "Dryfit Milano Premium",
+                  gsm: it.gsm || 135,
+                  meters: Number(it.lengthMeters) || 100,
+                  previewUrl: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=800&q=80",
+                  status: o.status === "CONFIRMED" || o.status === "IN_PRODUCTION" ? "APPROVED" : "PROOF_GENERATED",
+                  submittedAt: o.createdAt || "2026-10-03 09:20",
+                });
+              }
+            });
+          });
+          if (liveProofs.length > 0) {
+            setProofs(liveProofs);
+          }
+        }
+      })
+      .catch((err) => console.warn("Using offline proof items:", err));
+  }, []);
+
   const filteredProofs = proofs.filter((p) => {
     const matchesSearch = 
       p.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -129,7 +166,7 @@ export default function CustomOrdersProofingPage() {
     return matchesSearch && matchesStatus;
   });
 
-  const handleUpdateStatus = (id: string, newStatus: CustomProofItem["status"]) => {
+  const handleUpdateStatus = async (id: string, newStatus: CustomProofItem["status"]) => {
     setProofs(proofs.map(p => p.id === id ? { ...p, status: newStatus } : p));
     if (selectedProof?.id === id) {
       setSelectedProof({ ...selectedProof, status: newStatus });

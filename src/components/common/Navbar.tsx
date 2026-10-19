@@ -2,24 +2,24 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ThemeDropdown } from "../theme/ThemeDropdown";
+import { loadCart } from "@/lib/cart";
 import { 
   Home,
   Building2,
   Layers, 
   Palette, 
-  Search, 
   ShoppingCart, 
   User as UserIcon, 
   Menu, 
   X, 
-  ExternalLink,
-  ShieldCheck,
+  ShieldCheck, 
   ChevronDown,
-  Sparkles,
-  PhoneCall
+  Lock,
+  LogOut,
+  Sparkles
 } from "lucide-react";
 
 interface NavbarProps {
@@ -41,12 +41,90 @@ const NAV_LINKS = [
   { name: "Konsultasi B2B", href: "/contact" },
 ];
 
-export function Navbar({ cartCount = 2 }: NavbarProps) {
+export function Navbar({ cartCount: initialCartCount }: NavbarProps) {
   const pathname = usePathname();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
-  const [activeRole, setActiveRole] = useState("Pembeli (Storefront)");
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Dynamic real-time cart count & user session state
+  const [cartItemCount, setCartItemCount] = useState<number>(0);
+  const [currentUser, setCurrentUser] = useState<{
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    companyName?: string;
+  } | null>(null);
+
+  // Click anywhere outside to close user dropdown profile
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setUserMenuOpen(false);
+      }
+    };
+
+    if (userMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("touchstart", handleClickOutside);
+      document.addEventListener("keydown", handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [userMenuOpen]);
+
+  useEffect(() => {
+    // 1. Muat data keranjang riil dari storage
+    const syncCart = () => {
+      const items = loadCart();
+      setCartItemCount(items.length);
+    };
+
+    syncCart();
+    window.addEventListener("texora-cart-updated", syncCart);
+    window.addEventListener("storage", syncCart);
+
+    // 2. Ambil sesi autentikasi pengguna
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.authenticated && data.user) {
+          setCurrentUser(data.user);
+        } else {
+          setCurrentUser(null);
+        }
+      })
+      .catch(() => setCurrentUser(null));
+
+    return () => {
+      window.removeEventListener("texora-cart-updated", syncCart);
+      window.removeEventListener("storage", syncCart);
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch (e) {
+      console.warn("Logout error:", e);
+    } finally {
+      setCurrentUser(null);
+      setUserMenuOpen(false);
+      window.location.href = "/";
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full glass-panel border-b border-white/10 backdrop-blur-xl">
@@ -116,7 +194,7 @@ export function Navbar({ cartCount = 2 }: NavbarProps) {
                     />
                   )}
 
-                  {/* Active Page Gliding Pill & Bottom Gold Beacon */}
+                  {/* Active Page Gliding Pill & Bottom Glow Beacon */}
                   {isActive && (
                     <>
                       <motion.span
@@ -163,139 +241,220 @@ export function Navbar({ cartCount = 2 }: NavbarProps) {
           {/* Right Control Toolbar */}
           <div className="hidden md:flex items-center space-x-2.5">
             
-            {/* Utility Capsule: Role Switcher Demo + Theme Picker */}
+            {/* Theme Picker */}
             <div className="flex items-center p-1 rounded-full bg-slate-900/60 border border-white/10 backdrop-blur-md shadow-lg shadow-black/20">
-              
-              {/* Role Switcher Demo Dropdown */}
-              <div className="relative">
-                <button 
-                  onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800/80 hover:bg-slate-700/80 text-xs font-medium text-slate-300 transition-colors"
-                  title="Switch mode to preview CRM, OMS, or Storefront"
+              <ThemeDropdown />
+            </div>
+
+            {/* Direct Dashboard Shortcut Button (Solusi: Menu Tidak Tersembunyi Lagi) */}
+            {currentUser && (
+              <Link
+                href={currentUser.role === "CUSTOMER" ? "/customer/dashboard" : "/portal/dashboard"}
+                className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-brand-500/20 via-brand-500/10 to-accent-cyan/20 hover:from-brand-500/30 hover:to-accent-cyan/30 border border-brand-400/40 text-brand-200 hover:text-white text-xs font-bold transition-all shadow-sm shadow-brand-500/10 group shrink-0"
+                title="Buka Dashboard Utama Mitra B2B"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-brand-400 group-hover:scale-110 transition-transform" />
+                <span>{currentUser.role === "CUSTOMER" ? "Dashboard Mitra" : "Portal Pabrik"}</span>
+              </Link>
+            )}
+
+            {/* Shopping Cart Button Capsule with Dynamic Badge Notification (Hanya tampil jika user login) */}
+            {currentUser && (
+              <Link
+                href="/cart"
+                aria-label="Keranjang Belanja"
+                title={cartItemCount > 0 ? `Keranjang: ${cartItemCount} item pesanan` : "Keranjang Belanja"}
+                className="relative p-2.5 rounded-full bg-slate-900/60 hover:bg-slate-800/80 border border-white/10 text-slate-200 hover:text-white transition-all group shadow-lg shadow-black/20"
+              >
+                <ShoppingCart className="w-4 h-4 text-slate-300 group-hover:text-accent-cyan transition-colors" />
+                {cartItemCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[1.35rem] h-[1.35rem] px-1 bg-gradient-to-r from-amber-500 to-brand-500 text-slate-950 text-[11px] font-black rounded-full flex items-center justify-center leading-none shadow-md border border-slate-950 animate-in zoom-in-75 duration-200">
+                    {cartItemCount}
+                  </span>
+                )}
+              </Link>
+            )}
+
+            {/* Authentication & Portal Controls */}
+            {currentUser ? (
+              <div className="relative" ref={userMenuRef}>
+                <button
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/80 hover:bg-slate-800 border border-brand-500/30 text-white text-xs font-medium transition-all shadow-lg"
                 >
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                  <span className="text-slate-400 hidden xl:inline">Mode:</span>
-                  <span className="text-white font-semibold">{activeRole.split(" ")[0]}</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="max-w-[110px] truncate font-semibold">{currentUser.name.split(" ")[0]}</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-brand-500/20 text-brand-300 border border-brand-500/40 uppercase font-mono">
+                    {currentUser.role === "CUSTOMER" ? "Mitra" : currentUser.role === "ADMINISTRATOR" ? "Admin" : "Staff"}
+                  </span>
                   <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
                 </button>
 
                 <AnimatePresence>
-                  {roleDropdownOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: -6 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: -6 }}
-                      transition={{ duration: 0.18, ease: "easeOut" }}
-                      className="absolute right-0 mt-2 w-64 rounded-2xl bg-slate-900/95 border border-slate-700 shadow-2xl p-2 z-50 backdrop-blur-2xl"
-                    >
-                      <div className="text-[10px] uppercase font-bold text-slate-400 px-3 py-1.5 tracking-wider">
-                        Simulasi Akses Peran (PRD RBAC)
-                      </div>
-                      <Link
-                        href="/"
-                        onClick={() => { setActiveRole("Pembeli (Storefront)"); setRoleDropdownOpen(false); }}
-                        className="flex items-center justify-between px-3 py-2 rounded-lg text-xs hover:bg-brand-500/20 text-slate-200 hover:text-brand-300 transition-colors"
+                  {userMenuOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-[998] cursor-default bg-black/40 backdrop-blur-[2px]"
+                        onClick={() => setUserMenuOpen(false)}
+                        aria-hidden="true"
+                      />
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: -6 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: -6 }}
+                        transition={{ duration: 0.16 }}
+                        style={{ backgroundColor: "#0f172a" }}
+                        className="absolute right-0 mt-2 w-72 rounded-2xl bg-slate-900 border border-slate-700 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] p-2 z-[999] divide-y divide-slate-800/90 isolate"
                       >
-                        <span>🛒 Toko & Katalog (Storefront)</span>
-                        <span className="text-[10px] text-slate-400">Publik</span>
-                      </Link>
-                      <Link
-                        href="/customer/dashboard"
-                        onClick={() => { setActiveRole("Portal Pelanggan B2B"); setRoleDropdownOpen(false); }}
-                        className="flex items-center justify-between px-3 py-2 rounded-lg text-xs hover:bg-emerald-500/20 text-slate-200 hover:text-emerald-300 transition-colors font-medium"
-                      >
-                        <span>👤 Portal Pelanggan (Proofing & Pajak)</span>
-                        <span className="text-[10px] bg-emerald-500/30 px-1.5 py-0.5 rounded text-white">B2B V2</span>
-                      </Link>
-                      <Link
-                        href="/portal/crm/leads"
-                        onClick={() => { setActiveRole("Sales Rep (CRM)"); setRoleDropdownOpen(false); }}
-                        className="flex items-center justify-between px-3 py-2 rounded-lg text-xs hover:bg-accent-violet/20 text-slate-200 hover:text-accent-violet transition-colors"
-                      >
-                        <span>💼 Sales Rep (CRM Pipeline)</span>
-                        <span className="text-[10px] bg-accent-violet/30 px-1.5 py-0.5 rounded text-white">Internal</span>
-                      </Link>
-                      <Link
-                        href="/portal/warehouse/inventory"
-                        onClick={() => { setActiveRole("Gudang (Warehouse)"); setRoleDropdownOpen(false); }}
-                        className="flex items-center justify-between px-3 py-2 rounded-lg text-xs hover:bg-accent-amber/20 text-slate-200 hover:text-accent-amber transition-colors"
-                      >
-                        <span>📦 Staf Gudang (Roll Barcode)</span>
-                        <span className="text-[10px] bg-accent-amber/30 px-1.5 py-0.5 rounded text-white">Internal</span>
-                      </Link>
-                      <Link
-                        href="/portal/dashboard"
-                        onClick={() => { setActiveRole("Admin (Enterprise Portal)"); setRoleDropdownOpen(false); }}
-                        className="flex items-center justify-between px-3 py-2 rounded-lg text-xs hover:bg-brand-500/20 text-slate-200 hover:text-brand-300 transition-colors font-semibold"
-                      >
-                        <span>⚡ Executive Portal & OMS</span>
-                        <span className="text-[10px] bg-brand-500/40 px-1.5 py-0.5 rounded text-white">Admin</span>
-                      </Link>
-                      <Link
-                        href="/portal/audit-logs"
-                        onClick={() => { setActiveRole("Keamanan & Audit"); setRoleDropdownOpen(false); }}
-                        className="flex items-center justify-between px-3 py-2 rounded-lg text-xs hover:bg-red-500/20 text-slate-200 hover:text-red-300 transition-colors"
-                      >
-                        <span>🛡️ Log Audit & Jejak 2FA</span>
-                        <span className="text-[10px] bg-red-500/30 px-1.5 py-0.5 rounded text-white">Security</span>
-                      </Link>
-                      <div className="my-1 border-t border-slate-800" />
-                      <Link
-                        href="/login"
-                        onClick={() => setRoleDropdownOpen(false)}
-                        className="flex items-center justify-between px-3 py-2 rounded-lg text-xs bg-brand-500/10 hover:bg-brand-500/20 text-brand-300 transition-colors font-semibold"
-                      >
-                        <span>🔐 Halaman Masuk / Login</span>
-                        <span className="text-[10px] text-brand-400">Auth</span>
-                      </Link>
-                    </motion.div>
+                        {/* Header Profil */}
+                        <div className="px-3 py-2.5 bg-slate-900 rounded-xl">
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-bold text-white truncate">{currentUser.name}</p>
+                            <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                              Online
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-400 truncate">{currentUser.email}</p>
+                          {currentUser.companyName && (
+                            <p className="text-[10px] text-brand-400 font-mono mt-0.5 truncate flex items-center gap-1">
+                              <Building2 className="w-3 h-3 shrink-0" />
+                              <span>{currentUser.companyName}</span>
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Menu Portal Utama */}
+                        <div className="py-1.5 space-y-0.5">
+                          <p className="px-3 pt-1 pb-0.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                            Portal & Pesanan
+                          </p>
+                          <Link
+                            href={currentUser.role === "CUSTOMER" ? "/customer/dashboard" : "/portal/dashboard"}
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 transition-colors group"
+                          >
+                            <div className="p-1.5 rounded-lg bg-brand-500/20 text-brand-300 group-hover:bg-brand-500 group-hover:text-slate-950 transition-colors">
+                              <ShieldCheck className="w-3.5 h-3.5" />
+                            </div>
+                            <div>
+                              <div className="font-semibold">{currentUser.role === "CUSTOMER" ? "Dashboard Mitra B2B" : "Portal Internal Pabrik"}</div>
+                              <div className="text-[10px] text-slate-400">Ringkasan SPK & status produksi</div>
+                            </div>
+                          </Link>
+
+                          <Link
+                            href="/track-order"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 transition-colors group"
+                          >
+                            <div className="p-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 group-hover:bg-cyan-500 group-hover:text-slate-950 transition-colors">
+                              <Sparkles className="w-3.5 h-3.5" />
+                            </div>
+                            <div>
+                              <div className="font-semibold">Lacak Pesanan Real-Time</div>
+                              <div className="text-[10px] text-slate-400">Pantau proses cetak & heatpress</div>
+                            </div>
+                          </Link>
+
+                          <Link
+                            href="/cart"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center justify-between px-3 py-2 rounded-xl text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 transition-colors group"
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <div className="p-1.5 rounded-lg bg-amber-500/20 text-amber-300 group-hover:bg-amber-500 group-hover:text-slate-950 transition-colors">
+                                <ShoppingCart className="w-3.5 h-3.5" />
+                              </div>
+                              <div>
+                                <div className="font-semibold">Keranjang Belanja</div>
+                                <div className="text-[10px] text-slate-400">Draf pesanan aktif</div>
+                              </div>
+                            </div>
+                            {cartItemCount > 0 && (
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black shadow-sm">
+                                {cartItemCount}
+                              </span>
+                            )}
+                          </Link>
+                        </div>
+
+                        {/* Layanan & Produksi */}
+                        <div className="py-1.5 space-y-0.5">
+                          <p className="px-3 pt-1 pb-0.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                            Layanan Texora
+                          </p>
+                          <Link
+                            href="/custom-sublimation"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 transition-colors"
+                          >
+                            <Palette className="w-3.5 h-3.5 text-accent-cyan" />
+                            <span>Studio Kustom Sublimasi 3D</span>
+                          </Link>
+
+                          <Link
+                            href="/catalog"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 transition-colors"
+                          >
+                            <Layers className="w-3.5 h-3.5 text-brand-300" />
+                            <span>Katalog Kain Sublimasi</span>
+                          </Link>
+
+                          <Link
+                            href="/contact"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 transition-colors"
+                          >
+                            <Building2 className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>Konsultasi PIC & Bantuan B2B</span>
+                          </Link>
+                        </div>
+
+                        {/* Logout */}
+                        <div className="pt-1">
+                          <button
+                            onClick={handleLogout}
+                            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors text-left font-medium"
+                          >
+                            <LogOut className="w-4 h-4" />
+                            <span>Keluar (Logout)</span>
+                          </button>
+                        </div>
+                      </motion.div>
+                    </>
                   )}
                 </AnimatePresence>
               </div>
+            ) : (
+              <Link
+                href="/login"
+                className="px-4 py-2 rounded-full bg-gradient-to-r from-brand-500 via-brand-400 to-brand-500 hover:from-brand-400 hover:to-brand-300 text-slate-950 font-bold text-xs shadow-lg shadow-brand-500/25 transition-all flex items-center gap-1.5 shrink-0"
+              >
+                <Lock className="w-3.5 h-3.5 text-slate-950" />
+                <span>Masuk Portal B2B</span>
+              </Link>
+            )}
 
-              <div className="h-4 w-px bg-white/10 my-auto mx-0.5" />
-
-              {/* Accent Theme Picker */}
-              <ThemeDropdown />
-            </div>
-
-            {/* Shopping Cart Button Capsule */}
-            <Link
-              href="/cart"
-              className="relative p-2.5 rounded-full bg-slate-900/60 hover:bg-slate-800/80 border border-white/10 text-slate-200 hover:text-white transition-all group shadow-lg shadow-black/20"
-            >
-              <ShoppingCart className="w-4 h-4 text-slate-300 group-hover:text-accent-cyan transition-colors" />
-              {cartCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 min-w-[1.35rem] h-[1.35rem] px-1 bg-gradient-to-r from-amber-500 to-brand-500 text-slate-950 text-[11px] font-extrabold rounded-full flex items-center justify-center leading-none shadow-md border border-slate-950">
-                  {cartCount}
-                </span>
-              )}
-            </Link>
-
-            {/* Direct Executive Portal Button */}
-            <Link
-              href="/portal/dashboard"
-              className="px-4 py-2 rounded-full bg-gradient-to-r from-brand-500 via-brand-400 to-brand-500 hover:from-brand-400 hover:to-brand-300 text-slate-950 font-bold text-xs shadow-lg shadow-brand-500/25 transition-all flex items-center gap-1.5 shrink-0"
-            >
-              <ShieldCheck className="w-4 h-4 text-slate-950" />
-              <span>Portal CRM & OMS</span>
-            </Link>
           </div>
 
           {/* Mobile menu button */}
           <div className="flex md:hidden items-center space-x-2">
             <ThemeDropdown compact />
-            <Link
-              href="/cart"
-              className="relative p-2 rounded-lg bg-slate-800 text-slate-200"
-            >
-              <ShoppingCart className="w-5 h-5" />
-              {cartCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 min-w-[1.25rem] h-[1.25rem] px-1 bg-gradient-to-r from-amber-500 to-brand-500 text-slate-950 text-[10px] font-extrabold rounded-full flex items-center justify-center leading-none shadow-md border border-slate-950">
-                  {cartCount}
-                </span>
-              )}
-            </Link>
+            {currentUser && (
+              <Link
+                href="/cart"
+                className="relative p-2 rounded-lg bg-slate-800 text-slate-200"
+                aria-label="Keranjang"
+              >
+                <ShoppingCart className="w-5 h-5" />
+                {cartItemCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[1.25rem] h-[1.25rem] px-1 bg-gradient-to-r from-amber-500 to-brand-500 text-slate-950 text-[10px] font-extrabold rounded-full flex items-center justify-center leading-none shadow-md border border-slate-950">
+                    {cartItemCount}
+                  </span>
+                )}
+              </Link>
+            )}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white transition-colors"
@@ -352,14 +511,53 @@ export function Navbar({ cartCount = 2 }: NavbarProps) {
                 </motion.div>
               );
             })}
-            <div className="pt-2 border-t border-slate-800 flex flex-col gap-2">
-              <Link
-                href="/portal/dashboard"
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full text-center py-2.5 rounded-xl bg-brand-600 text-white font-semibold text-sm shadow-lg shadow-brand-600/30"
-              >
-                Buka Internal Portal (CRM & OMS)
-              </Link>
+
+            <div className="pt-3 border-t border-slate-800 flex flex-col gap-2">
+              {currentUser ? (
+                <>
+                  <div className="px-3.5 py-2 rounded-xl bg-slate-800/60 border border-slate-700/60 text-xs">
+                    <p className="font-bold text-white truncate">{currentUser.name}</p>
+                    <p className="text-[11px] text-slate-400 truncate">{currentUser.email}</p>
+                  </div>
+                  <Link
+                    href={currentUser.role === "CUSTOMER" ? "/customer/dashboard" : "/portal/dashboard"}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="w-full text-center py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-sm shadow-lg shadow-brand-600/30"
+                  >
+                    {currentUser.role === "CUSTOMER" ? "Buka Dashboard Mitra" : "Buka Portal Internal"}
+                  </Link>
+                  <Link
+                    href="/cart"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-between px-3.5 py-2 rounded-xl text-xs text-slate-200 bg-slate-800/80 hover:bg-slate-800 transition-colors"
+                  >
+                    <span className="flex items-center gap-2">
+                      <ShoppingCart className="w-4 h-4 text-accent-cyan" />
+                      <span>Keranjang Belanja</span>
+                    </span>
+                    {cartItemCount > 0 && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                        {cartItemCount} item
+                      </span>
+                    )}
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-center py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 font-semibold text-xs border border-red-500/30"
+                  >
+                    Keluar (Logout)
+                  </button>
+                </>
+              ) : (
+                <Link
+                  href="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full text-center py-2.5 rounded-xl bg-gradient-to-r from-brand-500 via-brand-400 to-brand-500 hover:from-brand-400 hover:to-brand-300 text-slate-950 font-bold text-xs shadow-lg shadow-brand-500/25 flex items-center justify-center gap-1.5"
+                >
+                  <Lock className="w-3.5 h-3.5 text-slate-950" />
+                  <span>Masuk Portal B2B</span>
+                </Link>
+              )}
             </div>
           </motion.div>
         )}

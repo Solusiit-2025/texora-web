@@ -1,10 +1,12 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { MOCK_FABRICS } from "@/lib/mock-data";
 import { formatRupiah, formatNumber } from "@/lib/utils";
+import { FabricProduct } from "@/types";
+import { addToCart } from "@/lib/cart";
 import { 
   ArrowLeft, 
   Palette, 
@@ -16,7 +18,8 @@ import {
   HelpCircle,
   Truck,
   Layers,
-  FileCheck
+  FileCheck,
+  Lock
 } from "lucide-react";
 
 export default function FabricDetailPage() {
@@ -24,11 +27,45 @@ export default function FabricDetailPage() {
   const router = useRouter();
   const slug = params?.slug as string;
 
-  const fabric = MOCK_FABRICS.find((f) => f.slug === slug) || MOCK_FABRICS[0];
-  
-  const [selectedVariantId, setSelectedVariantId] = useState(fabric.variants[0]?.id || "");
+  const defaultFabric = MOCK_FABRICS.find((f) => f.slug === slug) || MOCK_FABRICS[0];
+  const [fabric, setFabric] = useState<FabricProduct>(defaultFabric);
+  const [selectedVariantId, setSelectedVariantId] = useState(defaultFabric.variants[0]?.id || "");
   const [orderMeters, setOrderMeters] = useState<number>(100);
   const [isAdded, setIsAdded] = useState(false);
+
+  // User session state
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string } | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.authenticated && data.user) {
+          setCurrentUser(data.user);
+        } else {
+          setCurrentUser(null);
+        }
+      })
+      .catch(() => setCurrentUser(null))
+      .finally(() => setAuthChecked(true));
+  }, []);
+
+  useEffect(() => {
+    if (!slug) return;
+    fetch(`/api/products?slug=${slug}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.success && data.data?.length > 0) {
+          const found = data.data[0];
+          setFabric(found);
+          if (found.variants?.length > 0) {
+            setSelectedVariantId(found.variants[0].id);
+          }
+        }
+      })
+      .catch((err) => console.warn("Using fallback mock fabric:", err));
+  }, [slug]);
 
   const selectedVariant = fabric.variants.find(v => v.id === selectedVariantId) || fabric.variants[0];
 
@@ -43,10 +80,23 @@ export default function FabricDetailPage() {
   const subtotal = activeTier.unitPrice * orderMeters;
 
   const handleAddToCart = () => {
+    if (!currentUser) {
+      router.push(`/login?redirect=${encodeURIComponent(`/catalog/${slug}`)}&reason=auth_required`);
+      return;
+    }
+
     setIsAdded(true);
+    addToCart({
+      fabricName: fabric.name,
+      gsm: selectedVariant?.gsm ?? 140,
+      widthInch: fabric.widthInch,
+      meters: orderMeters,
+      unitPrice: activeTier.unitPrice,
+      sublimationPrintFeePerMeter: 0,
+    });
     setTimeout(() => {
       router.push("/cart");
-    }, 800);
+    }, 600);
   };
 
   return (
@@ -205,7 +255,7 @@ export default function FabricDetailPage() {
               className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-brand-500"
             />
 
-            <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
+            <div className="pt-3 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <span className="text-xs text-slate-400 block">Total Subtotal Bahan:</span>
                 <span className="text-2xl font-black text-white font-mono">
@@ -216,25 +266,57 @@ export default function FabricDetailPage() {
                 </span>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={handleAddToCart}
-                  className="px-5 py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs shadow-lg transition-all flex items-center gap-2"
-                >
-                  <ShoppingCart className="w-4 h-4" />
-                  <span>{isAdded ? "Ditambahkan!" : "Pesan Bahan Saja"}</span>
-                </button>
+              {/* Action Buttons with B2B Auth Check */}
+              <div className="flex flex-col gap-2 shrink-0">
+                {currentUser ? (
+                  <>
+                    <button
+                      onClick={handleAddToCart}
+                      className="px-5 py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs shadow-lg transition-all flex items-center justify-center gap-2"
+                    >
+                      <ShoppingCart className="w-4 h-4" />
+                      <span>{isAdded ? "Ditambahkan!" : "Pesan Bahan Saja"}</span>
+                    </button>
 
-                <Link
-                  href={`/custom-sublimation?fabric=${fabric.id}&meters=${orderMeters}`}
-                  className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-accent-cyan border border-accent-cyan/40 font-bold text-xs transition-colors flex items-center justify-center gap-2"
-                >
-                  <Palette className="w-4 h-4" />
-                  <span>Cetak Desain Sublimasi</span>
-                </Link>
+                    <Link
+                      href={`/custom-sublimation?fabric=${fabric.id}&meters=${orderMeters}`}
+                      className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-accent-cyan border border-accent-cyan/40 font-bold text-xs transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Palette className="w-4 h-4" />
+                      <span>Cetak Desain Sublimasi</span>
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href={`/login?redirect=${encodeURIComponent(`/catalog/${slug}`)}&reason=auth_required`}
+                      className="px-5 py-3 rounded-xl bg-gradient-to-r from-brand-600 via-brand-500 to-amber-500 hover:brightness-110 text-slate-950 font-bold text-xs shadow-xl transition-all flex items-center justify-center gap-2"
+                    >
+                      <Lock className="w-4 h-4" />
+                      <span>Masuk Akun untuk Memesan</span>
+                    </Link>
+
+                    <Link
+                      href={`/login?redirect=${encodeURIComponent(`/custom-sublimation?fabric=${fabric.id}&meters=${orderMeters}`)}&reason=auth_required`}
+                      className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 font-semibold text-xs transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Palette className="w-4 h-4 text-brand-400" />
+                      <span>Masuk untuk Kustom Sublimasi</span>
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
+
+            {/* B2B Partner Information Note when not logged in */}
+            {authChecked && !currentUser && (
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-300 flex items-center gap-2">
+                <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>
+                  Kemitraan B2B: Masuk ke akun Anda untuk menerbitkan Surat Perintah Kerja (SPK), memesan roll kain, atau upload file desain sublimasi.
+                </span>
+              </div>
+            )}
 
           </div>
 

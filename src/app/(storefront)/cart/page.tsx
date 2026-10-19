@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatRupiah, formatNumber } from "@/lib/utils";
-import { loadCart, saveCart, type CartLineItem } from "@/lib/cart";
+import { loadCart, saveCart, clearCart, type CartLineItem } from "@/lib/cart";
 import { 
   Trash2, 
   ArrowRight, 
@@ -12,41 +12,34 @@ import {
   Palette, 
   ShieldCheck, 
   Truck,
-  CheckCircle2
+  CheckCircle2,
+  RotateCcw,
+  Sparkles
 } from "lucide-react";
 
-const DEFAULT_CART: CartLineItem[] = [
-  {
-    id: "cart-1",
-    fabricName: "Dryfit Milano Premium",
-    gsm: 135,
-    widthInch: 60,
-    meters: 100,
-    unitPrice: 32500,
-    sublimationPrintFeePerMeter: 18000,
-    customDesignTitle: "Phoenix_Esport_Jersey_AllOver_Pattern.ai",
-    customDesignDpi: 300,
-  },
-  {
-    id: "cart-2",
-    fabricName: "Voal Ultrafine Premium Hijab",
-    gsm: 85,
-    widthInch: 46,
-    meters: 50,
-    unitPrice: 28000,
-    sublimationPrintFeePerMeter: 18000,
-    customDesignTitle: "Monogram_Botanical_Hijab_Voal.tiff",
-    customDesignDpi: 240,
-  },
-];
-
 export default function CartPage() {
-  const [cartItems, setCartItems] = useState<CartLineItem[]>(DEFAULT_CART);
+  const [cartItems, setCartItems] = useState<CartLineItem[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string; email: string } | null>(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
-  // Muat isi keranjang tersimpan (termasuk item dari Kustom Sublimasi)
+  // Muat isi keranjang tersimpan & cek status login
   useEffect(() => {
     const saved = loadCart();
-    if (saved.length) setCartItems(saved);
+    setCartItems(saved);
+    setIsLoaded(true);
+
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.authenticated && data.user) {
+          setCurrentUser(data.user);
+        } else {
+          setCurrentUser(null);
+        }
+      })
+      .catch(() => setCurrentUser(null))
+      .finally(() => setIsCheckingAuth(false));
   }, []);
 
   const updateMeters = (id: string, newMeters: number) => {
@@ -65,36 +58,65 @@ export default function CartPage() {
     });
   };
 
-  const subtotal = cartItems.reduce((acc, item) => {
-    const itemTotal = (item.unitPrice + item.sublimationPrintFeePerMeter) * item.meters;
-    return acc + itemTotal;
+  const handleClearCart = () => {
+    if (confirm("Kosongkan semua item di keranjang belanja?")) {
+      clearCart();
+      setCartItems([]);
+    }
+  };
+
+  const totalFabricAndPrint = cartItems.reduce((acc, item) => {
+    return acc + (item.unitPrice + item.sublimationPrintFeePerMeter) * item.meters;
   }, 0);
 
+  const totalDesignFee = cartItems.reduce((acc, item) => {
+    return acc + (item.designServiceFee || 0);
+  }, 0);
+
+  const subtotal = totalFabricAndPrint + totalDesignFee;
   const taxPPN = Math.round(subtotal * 0.11);
-  const estimatedShipping = 250000; // Ekspedisi Kargo Roll Tekstil
+  const estimatedShipping = cartItems.length > 0 ? 250000 : 0; // Ekspedisi Kargo Roll Tekstil
   const grandTotal = subtotal + taxPPN + estimatedShipping;
 
   return (
     <div className="texora-container py-10 space-y-8">
       
       {/* Header */}
-      <div className="border-b border-slate-800 pb-4">
-        <h1 className="text-3xl font-extrabold text-white font-display">
-          Keranjang Belanja Kain & Sublimasi
-        </h1>
-        <p className="text-xs text-slate-400 mt-1">
-          Periksa rincian meter lari kain dan lampiran file artwork sebelum proses penerbitan Surat Perintah Kerja (SPK).
-        </p>
+      <div className="border-b border-slate-800 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold text-white font-display">
+            Keranjang Belanja Kain & Sublimasi
+          </h1>
+          <p className="text-xs text-slate-400 mt-1">
+            Periksa rincian meter lari kain dan lampiran file artwork sebelum proses penerbitan Surat Perintah Kerja (SPK).
+          </p>
+        </div>
+
+        {cartItems.length > 0 && (
+          <button
+            onClick={handleClearCart}
+            className="text-xs text-red-400 hover:text-red-300 transition-colors flex items-center gap-1.5 self-start sm:self-auto px-3.5 py-2 rounded-xl border border-red-500/20 hover:border-red-500/40 bg-red-500/10 font-semibold"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Kosongkan Keranjang</span>
+          </button>
+        )}
       </div>
 
-      {cartItems.length > 0 ? (
+      {!isLoaded ? (
+        <div className="py-20 flex flex-col items-center justify-center space-y-3">
+          <div className="w-8 h-8 rounded-full border-2 border-brand-500 border-t-transparent animate-spin" />
+          <p className="text-xs text-slate-400">Memuat isi keranjang belanja...</p>
+        </div>
+      ) : cartItems.length > 0 ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
           {/* Left: Items list */}
           <div className="lg:col-span-8 space-y-4">
             {cartItems.map((item) => {
               const totalCostPerMeter = item.unitPrice + item.sublimationPrintFeePerMeter;
-              const itemSubtotal = totalCostPerMeter * item.meters;
+              const designFee = item.designServiceFee || 0;
+              const itemSubtotal = totalCostPerMeter * item.meters + designFee;
 
               return (
                 <div
@@ -120,18 +142,42 @@ export default function CartPage() {
                     </button>
                   </div>
 
-                  {/* Custom Design Badge if attached */}
+                  {/* Jasa Desain Texora Badge & Brief if chosen */}
+                  {(item.designServiceType === "TEXORA_DESIGN_SERVICE" || designFee > 0) && (
+                    <div className="p-3 rounded-xl bg-brand-500/10 border border-brand-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-brand-400 shrink-0" />
+                        <div>
+                          <span className="text-brand-300 font-bold block text-xs">
+                            Jasa Desain Tim Texora (+{formatRupiah(designFee)})
+                          </span>
+                          {item.designNotes && (
+                            <span className="text-slate-300 text-[11px] block italic line-clamp-2 mt-0.5">
+                              Brief: &quot;{item.designNotes}&quot;
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <span className="px-2.5 py-0.5 rounded-full bg-brand-500/20 text-brand-300 font-mono text-[10px] font-bold border border-brand-500/30 shrink-0 self-start sm:self-center">
+                        2x Revisi Minor Termasuk
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Custom Design / Sample File Badge if attached */}
                   {item.customDesignTitle && (
-                    <div className="p-3 rounded-xl bg-slate-900/90 border border-brand-500/30 flex items-center justify-between text-xs">
+                    <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-700/60 flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2">
                         <Palette className="w-4 h-4 text-accent-cyan" />
                         <div>
-                          <span className="text-slate-400 block text-[10px] uppercase">File Artwork Dilampirkan:</span>
+                          <span className="text-slate-400 block text-[10px] uppercase">
+                            {item.designServiceType === "TEXORA_DESIGN_SERVICE" ? "Sampel Referensi Desain:" : "File Artwork Siap Cetak:"}
+                          </span>
                           <span className="font-semibold text-white font-mono">{item.customDesignTitle}</span>
                         </div>
                       </div>
                       <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[10px] font-bold">
-                        {item.customDesignDpi} DPI Ready
+                        {item.customDesignDpi || 300} DPI Ready
                       </span>
                     </div>
                   )}
@@ -188,8 +234,17 @@ export default function CartPage() {
               <div className="space-y-3 text-xs text-slate-300">
                 <div className="flex justify-between">
                   <span>Subtotal Kain & Cetak:</span>
-                  <span className="font-mono text-white font-semibold">{formatRupiah(subtotal)}</span>
+                  <span className="font-mono text-white font-semibold">{formatRupiah(totalFabricAndPrint)}</span>
                 </div>
+                {totalDesignFee > 0 && (
+                  <div className="flex justify-between text-brand-300 font-medium bg-brand-500/10 p-2 rounded-lg border border-brand-500/20">
+                    <span className="flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-brand-400" />
+                      <span>Jasa Desain Tim Texora:</span>
+                    </span>
+                    <span className="font-mono font-bold">{formatRupiah(totalDesignFee)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span>PPN 11% (Faktur Pajak):</span>
                   <span className="font-mono text-white font-semibold">{formatRupiah(taxPPN)}</span>
@@ -209,13 +264,44 @@ export default function CartPage() {
                 </span>
               </div>
 
-              <Link
-                href="/checkout"
-                className="w-full py-4 rounded-xl bg-gradient-to-r from-brand-600 to-accent-violet hover:from-brand-500 hover:to-accent-violet text-white font-bold text-xs shadow-xl transition-all flex items-center justify-center gap-2"
-              >
-                <span>Lanjut ke Formulir Checkout</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
+              {!isCheckingAuth && !currentUser && (
+                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200/90 space-y-1">
+                  <div className="font-semibold text-amber-300 flex items-center gap-1.5">
+                    <span>⚠️ Wajib Masuk Akun</span>
+                  </div>
+                  <p className="text-[11px] leading-relaxed">
+                    Penerbitan Surat Perintah Kerja (SPK) & invoice legal memerlukan akun pembeli terdaftar.
+                  </p>
+                </div>
+              )}
+
+              {!isCheckingAuth && currentUser && (
+                <div className="px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-300 flex items-center justify-between">
+                  <span className="flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Akun: <strong>{currentUser.name}</strong></span>
+                  </span>
+                  <span className="text-[10px] text-emerald-400/80">Siap Checkout</span>
+                </div>
+              )}
+
+              {currentUser ? (
+                <Link
+                  href="/checkout"
+                  className="w-full py-4 rounded-xl bg-gradient-to-r from-brand-600 to-accent-violet hover:from-brand-500 hover:to-accent-violet text-white font-bold text-xs shadow-xl transition-all flex items-center justify-center gap-2 group"
+                >
+                  <span>Lanjut ke Formulir Checkout</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              ) : (
+                <Link
+                  href="/login?redirect=/checkout&reason=auth_required"
+                  className="w-full py-4 rounded-xl bg-gradient-to-r from-amber-600 to-brand-600 hover:from-amber-500 hover:to-brand-500 text-white font-bold text-xs shadow-xl transition-all flex items-center justify-center gap-2"
+                >
+                  <span>Masuk untuk Lanjut Checkout</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              )}
 
               <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-[11px] text-slate-400 space-y-1">
                 <div className="font-semibold text-white flex items-center gap-1">

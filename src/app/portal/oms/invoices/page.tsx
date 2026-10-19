@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   FileText, 
@@ -41,7 +41,7 @@ export default function InvoicesCoreTaxPage() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [activeInvoice, setActiveInvoice] = useState<InvoiceItem | null>(null);
 
-  const invoices: InvoiceItem[] = [
+  const initialInvoices: InvoiceItem[] = [
     {
       id: "inv-001",
       invoiceNumber: "INV/TX/2026/10/0081",
@@ -103,6 +103,39 @@ export default function InvoicesCoreTaxPage() {
       status: "OVERDUE",
     },
   ];
+
+  const [invoices, setInvoices] = useState<InvoiceItem[]>(initialInvoices);
+
+  useEffect(() => {
+    fetch("/api/orders")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json?.success && Array.isArray(json.data) && json.data.length > 0) {
+          const liveInvoices: InvoiceItem[] = json.data.map((o: any, idx: number) => {
+            const dpp = Number(o.totalAmount || 0);
+            const vat = Number(o.taxAmount || Math.round(dpp * 0.11));
+            const num = (o.orderNumber || "").replace(/\D/g, "") || String(1000 + idx);
+            return {
+              id: `inv-${o.id}`,
+              invoiceNumber: `INV/TX/2026/10/${num.slice(-4).padStart(4, "0")}`,
+              orderNumber: o.orderNumber,
+              customerName: o.customerName || "Customer Texora",
+              companyName: o.customerCompany || "PT Mitra Texora",
+              taxId: "01.234.567.8-012.000",
+              issueDate: o.createdAt?.slice(0, 10) || "2026-10-01",
+              dueDate: "2026-11-01",
+              dppAmount: dpp,
+              vatAmount: vat,
+              totalAmount: dpp + vat,
+              fakturPajakNo: `010.002-26.8920${num.slice(-4).padStart(4, "0")}`,
+              status: o.paymentStatus === "PAID" ? "PAID" : "UNPAID",
+            };
+          });
+          setInvoices(liveInvoices);
+        }
+      })
+      .catch((err) => console.warn("Using offline invoice cache:", err));
+  }, []);
 
   const filteredInvoices = invoices.filter((inv) => {
     const matchesSearch = 

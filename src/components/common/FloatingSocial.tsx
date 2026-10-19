@@ -13,11 +13,11 @@ import {
   Sparkles,
   X
 } from "lucide-react";
-import { SOCIAL_LINKS } from "@/config/social";
+import { DEFAULT_SOCIAL_LINKS, type SocialLink } from "@/config/social";
 import { SOCIAL_BRAND, SOCIAL_ICONS } from "./SocialLinks";
 
 interface SocialChannelMeta {
-  id: "whatsapp" | "instagram" | "tiktok" | "youtube" | "facebook";
+  id: "whatsapp" | "instagram" | "tiktok" | "youtube" | "facebook" | "linkedin";
   title: string;
   handle: string;
   badge?: string;
@@ -39,7 +39,7 @@ const SOCIAL_META: Record<string, SocialChannelMeta> = {
   instagram: {
     id: "instagram",
     title: "Instagram",
-    handle: "@texoravisiprima",
+    handle: "@xora_hijab",
     description: "Koleksi Motif, Portofolio & Inspirasi",
     actionText: "Lihat Profil",
     gradientBg: "from-purple-600 via-pink-500 to-amber-400",
@@ -47,7 +47,7 @@ const SOCIAL_META: Record<string, SocialChannelMeta> = {
   tiktok: {
     id: "tiktok",
     title: "TikTok",
-    handle: "@texoravisiprima",
+    handle: "@xoramateria",
     description: "Video Proses Cetak Sublimasi Pabrik",
     actionText: "Tonton Video",
     gradientBg: "from-cyan-400 to-rose-500",
@@ -63,10 +63,18 @@ const SOCIAL_META: Record<string, SocialChannelMeta> = {
   facebook: {
     id: "facebook",
     title: "Facebook",
-    handle: "Texora Visi Prima",
+    handle: "Xora Materia",
     description: "Komunitas & Informasi Terkini Pabrik",
     actionText: "Kunjungi Halaman",
     gradientBg: "from-blue-600 to-indigo-600",
+  },
+  linkedin: {
+    id: "linkedin",
+    title: "LinkedIn",
+    handle: "Xora Materia",
+    description: "Profil Bisnis & Koneksi B2B",
+    actionText: "Lihat Profil",
+    gradientBg: "from-sky-500 to-blue-700",
   },
 };
 
@@ -75,6 +83,26 @@ export function FloatingSocial() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [links, setLinks] = useState<SocialLink[]>(DEFAULT_SOCIAL_LINKS);
+
+  // URL sosial dibaca dari database (bukan hardcode)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/social-links", { cache: "no-store" });
+        const json = await res.json();
+        if (!cancelled && json.success && Array.isArray(json.data) && json.data.length > 0) {
+          setLinks(json.data);
+        }
+      } catch {
+        // fallback default
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Read collapsed preference if stored
   useEffect(() => {
@@ -106,7 +134,7 @@ export function FloatingSocial() {
     }
   };
 
-  const whatsappLink = SOCIAL_LINKS.find((s) => s.id === "whatsapp");
+  const whatsappLink = links.find((s) => s.id === "whatsapp");
 
   return (
     <>
@@ -155,9 +183,14 @@ export function FloatingSocial() {
 
               {/* Social Channels List */}
               <div className="flex flex-col gap-1.5">
-                {SOCIAL_LINKS.map((s) => {
-                  const Icon = SOCIAL_ICONS[s.id];
-                  const brand = SOCIAL_BRAND[s.id];
+                {links.map((s) => {
+                  const Icon = SOCIAL_ICONS[s.id] || Share2;
+                  const brand = SOCIAL_BRAND[s.id] || {
+                    color: "#38BDF8",
+                    bg: "rgba(56,189,248,0.10)",
+                    border: "rgba(56,189,248,0.35)",
+                    glow: "rgba(56,189,248,0.40)",
+                  };
                   const meta = SOCIAL_META[s.id] || {
                     id: s.id,
                     title: s.label,
@@ -378,7 +411,7 @@ export function FloatingSocial() {
               </div>
 
               <div className="flex flex-col gap-1">
-                {SOCIAL_LINKS.map((s) => {
+                {links.map((s) => {
                   const Icon = SOCIAL_ICONS[s.id];
                   const meta = SOCIAL_META[s.id];
                   const isWhatsApp = s.id === "whatsapp";

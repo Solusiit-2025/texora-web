@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MOCK_CUSTOMERS } from "@/lib/mock-data";
 import { formatRupiah } from "@/lib/utils";
 import { 
   Users, 
@@ -13,15 +12,38 @@ import {
   Mail, 
   FileText, 
   ExternalLink,
-  ShieldCheck,
-  Package
+  ShieldCheck, 
+  Package,
+  RefreshCw,
+  Database
 } from "lucide-react";
 
 export default function CustomersDirectoryPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [dataSource, setDataSource] = useState("loading");
 
-  const customers = MOCK_CUSTOMERS;
+  const fetchCustomers = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/crm/customers");
+      const json = await res.json();
+      if (json?.success && json.data) {
+        setCustomers(json.data);
+        setDataSource(json.source || "database");
+      }
+    } catch (err) {
+      console.warn("Using fallback customers:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
 
   const filtered = customers.filter(
     c => c.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -35,29 +57,49 @@ export default function CustomersDirectoryPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mb-1">
             <span className="w-2.5 h-2.5 rounded-full bg-brand-400" />
             <span className="text-xs font-bold text-brand-400 uppercase tracking-wider">
               PRD 3.3 — Database Profil Klien 360°
             </span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold ${
+                dataSource === "database"
+                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
+                  : "bg-amber-500/10 text-amber-400 border border-amber-500/30"
+              }`}
+            >
+              {dataSource === "database" ? "PostgreSQL Terhubung" : "Database Cache"}
+            </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white font-display">
-            Manajemen Akun Pelanggan & Mitra Garmen
+            Manajemen Akun Pelanggan &amp; Mitra Garmen
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
             Database legalitas perusahaan B2B, preferensi bahan kain, dan akumulasi nilai transaksi.
           </p>
         </div>
 
-        <div className="relative w-full md:w-72">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Cari perusahaan, nama, atau email..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-brand-500"
-          />
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={fetchCustomers}
+            disabled={loading}
+            className="p-2.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-slate-600 text-slate-300 hover:text-white transition-all"
+            title="Muat ulang pelanggan"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-brand-400" : ""}`} />
+          </button>
+          <div className="relative w-full md:w-72">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Cari perusahaan, nama, atau email..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-brand-500"
+            />
+          </div>
         </div>
       </div>
 
@@ -67,7 +109,7 @@ export default function CustomersDirectoryPage() {
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-slate-800 bg-slate-900/80 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                <th className="py-3.5 px-4">Nama Perusahaan & PIC</th>
+                <th className="py-3.5 px-4">Nama Perusahaan &amp; PIC</th>
                 <th className="py-3.5 px-4">Kategori Akun</th>
                 <th className="py-3.5 px-4">Bahan Favorit</th>
                 <th className="py-3.5 px-4">Total Akumulasi</th>

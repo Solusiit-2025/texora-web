@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { MOCK_ORDERS } from "@/lib/mock-data";
 import { formatRupiah } from "@/lib/utils";
+import { Order } from "@/types";
 import { 
   ArrowLeft, 
   CheckCircle2, 
@@ -23,27 +23,80 @@ import {
   Building2,
   Calendar,
   Sparkles,
-  ExternalLink
+  ExternalLink,
+  RefreshCw,
+  Database
 } from "lucide-react";
 
 export default function OrderDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const orderId = (params?.id as string) || "ord-101";
+  const orderId = (params?.id as string) || "";
 
-  const order = MOCK_ORDERS.find((o) => o.id === orderId) || MOCK_ORDERS[0];
+  const [order, setOrder] = useState<Order | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const [proofStatus, setProofStatus] = useState<"PENDING" | "APPROVED" | "REVISION_REQUESTED">(
-    order.status === "PENDING_PAYMENT" || order.status === "CONFIRMED" ? "PENDING" : "APPROVED"
-  );
+  const [proofStatus, setProofStatus] = useState<"PENDING" | "APPROVED" | "REVISION_REQUESTED">("PENDING");
   const [revisionNotes, setRevisionNotes] = useState("");
   const [showRevisionModal, setShowRevisionModal] = useState(false);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
-  const handleApproveProof = () => {
+  useEffect(() => {
+    if (!orderId) {
+      setLoading(false);
+      return;
+    }
+    fetch(`/api/orders/${orderId}`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (json?.success && json.data) {
+          setOrder(json.data);
+          if (json.data.status === "PENDING_PAYMENT" || json.data.status === "CONFIRMED") {
+            setProofStatus("PENDING");
+          } else {
+            setProofStatus("APPROVED");
+          }
+        }
+      })
+      .catch((err) => console.warn("Failed to fetch order detail:", err))
+      .finally(() => setLoading(false));
+  }, [orderId]);
+
+  if (loading) {
+    return (
+      <div className="p-12 text-center text-slate-400">
+        <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+        <p className="text-xs">Memuat detail pesanan SPK...</p>
+      </div>
+    );
+  }
+
+  if (!order) {
+    return (
+      <div className="p-12 text-center text-slate-400 space-y-3">
+        <p className="text-sm text-white font-bold">Pesanan tidak ditemukan.</p>
+        <Link href="/portal/oms/orders" className="text-xs text-brand-400 hover:underline">
+          Kembali ke Daftar Pesanan
+        </Link>
+      </div>
+    );
+  }
+
+  const handleApproveProof = async () => {
     setProofStatus("APPROVED");
     setActionSuccess("Digital Proof berhasil disetujui. Perintah Kerja (SPK) diteruskan ke Mesin Cetak Sublimasi.");
     setTimeout(() => setActionSuccess(null), 4000);
+
+    try {
+      await fetch(`/api/orders/${order.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "IN_PRODUCTION" }),
+      });
+      setOrder((prev) => prev ? { ...prev, status: "IN_PRODUCTION" } : null);
+    } catch (err) {
+      console.warn("Failed to update status in DB:", err);
+    }
   };
 
   const handleRequestRevision = () => {
@@ -56,7 +109,7 @@ export default function OrderDetailPage() {
 
   const productionTimeline = [
     { title: "Pesanan Diterima & Verifikasi Pembayaran", date: order.createdAt, done: true },
-    { title: "Pemeriksaan File Desain & Layout Proofing", date: "2026-10-02 10:30", done: true },
+    { title: "Pemeriksaan File Desain & Layout Proofing", date: "Tahap Persiapan", done: true },
     { 
       title: "Digital Proof Approval (Customer)", 
       date: proofStatus === "APPROVED" ? "Disetujui • Siap Cetak" : "Menunggu Konfirmasi", 

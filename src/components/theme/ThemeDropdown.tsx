@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, ChevronDown, Palette } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
@@ -15,10 +15,32 @@ interface ThemeDropdownProps {
 export function ThemeDropdown({ compact = false }: ThemeDropdownProps) {
   const { theme, setTheme } = useTheme();
   const [open, setOpen] = useState(false);
+  const themeRef = useRef<HTMLDivElement>(null);
   const active = THEMES.find((t) => t.id === theme) ?? THEMES[0];
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (themeRef.current && !themeRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("touchstart", handleClickOutside);
+      document.addEventListener("keydown", handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
+
   return (
-    <div className="relative">
+    <div className="relative" ref={themeRef}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -48,7 +70,7 @@ export function ThemeDropdown({ compact = false }: ThemeDropdownProps) {
         {open && (
           <>
             <div
-              className="fixed inset-0 z-40 cursor-default"
+              className="fixed inset-0 z-[998] cursor-default bg-black/40 backdrop-blur-[2px]"
               onClick={() => setOpen(false)}
               aria-hidden="true"
             />
@@ -57,7 +79,8 @@ export function ThemeDropdown({ compact = false }: ThemeDropdownProps) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -6 }}
               transition={{ duration: 0.18, ease: "easeOut" }}
-              className="absolute right-0 mt-2 w-64 rounded-2xl bg-slate-900/95 border border-slate-700 shadow-2xl p-2 z-50 backdrop-blur-2xl"
+              style={{ backgroundColor: "#0f172a" }}
+              className="absolute right-0 mt-2 w-64 rounded-2xl bg-slate-900 border border-slate-700 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] p-2 z-[999] isolate"
               role="listbox"
               aria-label="Pilih thema warna"
             >

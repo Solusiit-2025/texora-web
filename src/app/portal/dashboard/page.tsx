@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { MOCK_ORDERS, MOCK_LEADS } from "@/lib/mock-data";
+import { useState, useEffect } from "react";
+import RbacDemoSwitcher from "@/components/portal/RbacDemoSwitcher";
 import { formatRupiah } from "@/lib/utils";
 import { LeadStage } from "@/types";
 import {
@@ -121,14 +121,46 @@ function SectionHeader({
 export default function PortalDashboard() {
   const [period, setPeriod] = useState<Period>("BULAN_INI");
 
-  const totalPipelineValue = MOCK_LEADS.reduce((acc, l) => acc + l.estimatedValue, 0);
-  const productionOrders = MOCK_ORDERS.filter(
+  const [orders, setOrders] = useState<any[]>([]);
+  const [leads, setLeads] = useState<any[]>([]);
+  const [customerCount, setCustomerCount] = useState<number>(0);
+  const [inventoryCount, setInventoryCount] = useState<number>(184);
+  const [productsCount, setProductsCount] = useState<number>(18);
+
+  useEffect(() => {
+    Promise.allSettled([
+      fetch("/api/orders").then((r) => r.json()),
+      fetch("/api/crm/leads").then((r) => r.json()),
+      fetch("/api/crm/customers").then((r) => r.json()),
+      fetch("/api/warehouse/inventory").then((r) => r.json()),
+      fetch("/api/products").then((r) => r.json()),
+    ]).then(([ordersRes, leadsRes, custRes, invRes, prodRes]) => {
+      if (ordersRes.status === "fulfilled" && ordersRes.value?.success && Array.isArray(ordersRes.value.data)) {
+        setOrders(ordersRes.value.data);
+      }
+      if (leadsRes.status === "fulfilled" && leadsRes.value?.success && Array.isArray(leadsRes.value.data)) {
+        setLeads(leadsRes.value.data);
+      }
+      if (custRes.status === "fulfilled" && custRes.value?.success && Array.isArray(custRes.value.data)) {
+        setCustomerCount(custRes.value.data.length);
+      }
+      if (invRes.status === "fulfilled" && invRes.value?.success && Array.isArray(invRes.value.data)) {
+        setInventoryCount(invRes.value.data.length);
+      }
+      if (prodRes.status === "fulfilled" && prodRes.value?.success && Array.isArray(prodRes.value.data)) {
+        setProductsCount(prodRes.value.data.length);
+      }
+    });
+  }, []);
+
+  const totalPipelineValue = leads.reduce((acc, l) => acc + (Number(l.estimatedValue) || 0), 0);
+  const productionOrders = orders.filter(
     (o) => o.status === "IN_PRODUCTION" || o.status === "QUALITY_CONTROL"
   );
   const stageCounts = STAGE_META.map((s) => ({
     ...s,
-    count: MOCK_LEADS.filter((l) => l.stage === s.key).length,
-    value: MOCK_LEADS.filter((l) => l.stage === s.key).reduce((a, l) => a + l.estimatedValue, 0),
+    count: leads.filter((l) => l.stage === s.key).length,
+    value: leads.filter((l) => l.stage === s.key).reduce((a, l) => a + (Number(l.estimatedValue) || 0), 0),
   }));
   const maxStage = Math.max(1, ...stageCounts.map((s) => s.count));
   const maxRevenue = Math.max(...REVENUE_TREND.map((r) => r.v));
@@ -146,8 +178,8 @@ export default function PortalDashboard() {
         { name: "Social Listening", href: "/portal/social-media", icon: MessagesSquare, stat: "12", note: "prospek baru hari ini", color: "text-violet-400" },
         { name: "WhatsApp CRM", href: "/portal/crm/inbox", icon: MessageCircle, stat: "8", note: "chat belum dibalas", color: "text-emerald-400" },
         { name: "Webmail Sales", href: "/portal/crm/webmail", icon: Mail, stat: "5", note: "email & SPH masuk", color: "text-brand-400" },
-        { name: "Pipeline Leads", href: "/portal/crm/leads", icon: TrendingUp, stat: String(MOCK_LEADS.length), note: "deal aktif di kanban", color: "text-cyan-400" },
-        { name: "Pelanggan 360°", href: "/portal/crm/customers", icon: Users, stat: "412", note: "mitra B2B terdaftar", color: "text-sky-400" },
+        { name: "Pipeline Leads", href: "/portal/crm/leads", icon: TrendingUp, stat: String(leads.length), note: "deal aktif di kanban", color: "text-cyan-400" },
+        { name: "Pelanggan 360°", href: "/portal/crm/customers", icon: Users, stat: String(customerCount), note: "mitra B2B terdaftar", color: "text-sky-400" },
         { name: "Rekap Penjualan", href: "/portal/sales-report", icon: BarChart3, stat: "+18%", note: "growth vs bulan lalu", color: "text-emerald-400" },
       ],
     },
@@ -155,7 +187,7 @@ export default function PortalDashboard() {
       group: "OMS & Produksi",
       accent: "from-cyan-500/20 to-sky-500/10 border-cyan-500/30",
       items: [
-        { name: "Antrean SPK", href: "/portal/oms/orders", icon: ClipboardList, stat: String(productionOrders.length || 6), note: "SPK sedang diproduksi", color: "text-cyan-400" },
+        { name: "Antrean SPK", href: "/portal/oms/orders", icon: ClipboardList, stat: String(productionOrders.length), note: "SPK sedang diproduksi", color: "text-cyan-400" },
         { name: "Digital Proof", href: "/portal/oms/custom-orders", icon: FileCheck, stat: "3", note: "menunggu approval", color: "text-amber-400" },
         { name: "Faktur & CoreTax", href: "/portal/oms/invoices", icon: FileText, stat: "24", note: "faktur PPN bulan ini", color: "text-brand-400" },
       ],
@@ -164,7 +196,7 @@ export default function PortalDashboard() {
       group: "Gudang & Logistik",
       accent: "from-amber-500/20 to-orange-500/10 border-amber-500/30",
       items: [
-        { name: "Stok Roll & Barcode", href: "/portal/warehouse/inventory", icon: Barcode, stat: "184", note: "roll aktif • 21.500 m", color: "text-amber-400" },
+        { name: "Stok Roll & Barcode", href: "/portal/warehouse/inventory", icon: Barcode, stat: String(inventoryCount), note: "roll aktif • 21.500 m", color: "text-amber-400" },
         { name: "Cutting & Ekspedisi", href: "/portal/warehouse/fulfillment", icon: Scissors, stat: "9", note: "paket siap kirim", color: "text-orange-400" },
       ],
     },
@@ -180,7 +212,7 @@ export default function PortalDashboard() {
       group: "Katalog & Sistem",
       accent: "from-slate-500/20 to-slate-700/10 border-slate-600/40",
       items: [
-        { name: "Katalog & Pricing", href: "/portal/catalog-management", icon: Sliders, stat: "18", note: "jenis kain aktif", color: "text-slate-300" },
+        { name: "Katalog & Pricing", href: "/portal/catalog-management", icon: Sliders, stat: String(productsCount), note: "jenis kain aktif", color: "text-slate-300" },
         { name: "Audit & 2FA", href: "/portal/audit-logs", icon: ShieldAlert, stat: "0", note: "insiden keamanan", color: "text-emerald-400" },
         { name: "Sistem & RBAC", href: "/portal/settings", icon: Settings, stat: "4", note: "role pengguna", color: "text-slate-300" },
       ],
@@ -243,6 +275,9 @@ export default function PortalDashboard() {
         </div>
       </div>
 
+      {/* ── RBAC INTERNAL TESTING SUITE & ROLE SWITCHER ───────────── */}
+      <RbacDemoSwitcher />
+
       {/* ── RINGKASAN BAHASA SEDERHANA ─────────────────────────── */}
       <div className="rounded-2xl border border-brand-500/30 bg-gradient-to-r from-brand-600/15 via-slate-900/60 to-emerald-600/10 p-4 sm:p-5">
         <div className="text-[11px] font-bold uppercase tracking-wider text-brand-300 mb-2.5">
@@ -273,7 +308,7 @@ export default function PortalDashboard() {
         {[
           { label: "Omzet Penjualan", value: formatRupiah(omzet), sub: "+18,4% vs periode lalu", up: true, icon: TrendingUp, tone: "emerald", href: "/portal/sales-report" },
           { label: "Laba Bersih", value: formatRupiah(labaBersih), sub: "Margin 18,4%", up: true, icon: Landmark, tone: "emerald", href: "/portal/finance" },
-          { label: "Nilai Pipeline CRM", value: formatRupiah(totalPipelineValue), sub: `${MOCK_LEADS.length} deal aktif`, up: true, icon: Users, tone: "brand", href: "/portal/crm/leads" },
+          { label: "Nilai Pipeline CRM", value: formatRupiah(totalPipelineValue), sub: `${leads.length} deal aktif`, up: true, icon: Users, tone: "brand", href: "/portal/crm/leads" },
           { label: "Kas & Bank", value: formatRupiah(642_500_000), sub: "BCA + Mandiri", up: true, icon: Wallet, tone: "cyan", href: "/portal/finance" },
           { label: "Meter Terproduksi", value: "14.850 m", sub: "Kapasitas mesin 65%", up: true, icon: Cpu, tone: "cyan", href: "/portal/oms/orders" },
           { label: "Piutang B2B (AR)", value: formatRupiah(284_000_000), sub: "Rp 28 jt > 60 hari", up: false, icon: Clock, tone: "amber", href: "/portal/finance" },
@@ -456,7 +491,7 @@ export default function PortalDashboard() {
           />
 
           <div className="space-y-3">
-            {productionOrders.slice(0, 3).map((order) => (
+            {productionOrders.slice(0, 3).map((order: any) => (
               <div key={order.id} className="p-4 rounded-xl glass-panel border border-slate-800 hover:border-slate-700 transition-colors space-y-2.5 min-w-0">
                 <div className="flex flex-col min-[520px]:flex-row min-[520px]:items-center justify-between gap-2 border-b border-slate-800/80 pb-2">
                   <div className="min-w-0 truncate">
@@ -464,10 +499,10 @@ export default function PortalDashboard() {
                     <span className="text-xs text-slate-400 ml-2">— {order.customerCompany}</span>
                   </div>
                   <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-accent-cyan/15 text-accent-cyan border border-accent-cyan/30 self-start min-[520px]:self-auto whitespace-nowrap">
-                    {order.status.replace("_", " ")}
+                    {(order.status || "").replace("_", " ")}
                   </span>
                 </div>
-                {order.items.map((item) => (
+                {(order.items || []).map((item: any) => (
                   <div key={item.id} className="flex justify-between gap-2 text-xs text-slate-300">
                     <span className="truncate">• {item.fabricName} ({item.gsm} GSM)</span>
                     <span className="font-mono font-bold text-white shrink-0">{item.lengthMeters} m</span>

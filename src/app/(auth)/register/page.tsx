@@ -1,24 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { 
-  Layers, 
   Building2, 
   Mail, 
   Lock, 
   Phone, 
   FileText, 
   ArrowRight, 
-  ShieldCheck, 
   Sparkles,
   ChevronRight,
-  CheckCircle2
+  CheckCircle2,
+  AlertCircle
 } from "lucide-react";
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectQuery = searchParams.get("redirect") || "";
+
   const [formData, setFormData] = useState({
     fullName: "",
     companyName: "",
@@ -29,7 +31,9 @@ export default function RegisterPage() {
     password: "",
     acceptTerms: true,
   });
+
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
 
   const businessCategories = [
@@ -40,17 +44,37 @@ export default function RegisterPage() {
     { id: "DECOR", label: "Home Decor & Kanvas Sublimasi" },
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setErrorMessage(null);
 
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setErrorMessage(data.error || "Gagal mendaftarkan akun. Periksa kembali kelengkapan data.");
+        setIsSubmitting(false);
+        return;
+      }
+
       setIsSuccess(true);
+
+      const targetUrl = redirectQuery || data.redirectTo || "/customer/dashboard";
       setTimeout(() => {
-        router.push("/customer/dashboard");
-      }, 1500);
-    }, 1000);
+        router.push(targetUrl);
+        router.refresh();
+      }, 1200);
+    } catch {
+      setErrorMessage("Tidak dapat terhubung ke server pendaftaran. Pastikan jaringan internet aktif.");
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -72,7 +96,7 @@ export default function RegisterPage() {
           </div>
         </Link>
         <Link 
-          href="/login" 
+          href={redirectQuery ? `/login?redirect=${encodeURIComponent(redirectQuery)}` : "/login"} 
           className="text-xs text-slate-400 hover:text-brand-400 transition-colors flex items-center gap-1.5"
         >
           <span>Sudah punya akun? Masuk</span>
@@ -82,7 +106,7 @@ export default function RegisterPage() {
 
       {/* Main Registration Card */}
       <div className="max-w-3xl mx-auto w-full my-8">
-        <div className="glass-panel p-6 sm:p-10 rounded-3xl border border-brand-500/20 shadow-2xl">
+        <div className="glass-panel p-6 sm:p-10 rounded-3xl border border-brand-500/20 shadow-2xl relative overflow-hidden backdrop-blur-xl">
           
           {isSuccess ? (
             <div className="text-center py-12 space-y-4">
@@ -93,12 +117,15 @@ export default function RegisterPage() {
                 Akun Bisnis Berhasil Didaftarkan!
               </h2>
               <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
-                Selamat datang di ekosistem kemitraan PT. Texora Visi Prima. Anda akan dialihkan langsung ke Customer Self-Service Portal.
+                Selamat datang di ekosistem kemitraan PT. Texora Visi Prima. Anda akan dialihkan secara otomatis ke portal layanan mandiri.
               </p>
+              <div className="pt-2">
+                <div className="w-6 h-6 border-2 border-brand-400 border-t-transparent rounded-full animate-spin mx-auto" />
+              </div>
             </div>
           ) : (
             <div>
-              <div className="mb-8">
+              <div className="mb-6">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-400 text-xs font-semibold mb-3">
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>Program Kemitraan Industri Tekstil B2B</span>
@@ -107,11 +134,32 @@ export default function RegisterPage() {
                   Daftarkan Perusahaan / Brand Anda
                 </h1>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Dapatkan akses ke harga bertingkat pabrik (tiered pricing), fasilitas upload digital proof resolusi tinggi, dan pengiriman roll bergaransi.
+                  Dapatkan akses ke harga bertingkat pabrik (tiered pricing), fasilitas upload digital proof resolusi tinggi, dan pengiriman kargo roll bergaransi.
                 </p>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Context notification if redirected */}
+              {redirectQuery && (
+                <div className="mb-5 p-3.5 bg-amber-500/10 border border-amber-500/30 text-amber-300 rounded-xl text-xs flex items-start gap-2.5">
+                  <Lock className="w-4 h-4 shrink-0 text-amber-400 mt-0.5" />
+                  <div>
+                    <span className="font-bold block">Registrasi Diperlukan</span>
+                    <span className="text-[11px] text-amber-200/80 leading-relaxed block mt-0.5">
+                      Daftarkan akun kemitraan Anda untuk melanjutkan proses transaksi atau studio custom sublimasi yang sedang Anda akses.
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Error Alert */}
+              {errorMessage && (
+                <div className="mb-5 p-3.5 bg-rose-500/10 border border-rose-500/30 text-rose-300 rounded-xl text-xs flex items-start gap-2.5 animate-in fade-in slide-in-from-top-1">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
+                  <span>{errorMessage}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-4">
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
@@ -158,7 +206,7 @@ export default function RegisterPage() {
                         required
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        placeholder="rian@pratamasport.com"
+                        placeholder="nama@perusahaan.com"
                         className="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl py-2.5 pl-10 pr-3.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-all"
                       />
                     </div>
@@ -228,7 +276,7 @@ export default function RegisterPage() {
                       required
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      placeholder="Minimal 8 karakter kombinasi huruf dan angka"
+                      placeholder="Minimal 8 karakter"
                       className="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl py-2.5 pl-10 pr-3.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-all"
                     />
                   </div>
@@ -254,7 +302,7 @@ export default function RegisterPage() {
                   className="w-full py-3.5 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-400 hover:to-brand-500 text-slate-950 font-bold text-xs shadow-lg shadow-brand-500/20 transition-all flex items-center justify-center gap-2 group disabled:opacity-50"
                 >
                   {isSubmitting ? (
-                    <span>Memproses Pendaftaran...</span>
+                    <span>Mendaftarkan Akun Kemitraan...</span>
                   ) : (
                     <>
                       <span>Daftarkan Akun Kemitraan B2B</span>
@@ -274,5 +322,17 @@ export default function RegisterPage() {
         © {new Date().getFullYear()} PT. Texora Visi Prima. CS & WhatsApp: +62 878-8985-6066 / admin@texoraprima.com
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-brand-500 border-t-transparent animate-spin" />
+      </div>
+    }>
+      <RegisterForm />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   Barcode, 
@@ -40,7 +40,7 @@ export default function WarehouseFulfillmentPage() {
   const [scanInput, setScanInput] = useState("");
   const [scanFeedback, setScanFeedback] = useState<string | null>(null);
 
-  const [tasks, setTasks] = useState<FulfillmentTask[]>([
+  const initialTasks: FulfillmentTask[] = [
     {
       id: "ful-1",
       orderNumber: "TEX-202610-001",
@@ -82,7 +82,56 @@ export default function WarehouseFulfillmentPage() {
       courier: "Indah Logistik Cargo",
       stage: "READY_TO_CUT",
     },
-  ]);
+  ];
+
+  const [tasks, setTasks] = useState<FulfillmentTask[]>(initialTasks);
+
+  useEffect(() => {
+    fetch("/api/orders")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json?.success && Array.isArray(json.data) && json.data.length > 0) {
+          const liveTasks: FulfillmentTask[] = [];
+          json.data.forEach((o: any, idx: number) => {
+            (o.items || []).forEach((it: any, itIdx: number) => {
+              const stages: FulfillmentTask["stage"][] = [
+                "READY_TO_CUT",
+                "CUTTING_IN_PROGRESS",
+                "PACKED_WATERPROOF",
+                "DISPATCHED",
+              ];
+              const assignedStage: FulfillmentTask["stage"] =
+                o.status === "COMPLETED" || o.status === "SHIPPED"
+                  ? "DISPATCHED"
+                  : o.status === "QUALITY_CONTROL"
+                  ? "PACKED_WATERPROOF"
+                  : o.status === "IN_PRODUCTION"
+                  ? "CUTTING_IN_PROGRESS"
+                  : "READY_TO_CUT";
+
+              liveTasks.push({
+                id: `ful-${o.id}-${itIdx}`,
+                orderNumber: o.orderNumber,
+                customerCompany: o.customerCompany || "PT Mitra Texora",
+                fabricName: it.fabricName || "Dryfit Milano Premium",
+                gsm: it.gsm || 135,
+                lengthMeters: Number(it.lengthMeters) || 100,
+                allocatedRollBatch: `BATCH-2610-ROLL-${String(idx + 1).padStart(2, "0")}`,
+                cuttingTable: `Meja Potong Industri #${(itIdx % 3) + 1}`,
+                packagingType: "Plastic Shrink Heavy Duty + Karung PP",
+                courier: idx % 2 === 0 ? "Armada Texora Fleet" : "JNE Trucking Cargo",
+                trackingNo: o.trackingNumber || (assignedStage === "DISPATCHED" ? `EXP-TX-${1000 + idx}` : undefined),
+                stage: assignedStage,
+              });
+            });
+          });
+          if (liveTasks.length > 0) {
+            setTasks(liveTasks);
+          }
+        }
+      })
+      .catch((err) => console.warn("Using offline fulfillment tasks:", err));
+  }, []);
 
   const handleSimulateScan = (e: React.FormEvent) => {
     e.preventDefault();

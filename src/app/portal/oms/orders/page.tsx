@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { MOCK_ORDERS } from "@/lib/mock-data";
+import { useState, useEffect } from "react";
 import { Order, OrderStatus } from "@/types";
 import { formatRupiah } from "@/lib/utils";
 import { 
@@ -14,24 +13,60 @@ import {
   Filter, 
   Eye, 
   Download,
-  Palette
+  Palette,
+  RefreshCw,
+  Database
 } from "lucide-react";
 
 export default function OmsOrdersPage() {
-  const [orders, setOrders] = useState<Order[]>(MOCK_ORDERS);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [dataSource, setDataSource] = useState("loading");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/orders");
+      const json = await res.json();
+      if (json.success && json.data) {
+        setOrders(json.data);
+        setDataSource(json.source || "database");
+      }
+    } catch (err) {
+      console.warn("Failed to fetch live orders:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
 
   const filteredOrders = statusFilter === "ALL" 
     ? orders 
     : orders.filter(o => o.status === statusFilter);
 
-  const updateOrderStatus = (orderId: string, newStatus: OrderStatus) => {
+  const updateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
+    // Optimistic UI update
     setOrders(prev =>
       prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o)
     );
     if (selectedOrder && selectedOrder.id === orderId) {
       setSelectedOrder(prev => prev ? { ...prev, status: newStatus } : null);
+    }
+
+    // Persist to PostgreSQL database
+    try {
+      await fetch(`/api/orders/${orderId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+    } catch (err) {
+      console.error("Failed to update order status in DB:", err);
     }
   };
 

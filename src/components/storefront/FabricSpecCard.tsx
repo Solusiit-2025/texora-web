@@ -26,7 +26,7 @@ export function FabricSpecCard({ fabric, index = 0 }: { fabric: FabricProduct; i
       onHoverEnd={() => setHovered(false)}
       onFocus={() => setHovered(true)}
       onBlur={() => setHovered(false)}
-      className="group relative flex flex-col overflow-hidden rounded-organic border border-brand-500/20 bg-ink hover:border-brand-500/60 transition-colors"
+      className="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60 shadow-lg shadow-black/20 transition-all duration-300 hover:-translate-y-1 hover:border-brand-500/50 hover:shadow-2xl hover:shadow-brand-500/10"
     >
       <div className="relative aspect-[4/3] overflow-hidden">
         <motion.img
@@ -38,7 +38,7 @@ export function FabricSpecCard({ fabric, index = 0 }: { fabric: FabricProduct; i
           className="h-full w-full object-cover"
         />
 
-        <div className="absolute left-4 top-4 text-[10px] uppercase tracking-[0.2em] text-brand-200 bg-ink/80 px-2 py-1 border border-brand-500/30">
+        <div className="absolute left-4 top-4 rounded-full text-[10px] font-semibold uppercase tracking-[0.16em] text-white bg-black/50 backdrop-blur-md px-3 py-1 border border-white/15">
           {fabric.category}
         </div>
 
@@ -56,7 +56,7 @@ export function FabricSpecCard({ fabric, index = 0 }: { fabric: FabricProduct; i
                 animate={{ y: 0 }}
                 exit={{ y: 16 }}
                 transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                className="grid w-full grid-cols-3 gap-px bg-brand-500/30 border border-brand-500/40"
+                className="grid w-full grid-cols-3 gap-px overflow-hidden rounded-xl bg-brand-500/30 border border-brand-500/40"
               >
                 {[
                   { k: "Gramatur", v: `${variant?.gsm} GSM` },
@@ -92,7 +92,7 @@ export function FabricSpecCard({ fabric, index = 0 }: { fabric: FabricProduct; i
           </div>
           <Link
             href={`/catalog/${fabric.slug}`}
-            className="inline-flex items-center gap-1 text-xs font-semibold text-alabaster hover:text-brand-300 transition-colors"
+            className="inline-flex items-center gap-1 rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-alabaster transition-all group-hover:border-brand-500 group-hover:bg-brand-500 group-hover:text-ink"
             aria-label={`Lihat detail ${fabric.name}`}
           >
             Detail <ArrowUpRight className="h-3.5 w-3.5" />

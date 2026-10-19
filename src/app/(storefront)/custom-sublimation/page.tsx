@@ -25,9 +25,55 @@ import {
 export default function CustomSublimationPage() {
   const router = useRouter();
 
-  // Selected Fabric & Variant
+  // Authentication Guard State
+  const [authChecked, setAuthChecked] = useState(false);
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string; email: string; role?: string } | null>(null);
+
+  // Dynamic Fabrics from database API
+  const [fabrics, setFabrics] = useState(MOCK_FABRICS);
   const [selectedFabricId, setSelectedFabricId] = useState(MOCK_FABRICS[0].id);
-  const activeFabric = MOCK_FABRICS.find(f => f.id === selectedFabricId) || MOCK_FABRICS[0];
+
+  // Verifikasi otentikasi pengguna
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data.authenticated || !data.user) {
+          const currentUrl = typeof window !== "undefined" 
+            ? window.location.pathname + window.location.search 
+            : "/custom-sublimation";
+          router.push(`/login?redirect=${encodeURIComponent(currentUrl)}&reason=auth_required`);
+          return;
+        }
+        setCurrentUser(data.user);
+        setAuthChecked(true);
+      })
+      .catch(() => {
+        const currentUrl = typeof window !== "undefined" 
+          ? window.location.pathname + window.location.search 
+          : "/custom-sublimation";
+        router.push(`/login?redirect=${encodeURIComponent(currentUrl)}&reason=auth_required`);
+      });
+  }, [router]);
+
+  useEffect(() => {
+    fetch("/api/products")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json?.success && Array.isArray(json.data) && json.data.length > 0) {
+          setFabrics(json.data);
+          const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+          const urlFabric = params?.get("fabric");
+          const targetId = urlFabric || selectedFabricId;
+          if (json.data.some((f: any) => f.id === targetId)) {
+            setSelectedFabricId(targetId);
+          }
+        }
+      })
+      .catch((err) => console.warn("Using offline fabric catalog:", err));
+  }, [selectedFabricId]);
+
+  const activeFabric = fabrics.find(f => f.id === selectedFabricId) || fabrics[0];
 
   // Uploaded artwork state
   const [artworkFile, setArtworkFile] = useState<{
@@ -53,8 +99,30 @@ export default function CustomSublimationPage() {
   const [proofApproved, setProofApproved] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  // Sublimation service fee per meter
-  const SUBLIMATION_PRINT_FEE_PER_METER = 18000;
+  // Dynamic Pricing from Management CMS Settings
+  const [pricingConfig, setPricingConfig] = useState({
+    designServiceFee: 150000,
+    sublimationPrintFee: 18000,
+    designServiceTitle: "Jasa Desain Grafis & Pattern Repeat Texora",
+    designServiceDescription: "Pola seamless repeat vector, penyesuaian skala motif, dan 2x revisi minor",
+    revisionPolicy: "Termasuk 2x revisi minor & digital 3D proofing mockup sebelum naik mesin cetak.",
+  });
+
+  // Opsi Sumber Desain (Desain Sendiri vs Jasa Desain Texora)
+  const [designOption, setDesignOption] = useState<"CUSTOMER_FILE" | "TEXORA_DESIGN_SERVICE">("CUSTOMER_FILE");
+  const [designNotes, setDesignNotes] = useState<string>("");
+
+  // Muat tarif realtime yang diatur oleh management via CMS
+  useEffect(() => {
+    fetch("/api/settings/pricing")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json?.success && json.data) {
+          setPricingConfig(json.data);
+        }
+      })
+      .catch((err) => console.warn("Using default pricing settings:", err));
+  }, []);
 
   // Active fabric tier price
   const activeTier = activeFabric.priceTiers.find((tier) => {
@@ -65,8 +133,9 @@ export default function CustomSublimationPage() {
   }) || activeFabric.priceTiers[0];
 
   const fabricCostTotal = activeTier.unitPrice * requiredMeters;
-  const printingCostTotal = SUBLIMATION_PRINT_FEE_PER_METER * requiredMeters;
-  const grandTotal = fabricCostTotal + printingCostTotal;
+  const printingCostTotal = pricingConfig.sublimationPrintFee * requiredMeters;
+  const designFeeTotal = designOption === "TEXORA_DESIGN_SERVICE" ? pricingConfig.designServiceFee : 0;
+  const grandTotal = fabricCostTotal + printingCostTotal + designFeeTotal;
 
   // Mock upload trigger
   const handleSimulateUpload = (sampleIndex: number) => {
@@ -113,14 +182,31 @@ export default function CustomSublimationPage() {
       widthInch: activeFabric.widthInch,
       meters: requiredMeters,
       unitPrice: activeTier.unitPrice,
-      sublimationPrintFeePerMeter: SUBLIMATION_PRINT_FEE_PER_METER,
-      customDesignTitle: artworkFile?.name,
-      customDesignDpi: artworkFile?.dpi,
+      sublimationPrintFeePerMeter: pricingConfig.sublimationPrintFee,
+      customDesignTitle: designOption === "TEXORA_DESIGN_SERVICE" 
+        ? (artworkFile?.name ? `Sampel: ${artworkFile.name}` : "Brief Desain Tim Texora") 
+        : artworkFile?.name,
+      customDesignDpi: designOption === "TEXORA_DESIGN_SERVICE" ? 300 : artworkFile?.dpi,
+      designServiceType: designOption,
+      designServiceFee: designFeeTotal,
+      designNotes: designOption === "TEXORA_DESIGN_SERVICE" ? designNotes : undefined,
     });
     setTimeout(() => {
       router.push("/cart");
     }, 800);
   };
+
+  if (!authChecked) {
+    return (
+      <div className="texora-container py-24 flex flex-col items-center justify-center min-h-[50vh] text-center space-y-4">
+        <div className="w-12 h-12 rounded-full border-2 border-brand-500 border-t-transparent animate-spin" />
+        <h2 className="text-lg font-bold text-white">Memverifikasi Hak Akses Studio Sublimasi...</h2>
+        <p className="text-xs text-slate-400 max-w-sm">
+          Fitur simulator & pemesanan custom sublimasi memerlukan akun aktif terdaftar. Mengarahkan ke halaman login jika belum masuk.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="texora-container py-10 space-y-10">
@@ -128,9 +214,17 @@ export default function CustomSublimationPage() {
       {/* Page Header */}
       <div className="border-b border-slate-800 pb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 text-xs font-semibold text-accent-cyan uppercase tracking-wider mb-1">
-            <Palette className="w-4 h-4" />
-            <span>Alat Bantu Cetak Sublimasi Digital & Visualizer</span>
+          <div className="flex flex-wrap items-center gap-3 mb-1">
+            <div className="inline-flex items-center gap-2 text-xs font-semibold text-accent-cyan uppercase tracking-wider">
+              <Palette className="w-4 h-4" />
+              <span>Alat Bantu Cetak Sublimasi Digital & Visualizer</span>
+            </div>
+            {currentUser && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[11px] font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Terotentikasi: {currentUser.name}</span>
+              </span>
+            )}
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-white font-display">
             Kustom Sublimasi & Simulator Pola Kain
@@ -268,21 +362,125 @@ export default function CustomSublimationPage() {
 
           </div>
 
+          {/* OPSI KEBUTUHAN DESAIN & ARTWORK (CMS MANAGEMENT) */}
+          <div className="rounded-2xl glass-panel border border-slate-800 p-6 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
+              <div>
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                  <Palette className="w-4 h-4 text-brand-400" />
+                  <span>Kategori Kebutuhan Desain / Artwork</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Tentukan apakah Anda sudah memiliki file siap cetak atau memerlukan pembuatan desain motif dari Tim Desainer Texora.
+                </p>
+              </div>
+              <span className="text-[11px] text-brand-400/90 font-mono bg-brand-500/10 px-2.5 py-1 rounded-lg border border-brand-500/20">
+                Tarif Diatur via CMS
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Opsi 1: File Sendiri (Gratis) */}
+              <div
+                onClick={() => setDesignOption("CUSTOMER_FILE")}
+                className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex flex-col justify-between ${
+                  designOption === "CUSTOMER_FILE"
+                    ? "bg-brand-500/10 border-brand-500 shadow-lg shadow-brand-500/10"
+                    : "bg-slate-900/60 border-slate-800 hover:border-slate-700"
+                }`}
+              >
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="p-2 rounded-lg bg-slate-800 text-slate-200">
+                      <UploadCloud className="w-4 h-4" />
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono text-[10px] font-bold border border-emerald-500/30">
+                      Biaya Desain: Rp 0 (Gratis)
+                    </span>
+                  </div>
+                  <h4 className="text-sm font-bold text-white">1. File Desain Sendiri (Siap Cetak)</h4>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Customer melampirkan master file siap cetak (AI / PDF / TIFF / PNG 300 DPI) dalam format <em>seamless pattern repeat</em>.
+                  </p>
+                </div>
+                <div className="pt-3 border-t border-slate-800/60 mt-3 flex items-center gap-2 text-[11px] text-slate-400">
+                  <CheckCircle2 className={`w-3.5 h-3.5 ${designOption === "CUSTOMER_FILE" ? "text-brand-400" : "text-slate-600"}`} />
+                  <span>Langsung masuk antrean RIP mesin cetak</span>
+                </div>
+              </div>
+
+              {/* Opsi 2: Jasa Desain Texora */}
+              <div
+                onClick={() => setDesignOption("TEXORA_DESIGN_SERVICE")}
+                className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex flex-col justify-between relative overflow-hidden ${
+                  designOption === "TEXORA_DESIGN_SERVICE"
+                    ? "bg-brand-500/10 border-brand-500 shadow-lg shadow-brand-500/10"
+                    : "bg-slate-900/60 border-slate-800 hover:border-slate-700"
+                }`}
+              >
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="p-2 rounded-lg bg-brand-500/20 text-brand-300">
+                      <Sparkles className="w-4 h-4" />
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-brand-500/20 text-brand-300 font-mono text-[10px] font-bold border border-brand-500/30">
+                      + {formatRupiah(pricingConfig.designServiceFee)} (All-in)
+                    </span>
+                  </div>
+                  <h4 className="text-sm font-bold text-white">2. Jasa Desain Tim Texora</h4>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    {pricingConfig.designServiceDescription || "Kirim sampel foto kain atau sketsa. Desainer kami akan mendesain vektor seamless repeat berkualitas tinggi."}
+                  </p>
+                </div>
+                <div className="pt-3 border-t border-slate-800/60 mt-3 flex items-center gap-2 text-[11px] text-brand-300">
+                  <CheckCircle2 className={`w-3.5 h-3.5 ${designOption === "TEXORA_DESIGN_SERVICE" ? "text-brand-400" : "text-slate-600"}`} />
+                  <span>{pricingConfig.revisionPolicy}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Form Brief Desain jika Opsi 2 dipilih */}
+            {designOption === "TEXORA_DESIGN_SERVICE" && (
+              <div className="p-4 rounded-xl bg-slate-950/70 border border-brand-500/30 space-y-2.5">
+                <div className="flex items-center gap-2 text-xs font-bold text-white">
+                  <Sparkles className="w-4 h-4 text-brand-400" />
+                  <span>Instruksi &amp; Catatan Desain untuk Tim Desainer Texora</span>
+                </div>
+                <textarea
+                  rows={3}
+                  value={designNotes}
+                  onChange={(e) => setDesignNotes(e.target.value)}
+                  placeholder="Contoh: Tolong buatkan motif monogram floral bernuansa earth-tone / pastel seperti foto sampel terlampir, ukuran logo monogram 4x4 cm, pola repeat rapat untuk hijab voal..."
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-brand-500"
+                />
+                <p className="text-[11px] text-slate-400">
+                  *Lampirkan foto sampel pakaian, sketsa kasar, atau referensi motif pada kotak upload di bawah.
+                </p>
+              </div>
+            )}
+          </div>
+
           {/* Upload Dropzone & File Specs */}
           <div className="rounded-2xl glass-panel border border-slate-800 p-6 space-y-4">
             <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
               <UploadCloud className="w-4 h-4 text-brand-400" />
-              <span>Unggah File Desain Produksi (Resolusi Tinggi)</span>
+              <span>
+                {designOption === "TEXORA_DESIGN_SERVICE"
+                  ? "Unggah Sampel / Foto Referensi Motif untuk Desainer"
+                  : "Unggah File Desain Produksi (Resolusi Tinggi)"}
+              </span>
             </h3>
 
             {/* Simulated Dropzone */}
             <div className="border-2 border-dashed border-slate-700 hover:border-brand-500 rounded-xl p-6 text-center transition-colors bg-slate-950/40 cursor-pointer">
               <UploadCloud className="w-10 h-10 text-brand-400 mx-auto mb-2 animate-bounce" />
               <div className="text-sm font-semibold text-white">
-                Tarik & Lepas File Desain ke Sini
+                {designOption === "TEXORA_DESIGN_SERVICE"
+                  ? "Tarik & Lepas Foto Sampel / Sketsa Motif ke Sini"
+                  : "Tarik & Lepas File Desain ke Sini"}
               </div>
               <p className="text-xs text-slate-400 mt-1">
-                Format yang didukung: <strong>Adobe Illustrator (.AI), PDF Vektor, TIFF Tanpa Kompresi, PNG 300 DPI</strong> (Maks. 250 MB)
+                Format yang didukung: <strong>Adobe Illustrator (.AI), PDF Vektor, TIFF Tanpa Kompresi, PNG, JPG</strong> (Maks. 250 MB)
               </p>
               <button
                 type="button"
@@ -352,7 +550,7 @@ export default function CustomSublimationPage() {
                 onChange={(e) => setSelectedFabricId(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-brand-500"
               >
-                {MOCK_FABRICS.map((fabric) => (
+                {fabrics.map((fabric) => (
                   <option key={fabric.id} value={fabric.id}>
                     {fabric.name} ({fabric.variants[0]?.gsm} GSM) — {fabric.category}
                   </option>
@@ -411,9 +609,19 @@ export default function CustomSublimationPage() {
               </div>
 
               <div className="flex justify-between text-slate-300">
-                <span>Jasa Cetak & Heatpress ({formatRupiah(SUBLIMATION_PRINT_FEE_PER_METER)}/m × {requiredMeters}m):</span>
+                <span>Jasa Cetak & Heatpress ({formatRupiah(pricingConfig.sublimationPrintFee)}/m × {requiredMeters}m):</span>
                 <span className="font-mono text-white">{formatRupiah(printingCostTotal)}</span>
               </div>
+
+              {designOption === "TEXORA_DESIGN_SERVICE" && (
+                <div className="flex justify-between text-brand-300 font-medium bg-brand-500/10 p-2 rounded-lg border border-brand-500/20">
+                  <span className="flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-brand-400" />
+                    <span>Jasa Desain Grafis Texora:</span>
+                  </span>
+                  <span className="font-mono font-bold">{formatRupiah(pricingConfig.designServiceFee)}</span>
+                </div>
+              )}
 
               <div className="pt-2 border-t border-slate-800 flex justify-between items-baseline">
                 <span className="font-bold text-white text-sm">Total Estimasi Cetak:</span>

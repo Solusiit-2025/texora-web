@@ -39,7 +39,13 @@ export function loadLastOrder(): PlacedOrder | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as PlacedOrder) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as PlacedOrder;
+    if (parsed && (parsed.customerName === "Hendra Wijaya" || parsed.orderNumber === "TEX-202610-001")) {
+      window.localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+    return parsed;
   } catch {
     return null;
   }

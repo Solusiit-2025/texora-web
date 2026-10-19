@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { MOCK_LEADS } from "@/lib/mock-data";
 import { Lead, LeadStage, ActivityType } from "@/types";
 import { formatRupiah, formatNumber } from "@/lib/utils";
 import { 
@@ -35,7 +34,7 @@ import {
 } from "lucide-react";
 
 export default function CrmLeadsPage() {
-  const [leads, setLeads] = useState<Lead[]>(MOCK_LEADS);
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [selectedLeadForActivity, setSelectedLeadForActivity] = useState<Lead | null>(null);
   
   // New activity form state
@@ -102,6 +101,18 @@ export default function CrmLeadsPage() {
     qualityStandard: "Grade A Tekstil Ekspor, Toleransi susut maksimal 2.5%, garansi retur roll cacat dalam 7 hari kerja",
   });
 
+  // Fetch live leads from PostgreSQL
+  useEffect(() => {
+    fetch("/api/crm/leads")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json?.success && json.data) {
+          setLeads(json.data);
+        }
+      })
+      .catch((err) => console.warn("Using fallback leads:", err));
+  }, []);
+
   // Auto-prefill dari Social Listening (comment -> lead)
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -120,7 +131,7 @@ export default function CrmLeadsPage() {
     }
   }, []);
 
-  const handleAddLead = (e: React.FormEvent) => {
+  const handleAddLead = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newLeadForm.companyName.trim() || !newLeadForm.title.trim()) return;
     const id = `lead-${Date.now()}`;
@@ -149,9 +160,32 @@ export default function CrmLeadsPage() {
         },
       ],
     };
+
     setLeads((prev) => [newLead, ...prev]);
     setNewLeadForm({ companyName: "", contactPerson: "", title: "", fabricInterest: "", estimatedMeters: 0 });
     setShowNewLeadModal(false);
+
+    try {
+      const res = await fetch("/api/crm/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: newLead.title,
+          companyName: newLead.companyName,
+          contactPerson: newLead.contactPerson,
+          estimatedValue: newLead.estimatedValue,
+          estimatedMeters: newLead.estimatedMeters,
+          fabricInterest: newLead.fabricInterest,
+          stage: "NEW_INQUIRY",
+        }),
+      });
+      const json = await res.json();
+      if (json.success && json.data) {
+        setLeads((prev) => prev.map((l) => (l.id === id ? json.data : l)));
+      }
+    } catch (err) {
+      console.warn("Failed to persist lead to DB:", err);
+    }
   };
 
   const stages: { key: LeadStage; label: string; color: string }[] = [
@@ -162,7 +196,7 @@ export default function CrmLeadsPage() {
     { key: "WON", label: "Closing Menang (Won)", color: "border-emerald-500/40 bg-emerald-950/20" },
   ];
 
-  const moveStage = (leadId: string, direction: "prev" | "next") => {
+  const moveStage = async (leadId: string, direction: "prev" | "next") => {
     const stageOrder: LeadStage[] = [
       "NEW_INQUIRY",
       "REQUIREMENT_GATHERING",
@@ -171,15 +205,30 @@ export default function CrmLeadsPage() {
       "WON",
     ];
 
+    let targetStage: LeadStage | null = null;
+
     setLeads(prev =>
       prev.map(l => {
         if (l.id !== leadId) return l;
         const currentIdx = stageOrder.indexOf(l.stage);
         let targetIdx = direction === "next" ? currentIdx + 1 : currentIdx - 1;
         if (targetIdx < 0 || targetIdx >= stageOrder.length) return l;
-        return { ...l, stage: stageOrder[targetIdx], updatedAt: "Baru saja" };
+        targetStage = stageOrder[targetIdx];
+        return { ...l, stage: targetStage, updatedAt: "Baru saja" };
       })
     );
+
+    if (targetStage) {
+      try {
+        await fetch(`/api/crm/leads/${leadId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ stage: targetStage }),
+        });
+      } catch (err) {
+        console.warn("Failed to persist lead stage update to DB:", err);
+      }
+    }
   };
 
   const handleAddActivity = (e: React.FormEvent) => {

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { MOCK_FABRICS } from "@/lib/mock-data";
 import { formatRupiah, formatNumber } from "@/lib/utils";
+import { FabricProduct } from "@/types";
 import { 
   Search, 
   SlidersHorizontal, 
@@ -16,12 +17,24 @@ import {
 } from "lucide-react";
 
 export default function CatalogPage() {
+  const [fabrics, setFabrics] = useState<FabricProduct[]>(MOCK_FABRICS);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedGsmFilter, setSelectedGsmFilter] = useState<string>("All");
   const [sortBy, setSortBy] = useState<string>("default");
 
-  const filteredFabrics = MOCK_FABRICS.filter((fabric) => {
+  useEffect(() => {
+    fetch("/api/products")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.success && data.data?.length > 0) {
+          setFabrics(data.data);
+        }
+      })
+      .catch((err) => console.warn("Using fallback mock fabrics:", err));
+  }, []);
+
+  const filteredFabrics = fabrics.filter((fabric) => {
     const matchesSearch = 
       fabric.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       fabric.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
