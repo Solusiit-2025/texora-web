@@ -708,47 +708,67 @@ const ARTICLES = [
 ];
 
 async function main() {
+  // --force = timpa artikel yang sudah ada (dipakai untuk memulihkan artikel
+  // yang somehow rusak/tertimpa, mis. saat pengujian).
+  const force = process.argv.includes("--force");
+
   let created = 0;
   let skipped = 0;
+  let updated = 0;
 
   for (const [index, a] of ARTICLES.entries()) {
     const existing = await prisma.article.findUnique({ where: { slug: a.slug } });
-    if (existing) {
-      skipped++;
-      console.log(`SKIP   ${a.slug}`);
-      continue;
-    }
 
     // Tanggal terbit bertahap mundur 3-4 hari per artikel
     const publishedAt = new Date();
     publishedAt.setDate(publishedAt.getDate() - index * 4);
     publishedAt.setHours(9, 0, 0, 0);
 
-    await prisma.article.create({
-      data: {
-        slug: a.slug,
-        title: a.title,
-        excerpt: a.excerpt,
-        body: a.body,
-        coverImage: a.coverImage,
-        category: a.category,
-        articleType: a.articleType,
-        tags: JSON.stringify(a.tags),
-        relatedProducts: JSON.stringify(a.relatedProducts),
-        author: a.author,
-        authorRole: a.authorRole,
-        readMinutes: a.readMinutes,
-        seoTitle: a.seoTitle,
-        seoDescription: a.seoDescription,
-        isPublished: true,
-        publishedAt,
-      },
-    });
+    const data = {
+      slug: a.slug,
+      title: a.title,
+      excerpt: a.excerpt,
+      body: a.body,
+      coverImage: a.coverImage,
+      category: a.category,
+      articleType: a.articleType,
+      tags: JSON.stringify(a.tags),
+      relatedProducts: JSON.stringify(a.relatedProducts),
+      author: a.author,
+      authorRole: a.authorRole,
+      readMinutes: a.readMinutes,
+      seoTitle: a.seoTitle,
+      seoDescription: a.seoDescription,
+      isPublished: true,
+    };
+
+    if (existing) {
+      if (!force) {
+        skipped++;
+        console.log(`SKIP   ${a.slug}`);
+        continue;
+      }
+      await prisma.article.update({
+        where: { slug: a.slug },
+        data: { ...data, publishedAt: existing.publishedAt || publishedAt },
+      });
+      // Cache terjemahan jadi basi (source berubah) -> hapus agar dibuat ulang
+      await prisma.contentTranslation.deleteMany({
+        where: { entity: "article", entityId: existing.id },
+      });
+      updated++;
+      console.log(`UPDATE ${a.slug}`);
+      continue;
+    }
+
+    await prisma.article.create({ data: { ...data, publishedAt } });
     created++;
     console.log(`CREATE ${a.slug}`);
   }
 
-  console.log(`\nSelesai: ${created} artikel dibuat, ${skipped} dilewati.`);
+  console.log(
+    `\nSelesai: ${created} dibuat, ${updated} diperbarui, ${skipped} dilewati.`
+  );
   await prisma.$disconnect();
 }
 

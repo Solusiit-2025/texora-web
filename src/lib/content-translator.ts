@@ -1113,7 +1113,9 @@ export async function translateAllContent(
     prisma.siteContent.findUnique({ where: { key: "site.pages" } }).catch(() => null),
     prisma.siteContent.findUnique({ where: { key: "homepage.cta_b2b" } }).catch(() => null),
     prisma.siteContent.findUnique({ where: { key: "homepage.stats" } }).catch(() => null),
-    prisma.article.findMany({ select: { id: true, title: true, excerpt: true, body: true } }).catch(() => []),
+    prisma.article.findMany({
+      select: { id: true, title: true, excerpt: true, body: true, seoTitle: true },
+    }).catch(() => []),
   ]);
 
   // Metadata per halaman (judul + deskripsi) -> agar /en/, /de/ dll langsung
@@ -1163,6 +1165,7 @@ export async function translateAllContent(
     const id = String(a.id);
     if (a.title) items.push({ entity: "article", entityId: id, field: "title", text: a.title });
     if (a.excerpt) items.push({ entity: "article", entityId: id, field: "excerpt", text: a.excerpt });
+    if (a.seoTitle) items.push({ entity: "article", entityId: id, field: "seoTitle", text: a.seoTitle });
     if (a.body) items.push({ entity: "article", entityId: id, field: "body", text: a.body });
   }
   for (const m of metaEntries) {

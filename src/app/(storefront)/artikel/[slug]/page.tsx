@@ -49,7 +49,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return buildPageMetadata({
     locale,
     path: `/artikel/${article.slug}`,
-    title: article.seoTitle || `${article.title} | Texora`,
+    // Judul artikel sudah memuat nama brand ("... | Texora"), jadi tidak
+    // perlu suffix lagi - meta title tidak kepotong di tengah kalimat.
+    title: article.seoTitle || article.title,
     description: article.seoDescription || article.excerpt,
     keywords: article.tags,
     image: article.coverImage || undefined,

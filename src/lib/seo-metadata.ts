@@ -65,6 +65,22 @@ export function truncateDescription(text: string, maxLength = 160): string {
   return `${truncated.trim()}…`;
 }
 
+/**
+ * Potong judul meta pada batas kata.
+ *
+ * Contoh: "Warum sich Viskose nicht sublimieren lässt: Eine technische."
+ * (potong di tengah kata) → jadi "Warum sich Viskose nicht sublimieren lässt…"
+ */
+export function truncateTitle(text: string, maxLength = 62): string {
+  const clean = (text || "").replace(/\s+/g, " ").trim();
+  if (clean.length <= maxLength) return clean;
+
+  const cut = clean.slice(0, maxLength - 1);
+  const lastSpace = cut.lastIndexOf(" ");
+  const truncated = lastSpace > maxLength * 0.5 ? cut.slice(0, lastSpace) : cut;
+  return `${truncated.trim()}…`;
+}
+
 export interface PageMetaInput {
   /** Path halaman, mis. "/catalog/dryfit-milano" */
   path: string;
@@ -188,7 +204,8 @@ export async function buildPageMetadata(input: PageMetaInput): Promise<Metadata>
 
   // Google memotong title > 60 karakter & description > 160 karakter.
   // Potong otomatis supaya tidak ada yang "truncated" di hasil pencarian.
-  const finalTitle = title.length > 62 ? `${title.slice(0, 59).trim()}…` : title;
+  // Title dipotong di batas kata (bukan di tengah kata) + elipsis.
+  const finalTitle = truncateTitle(title, 62);
   const finalDescription = truncateDescription(
     htmlToPlainText(description, 0),
     160

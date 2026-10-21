@@ -313,7 +313,7 @@ export async function getStorefrontArticles(
         "article",
         articles,
         (a) => a.id,
-        ["title", "excerpt", "body"],
+        ["title", "excerpt", "body", "seoTitle"],
         options.lang
       );
     }
@@ -343,7 +343,7 @@ export async function getStorefrontArticleBySlug(
         "article",
         [article],
         (a) => a.id,
-        ["title", "excerpt", "body"],
+        ["title", "excerpt", "body", "seoTitle"],
         lang
       );
       return out;

@@ -39,8 +39,8 @@ function schedulePreTranslate(type: string, data: any, record: any) {
       preTranslateFields(
         "article",
         id,
-        { title: data.title, excerpt: data.excerpt, body: data.body },
-        ["title", "excerpt", "body"]
+        { title: data.title, excerpt: data.excerpt, body: data.body, seoTitle: data.seoTitle },
+        ["title", "excerpt", "body", "seoTitle"]
       ).catch(() => {});
     }
   } catch {
