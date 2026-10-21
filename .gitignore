@@ -14,10 +14,19 @@
 
 # next.js
 /.next/
+/.next-*/
+/.next-dev/
+/.next-dev-*/
 /out/
 
 # production
 /build
+
+# backup database (jangan di-commit)
+/backups/
+
+# file hasil upload user (penyimpanan lokal - jangan di-commit)
+/public/uploads/
 
 # misc
 .DS_Store

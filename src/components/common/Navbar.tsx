@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ThemeDropdown } from "../theme/ThemeDropdown";
+import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
+import { useI18n, useLocalePath } from "@/lib/i18n/LanguageContext";
 import { loadCart } from "@/lib/cart";
 import { 
   Home,
@@ -19,30 +21,39 @@ import {
   ChevronDown,
   Lock,
   LogOut,
-  Sparkles
+  Sparkles,
+  Package,
+  FileText,
+  BookOpen
 } from "lucide-react";
 
 interface NavbarProps {
   cartCount?: number;
+  /** Daftar path yang dinonaktifkan — di-resolve dari DB oleh layout server
+   *  supaya link navigasi benar sejak HTML pertama (tanpa flash, SSR-friendly). */
+  initialDisabledPaths?: string[];
 }
 
 const NAV_LINKS = [
-  { name: "Home", href: "/", icon: Home },
-  { name: "Katalog Kain", href: "/catalog", icon: Layers },
-  { name: "Tentang Kami", href: "/about", icon: Building2 },
-  { 
-    name: "Kustom Sublimasi", 
-    href: "/custom-sublimation", 
-    badge: "Visualizer",
+  { key: "nav.home", href: "/", icon: Home },
+  { key: "nav.catalog", href: "/catalog", icon: Layers },
+  { key: "nav.artikel", href: "/artikel", icon: BookOpen },
+  { key: "nav.about", href: "/about", icon: Building2 },
+  {
+    key: "nav.custom",
+    href: "/custom-sublimation",
+    badgeKey: "nav.badge",
     icon: Palette,
-    special: true
+    special: true,
   },
-  { name: "Lacak Pesanan", href: "/track-order" },
-  { name: "Konsultasi B2B", href: "/contact" },
+  { key: "nav.track", href: "/track-order" },
+  { key: "nav.consult", href: "/contact" },
 ];
 
-export function Navbar({ cartCount: initialCartCount }: NavbarProps) {
+export function Navbar({ cartCount: initialCartCount, initialDisabledPaths = [] }: NavbarProps) {
   const pathname = usePathname();
+  const { t } = useI18n();
+  const localePath = useLocalePath();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -56,7 +67,10 @@ export function Navbar({ cartCount: initialCartCount }: NavbarProps) {
     email: string;
     role: string;
     companyName?: string;
+    dash?: string;
   } | null>(null);
+  // Seed awal dari server (SSR) -> tidak ada flash menu nonaktif & link tetap terbaca crawler.
+  const [disabledPaths, setDisabledPaths] = useState<string[]>(initialDisabledPaths);
 
   // Click anywhere outside to close user dropdown profile
   useEffect(() => {
@@ -114,6 +128,27 @@ export function Navbar({ cartCount: initialCartCount }: NavbarProps) {
     };
   }, []);
 
+  // Sinkronkan ulang status disable saat berada di halaman (mis. setelah admin
+  // toggle modul, navigasi client-side ikut ter-update tanpa reload).
+  useEffect(() => {
+    fetch("/api/seo")
+      .then((r) => r.json())
+      .then((json) => {
+        const pages = json?.data?.pages || {};
+        const disabled = Object.keys(pages).filter((p) => pages[p]?.enabled === false);
+        setDisabledPaths(disabled);
+      })
+      .catch(() => {});
+  }, [pathname]);
+
+  const dashboardHref =
+    currentUser?.dash ||
+    (currentUser?.role === "CUSTOMER" ? "/customer/dashboard" : "/portal/dashboard");
+
+  const visibleNavLinks = NAV_LINKS.filter(
+    (item) => !disabledPaths.includes(item.href)
+  );
+
   const handleLogout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
@@ -132,7 +167,7 @@ export function Navbar({ cartCount: initialCartCount }: NavbarProps) {
         <div className="flex items-center justify-between h-16 lg:h-[4.25rem] xl:h-[4.5rem]">
           
           {/* Brand Logo */}
-          <Link href="/" className="flex items-center space-x-3 group shrink-0">
+          <Link href={localePath("/")} className="flex items-center space-x-3 group shrink-0">
             <div className="relative w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-gradient-to-b from-slate-50 via-slate-100 to-slate-200 p-1 border border-brand-400/60 flex items-center justify-center shadow-md shadow-black/40 group-hover:border-brand-400 transition-all duration-300">
               <img
                 src="/icons/texora-logo.png"
@@ -160,7 +195,7 @@ export function Navbar({ cartCount: initialCartCount }: NavbarProps) {
             className="hidden lg:flex items-center space-x-1 p-1 rounded-full bg-slate-900/60 border border-white/10 backdrop-blur-md relative shadow-lg shadow-black/20"
             onMouseLeave={() => setHoveredIndex(null)}
           >
-            {NAV_LINKS.map((item, index) => {
+            {visibleNavLinks.map((item, index) => {
               const isActive = item.href === "/" 
                 ? pathname === "/" 
                 : pathname?.startsWith(item.href);
@@ -170,7 +205,7 @@ export function Navbar({ cartCount: initialCartCount }: NavbarProps) {
               return (
                 <Link
                   key={item.href}
-                  href={item.href}
+                  href={localePath(item.href)}
                   onMouseEnter={() => setHoveredIndex(index)}
                   className={`relative px-4 py-2 rounded-full text-xs xl:text-sm font-medium transition-colors duration-200 flex items-center gap-2 select-none ${
                     item.special
@@ -222,14 +257,14 @@ export function Navbar({ cartCount: initialCartCount }: NavbarProps) {
                         }`} 
                       />
                     )}
-                    <span>{item.name}</span>
-                    {item.badge && (
+                    <span>{t(item.key)}</span>
+                    {item.badgeKey && (
                       <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${
                         isActive
                           ? "bg-accent-cyan/25 text-accent-cyan border border-accent-cyan/40"
                           : "bg-accent-cyan/15 text-accent-cyan border border-accent-cyan/25"
                       }`}>
-                        {item.badge}
+                        {t(item.badgeKey)}
                       </span>
                     )}
                   </span>
@@ -241,6 +276,9 @@ export function Navbar({ cartCount: initialCartCount }: NavbarProps) {
           {/* Right Control Toolbar */}
           <div className="hidden md:flex items-center space-x-2.5">
             
+            {/* Language Switcher */}
+            <LanguageSwitcher />
+
             {/* Theme Picker */}
             <div className="flex items-center p-1 rounded-full bg-slate-900/60 border border-white/10 backdrop-blur-md shadow-lg shadow-black/20">
               <ThemeDropdown />
@@ -249,12 +287,12 @@ export function Navbar({ cartCount: initialCartCount }: NavbarProps) {
             {/* Direct Dashboard Shortcut Button (Solusi: Menu Tidak Tersembunyi Lagi) */}
             {currentUser && (
               <Link
-                href={currentUser.role === "CUSTOMER" ? "/customer/dashboard" : "/portal/dashboard"}
+                href={dashboardHref}
                 className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-brand-500/20 via-brand-500/10 to-accent-cyan/20 hover:from-brand-500/30 hover:to-accent-cyan/30 border border-brand-400/40 text-brand-200 hover:text-white text-xs font-bold transition-all shadow-sm shadow-brand-500/10 group shrink-0"
                 title="Buka Dashboard Utama Mitra B2B"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-brand-400 group-hover:scale-110 transition-transform" />
-                <span>{currentUser.role === "CUSTOMER" ? "Dashboard Mitra" : "Portal Pabrik"}</span>
+                <span>{currentUser.role === "CUSTOMER" ? t("nav.dashMitra") : t("nav.dashPabrik")}</span>
               </Link>
             )}
 
@@ -274,6 +312,16 @@ export function Navbar({ cartCount: initialCartCount }: NavbarProps) {
                 )}
               </Link>
             )}
+
+            {/* CTA Utama: Minta Penawaran */}
+            <Link
+              href={localePath("/request-quote")}
+              className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-brand-400/50 bg-brand-500/10 hover:bg-brand-500/25 hover:border-brand-300 text-brand-200 hover:text-white text-xs font-bold transition-all shadow-sm shadow-brand-500/10 shrink-0"
+              title={t("nav.requestQuote")}
+            >
+              <FileText className="w-3.5 h-3.5 text-brand-300" />
+              <span>{t("nav.requestQuote")}</span>
+            </Link>
 
             {/* Authentication & Portal Controls */}
             {currentUser ? (
@@ -326,10 +374,10 @@ export function Navbar({ cartCount: initialCartCount }: NavbarProps) {
                         {/* Menu Portal Utama */}
                         <div className="py-1.5 space-y-0.5">
                           <p className="px-3 pt-1 pb-0.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                            Portal & Pesanan
+                            {t("nav.portalSection")}
                           </p>
                           <Link
-                            href={currentUser.role === "CUSTOMER" ? "/customer/dashboard" : "/portal/dashboard"}
+                            href={dashboardHref}
                             onClick={() => setUserMenuOpen(false)}
                             className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 transition-colors group"
                           >
@@ -337,8 +385,8 @@ export function Navbar({ cartCount: initialCartCount }: NavbarProps) {
                               <ShieldCheck className="w-3.5 h-3.5" />
                             </div>
                             <div>
-                              <div className="font-semibold">{currentUser.role === "CUSTOMER" ? "Dashboard Mitra B2B" : "Portal Internal Pabrik"}</div>
-                              <div className="text-[10px] text-slate-400">Ringkasan SPK & status produksi</div>
+                              <div className="font-semibold">{currentUser.role === "CUSTOMER" ? t("nav.dashMitra") : t("nav.dashPabrik")}</div>
+                              <div className="text-[10px] text-slate-400">{t("nav.dashDesc")}</div>
                             </div>
                           </Link>
 
@@ -351,8 +399,8 @@ export function Navbar({ cartCount: initialCartCount }: NavbarProps) {
                               <Sparkles className="w-3.5 h-3.5" />
                             </div>
                             <div>
-                              <div className="font-semibold">Lacak Pesanan Real-Time</div>
-                              <div className="text-[10px] text-slate-400">Pantau proses cetak & heatpress</div>
+                              <div className="font-semibold">{t("nav.trackRt")}</div>
+                              <div className="text-[10px] text-slate-400">{t("nav.trackRtDesc")}</div>
                             </div>
                           </Link>
 
@@ -366,8 +414,8 @@ export function Navbar({ cartCount: initialCartCount }: NavbarProps) {
                                 <ShoppingCart className="w-3.5 h-3.5" />
                               </div>
                               <div>
-                                <div className="font-semibold">Keranjang Belanja</div>
-                                <div className="text-[10px] text-slate-400">Draf pesanan aktif</div>
+                                <div className="font-semibold">{t("nav.cart")}</div>
+                                <div className="text-[10px] text-slate-400">{t("nav.cartDesc")}</div>
                               </div>
                             </div>
                             {cartItemCount > 0 && (
@@ -381,35 +429,68 @@ export function Navbar({ cartCount: initialCartCount }: NavbarProps) {
                         {/* Layanan & Produksi */}
                         <div className="py-1.5 space-y-0.5">
                           <p className="px-3 pt-1 pb-0.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                            Layanan Texora
+                            {t("nav.services")}
                           </p>
                           <Link
-                            href="/custom-sublimation"
+                            href={localePath("/custom-sublimation")}
                             onClick={() => setUserMenuOpen(false)}
                             className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 transition-colors"
                           >
                             <Palette className="w-3.5 h-3.5 text-accent-cyan" />
-                            <span>Studio Kustom Sublimasi 3D</span>
+                            <span>{t("nav.studio")}</span>
                           </Link>
 
                           <Link
-                            href="/catalog"
+                            href={localePath("/catalog")}
                             onClick={() => setUserMenuOpen(false)}
                             className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 transition-colors"
                           >
                             <Layers className="w-3.5 h-3.5 text-brand-300" />
-                            <span>Katalog Kain Sublimasi</span>
+                            <span>{t("nav.katalogSub")}</span>
                           </Link>
 
                           <Link
-                            href="/contact"
+                            href={localePath("/contact")}
                             onClick={() => setUserMenuOpen(false)}
                             className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 transition-colors"
                           >
                             <Building2 className="w-3.5 h-3.5 text-emerald-400" />
-                            <span>Konsultasi PIC & Bantuan B2B</span>
+                            <span>{t("nav.consultSub")}</span>
                           </Link>
                         </div>
+
+                        {/* Manajemen (khusus Administrator) */}
+                        {currentUser.role === "ADMINISTRATOR" && (
+                          <div className="py-1.5 space-y-0.5">
+                            <p className="px-3 pt-1 pb-0.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                              {t("nav.cms")}
+                            </p>
+                            <Link
+                              href="/portal/content-management"
+                              onClick={() => setUserMenuOpen(false)}
+                              className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 transition-colors"
+                            >
+                              <Layers className="w-3.5 h-3.5 text-brand-300" />
+                              <span>Content Management</span>
+                            </Link>
+                            <Link
+                              href="/portal/catalog-management"
+                              onClick={() => setUserMenuOpen(false)}
+                              className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 transition-colors"
+                            >
+                              <Package className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>Katalog Kain</span>
+                            </Link>
+                            <Link
+                              href="/portal/settings/users-rbac"
+                              onClick={() => setUserMenuOpen(false)}
+                              className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 transition-colors"
+                            >
+                              <ShieldCheck className="w-3.5 h-3.5 text-accent-cyan" />
+                              <span>User & Role (RBAC)</span>
+                            </Link>
+                          </div>
+                        )}
 
                         {/* Logout */}
                         <div className="pt-1">
@@ -418,7 +499,7 @@ export function Navbar({ cartCount: initialCartCount }: NavbarProps) {
                             className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors text-left font-medium"
                           >
                             <LogOut className="w-4 h-4" />
-                            <span>Keluar (Logout)</span>
+                            <span>{t("nav.logout")}</span>
                           </button>
                         </div>
                       </motion.div>
@@ -428,11 +509,11 @@ export function Navbar({ cartCount: initialCartCount }: NavbarProps) {
               </div>
             ) : (
               <Link
-                href="/login"
+                href={localePath("/login")}
                 className="px-4 py-2 rounded-full bg-gradient-to-r from-brand-500 via-brand-400 to-brand-500 hover:from-brand-400 hover:to-brand-300 text-slate-950 font-bold text-xs shadow-lg shadow-brand-500/25 transition-all flex items-center gap-1.5 shrink-0"
               >
                 <Lock className="w-3.5 h-3.5 text-slate-950" />
-                <span>Masuk Portal B2B</span>
+                <span>Login</span>
               </Link>
             )}
 
@@ -440,6 +521,7 @@ export function Navbar({ cartCount: initialCartCount }: NavbarProps) {
 
           {/* Mobile menu button */}
           <div className="flex md:hidden items-center space-x-2">
+            <LanguageSwitcher />
             <ThemeDropdown compact />
             {currentUser && (
               <Link
@@ -476,7 +558,7 @@ export function Navbar({ cartCount: initialCartCount }: NavbarProps) {
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
             className="md:hidden overflow-hidden bg-slate-900/98 border-b border-slate-800 px-4 pt-3 pb-6 space-y-2 backdrop-blur-2xl"
           >
-            {NAV_LINKS.map((item, idx) => {
+            {visibleNavLinks.map((item, idx) => {
               const isActive = item.href === "/" 
                 ? pathname === "/" 
                 : pathname?.startsWith(item.href);
@@ -490,7 +572,7 @@ export function Navbar({ cartCount: initialCartCount }: NavbarProps) {
                   transition={{ delay: idx * 0.035, duration: 0.2 }}
                 >
                   <Link
-                    href={item.href}
+                    href={localePath(item.href)}
                     onClick={() => setMobileMenuOpen(false)}
                     className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-base font-medium transition-all ${
                       isActive
@@ -500,11 +582,11 @@ export function Navbar({ cartCount: initialCartCount }: NavbarProps) {
                   >
                     <div className="flex items-center gap-2.5">
                       {Icon && <Icon className={`w-5 h-5 ${isActive ? "text-brand-300" : "text-slate-400"}`} />}
-                      <span>{item.name}</span>
+                      <span>{t(item.key)}</span>
                     </div>
-                    {item.badge && (
+                    {item.badgeKey && (
                       <span className="text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider bg-accent-cyan/20 text-accent-cyan border border-accent-cyan/40">
-                        {item.badge}
+                        {t(item.badgeKey)}
                       </span>
                     )}
                   </Link>
@@ -513,6 +595,14 @@ export function Navbar({ cartCount: initialCartCount }: NavbarProps) {
             })}
 
             <div className="pt-3 border-t border-slate-800 flex flex-col gap-2">
+              <Link
+                href={localePath("/request-quote")}
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full text-center py-2.5 rounded-xl border border-brand-400/40 bg-brand-500/10 text-brand-200 font-bold text-xs flex items-center justify-center gap-1.5"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>{t("nav.requestQuote")}</span>
+              </Link>
               {currentUser ? (
                 <>
                   <div className="px-3.5 py-2 rounded-xl bg-slate-800/60 border border-slate-700/60 text-xs">
@@ -520,11 +610,11 @@ export function Navbar({ cartCount: initialCartCount }: NavbarProps) {
                     <p className="text-[11px] text-slate-400 truncate">{currentUser.email}</p>
                   </div>
                   <Link
-                    href={currentUser.role === "CUSTOMER" ? "/customer/dashboard" : "/portal/dashboard"}
+                    href={dashboardHref}
                     onClick={() => setMobileMenuOpen(false)}
                     className="w-full text-center py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-sm shadow-lg shadow-brand-600/30"
                   >
-                    {currentUser.role === "CUSTOMER" ? "Buka Dashboard Mitra" : "Buka Portal Internal"}
+                    {currentUser.role === "CUSTOMER" ? t("nav.dashMitra") : t("nav.dashPabrik")}
                   </Link>
                   <Link
                     href="/cart"
@@ -541,21 +631,39 @@ export function Navbar({ cartCount: initialCartCount }: NavbarProps) {
                       </span>
                     )}
                   </Link>
+                   {currentUser.role === "ADMINISTRATOR" && (
+                     <>
+                       <Link
+                         href="/portal/content-management"
+                         onClick={() => setMobileMenuOpen(false)}
+                         className="w-full text-center py-2 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-200 font-semibold text-xs border border-slate-700"
+                       >
+                         Content Management
+                       </Link>
+                       <Link
+                         href="/portal/catalog-management"
+                         onClick={() => setMobileMenuOpen(false)}
+                         className="w-full text-center py-2 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-200 font-semibold text-xs border border-slate-700"
+                       >
+                         Katalog Kain
+                       </Link>
+                     </>
+                   )}
                   <button
                     onClick={handleLogout}
                     className="w-full text-center py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 font-semibold text-xs border border-red-500/30"
                   >
-                    Keluar (Logout)
+                    {t("nav.logout")}
                   </button>
                 </>
               ) : (
                 <Link
-                  href="/login"
+                  href={localePath("/login")}
                   onClick={() => setMobileMenuOpen(false)}
                   className="w-full text-center py-2.5 rounded-xl bg-gradient-to-r from-brand-500 via-brand-400 to-brand-500 hover:from-brand-400 hover:to-brand-300 text-slate-950 font-bold text-xs shadow-lg shadow-brand-500/25 flex items-center justify-center gap-1.5"
                 >
                   <Lock className="w-3.5 h-3.5 text-slate-950" />
-                  <span>Masuk Portal B2B</span>
+                  <span>Login</span>
                 </Link>
               )}
             </div>

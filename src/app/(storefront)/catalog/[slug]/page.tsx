@@ -1,344 +1,141 @@
-"use client";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import ProductDetailClient from "./ProductDetailClient";
+import { JsonLd } from "@/components/common/JsonLd";
+import { getStorefrontProductBySlug, getStorefrontProducts, getStorefrontTestimonials } from "@/lib/storefront-data";
+import { getRequestLocale, getContentLocale } from "@/lib/server-locale";
+import { localizeRows } from "@/lib/content-translator";
+import { translate } from "@/lib/i18n/dictionary";
+import {
+  buildPageMetadata,
+  buildProductSchema,
+  buildBreadcrumbSchema,
+  buildWebPageSchema,
+  SITE_URL,
+} from "@/lib/seo-metadata";
+import { htmlToPlainText } from "@/lib/sanitize";
 
-import { useParams, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { MOCK_FABRICS } from "@/lib/mock-data";
-import { formatRupiah, formatNumber } from "@/lib/utils";
-import { FabricProduct } from "@/types";
-import { addToCart } from "@/lib/cart";
-import { 
-  ArrowLeft, 
-  Palette, 
-  ShoppingCart, 
-  ShieldCheck, 
-  Award, 
-  Check, 
-  Zap, 
-  HelpCircle,
-  Truck,
-  Layers,
-  FileCheck,
-  Lock
-} from "lucide-react";
+interface PageProps {
+  params: { slug: string };
+}
 
-export default function FabricDetailPage() {
-  const params = useParams();
-  const router = useRouter();
-  const slug = params?.slug as string;
+/**
+ * Halaman detail produk katalog.
+ *
+ * Di-render sebagai SERVER component agar:
+ *  - Metadata (title, description, canonical, OG) terbaca crawler tanpa JS.
+ *  - Nama produk, harga, dan spesifikasi ada di HTML awal (WAJIB untuk SEO produk).
+ *  - JSON-LD Product + BreadcrumbList tersedia untuk Google Rich Results.
+ */
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const product = await getStorefrontProductBySlug(params.slug);
 
-  const defaultFabric = MOCK_FABRICS.find((f) => f.slug === slug) || MOCK_FABRICS[0];
-  const [fabric, setFabric] = useState<FabricProduct>(defaultFabric);
-  const [selectedVariantId, setSelectedVariantId] = useState(defaultFabric.variants[0]?.id || "");
-  const [orderMeters, setOrderMeters] = useState<number>(100);
-  const [isAdded, setIsAdded] = useState(false);
+  if (!product) {
+    return {
+      title: "Produk Tidak Found — PT. Texora Visi Prima",
+      robots: { index: false, follow: true },
+    };
+  }
 
-  // User session state
-  const [currentUser, setCurrentUser] = useState<{ id: string; name: string } | null>(null);
-  const [authChecked, setAuthChecked] = useState(false);
+  const locale = await getRequestLocale();
+  const plain = htmlToPlainText(product.description, 0);
+  const keywords = [
+    product.name,
+    product.category,
+    product.composition,
+    product.weaveType,
+    `kain ${product.category.toLowerCase()}`,
+    "kain sublimasi jakarta",
+    "buy kain sublimasi grosir",
+  ].filter(Boolean);
 
-  useEffect(() => {
-    fetch("/api/auth/me")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.authenticated && data.user) {
-          setCurrentUser(data.user);
-        } else {
-          setCurrentUser(null);
-        }
-      })
-      .catch(() => setCurrentUser(null))
-      .finally(() => setAuthChecked(true));
-  }, []);
+  return buildPageMetadata({
+    locale,
+    path: `/catalog/${product.slug}`,
+    // Nama produk dipotong agar total title tetap <= 62 karakter (batas ideal Google).
+    title: `${product.name.slice(0, 40).trim()} — Kain Sublimasi | Texora`,
+    description:
+      plain ||
+      `${product.name} — ${product.composition}, lebar ${product.widthInch} inci. Kain siap sublimasi untuk sportwear, hijab, dan merchandise. Harga grosir bertingkat.`,
+    keywords,
+    image: product.thumbnailUrl,
+    schemaType: "product",
+    ogType: "product",
+    modifiedTime: product.updatedAt,
+  });
+}
 
-  useEffect(() => {
-    if (!slug) return;
-    fetch(`/api/products?slug=${slug}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data?.success && data.data?.length > 0) {
-          const found = data.data[0];
-          setFabric(found);
-          if (found.variants?.length > 0) {
-            setSelectedVariantId(found.variants[0].id);
-          }
-        }
-      })
-      .catch((err) => console.warn("Using fallback mock fabric:", err));
-  }, [slug]);
+export default async function FabricDetailPage({ params }: PageProps) {
+  const lang = await getContentLocale();
+  const productRaw = await getStorefrontProductBySlug(params.slug);
+  const product =
+    productRaw && lang
+      ? (await localizeRows("product", [productRaw], (p: any) => p.slug, ["description"], lang))[0]
+      : productRaw;
 
-  const selectedVariant = fabric.variants.find(v => v.id === selectedVariantId) || fabric.variants[0];
+  if (!product) {
+    notFound();
+  }
 
-  // Calculate pricing based on tiers
-  const activeTier = fabric.priceTiers.find((tier) => {
-    if (tier.maxMeters) {
-      return orderMeters >= tier.minMeters && orderMeters <= tier.maxMeters;
-    }
-    return orderMeters >= tier.minMeters;
-  }) || fabric.priceTiers[0];
+  // Produk terkait: kategori sama, atau GSM terdekat bila kategori berbeda
+  const [all, testimonials] = await Promise.all([
+    getStorefrontProducts(),
+    getStorefrontTestimonials(),
+  ]);
+  const related = all
+    .filter((p) => p.slug !== product.slug)
+    .sort((a, b) => {
+      const aScore = a.category === product.category ? 0 : 1;
+      const bScore = b.category === product.category ? 0 : 1;
+      if (aScore !== bScore) return aScore - bScore;
+      return Math.abs(a.variants[0]?.gsm - (product.variants[0]?.gsm || 140)) -
+        Math.abs(b.variants[0]?.gsm - (product.variants[0]?.gsm || 140));
+    })
+    .slice(0, 4);
 
-  const subtotal = activeTier.unitPrice * orderMeters;
+  const breadcrumbItems = [
+    { name: lang ? translate(lang, "nav.catalog") : "Katalog", path: "/catalog" },
+    { name: product.name, path: `/catalog/${product.slug}` },
+  ];
 
-  const handleAddToCart = () => {
-    if (!currentUser) {
-      router.push(`/login?redirect=${encodeURIComponent(`/catalog/${slug}`)}&reason=auth_required`);
-      return;
-    }
+  const productSchema = buildProductSchema({
+    name: product.name,
+    slug: product.slug,
+    description: product.description,
+    image: product.thumbnailUrl,
+    category: product.category,
+    composition: product.composition,
+    widthInch: product.widthInch,
+    basePrice: product.basePricePerMeter,
+    variants: product.variants,
+    priceTiers: product.priceTiers,
+    color: product.variants?.[0]?.colorName || "Optic White",
+    dateModified: product.updatedAt,
+    // Ulasan dari testimoni CMS (dikonversi menjadi schema.org Review)
+    reviews: testimonials.slice(0, 3).map((t) => ({
+      author: t.name,
+      quote: t.quote,
+      rating: 5,
+    })),
+  });
 
-    setIsAdded(true);
-    addToCart({
-      fabricName: fabric.name,
-      gsm: selectedVariant?.gsm ?? 140,
-      widthInch: fabric.widthInch,
-      meters: orderMeters,
-      unitPrice: activeTier.unitPrice,
-      sublimationPrintFeePerMeter: 0,
-    });
-    setTimeout(() => {
-      router.push("/cart");
-    }, 600);
-  };
+  const breadcrumbSchema = buildBreadcrumbSchema(breadcrumbItems);
+
+  const webPageSchema = buildWebPageSchema({
+    path: `/catalog/${product.slug}`,
+    name: product.name,
+    description: htmlToPlainText(product.description, 0),
+    breadcrumb: breadcrumbItems,
+  });
 
   return (
-    <div className="texora-container py-10 space-y-10">
-      
-      {/* Back button */}
-      <Link
-        href="/catalog"
-        className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        <span>Kembali ke Semua Kain</span>
-      </Link>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        
-        {/* Left Column: Image preview & Tech badges */}
-        <div className="lg:col-span-6 space-y-6">
-          <div className="relative aspect-[4/3] rounded-2xl overflow-hidden glass-panel border border-slate-800 shadow-2xl bg-slate-950">
-            <img
-              src={fabric.thumbnailUrl}
-              alt={fabric.name}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute top-4 left-4 flex gap-2">
-              <span className="px-3 py-1 rounded-lg text-xs font-bold bg-slate-900/90 text-accent-cyan border border-accent-cyan/30 backdrop-blur-md">
-                {fabric.category}
-              </span>
-              <span className="px-3 py-1 rounded-lg text-xs font-bold bg-slate-900/90 text-white border border-slate-700 backdrop-blur-md">
-                {selectedVariant?.gsm} GSM
-              </span>
-            </div>
-            <div className="absolute bottom-4 left-4 right-4 p-3 rounded-xl bg-slate-900/90 border border-slate-700 backdrop-blur-md flex items-center justify-between text-xs">
-              <span className="text-slate-300">Dukungan Kalibrasi Warna:</span>
-              <span className="font-bold text-accent-cyan">CMYK & Fluorescent Sublimation</span>
-            </div>
-          </div>
-
-          {/* Industrial Certifications */}
-          <div className="grid grid-cols-3 gap-3 text-center">
-            <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs">
-              <Award className="w-5 h-5 text-amber-400 mx-auto mb-1" />
-              <div className="font-bold text-white">OEKO-TEX</div>
-              <div className="text-[10px] text-slate-400">Bebas Zat Berbahaya</div>
-            </div>
-            <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs">
-              <Zap className="w-5 h-5 text-accent-cyan mx-auto mb-1" />
-              <div className="font-bold text-white">Heatpress 215°C</div>
-              <div className="text-[10px] text-slate-400">Anti-Mengkerut & Gosong</div>
-            </div>
-            <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs">
-              <Truck className="w-5 h-5 text-brand-400 mx-auto mb-1" />
-              <div className="font-bold text-white">Roll Waterproof</div>
-              <div className="text-[10px] text-slate-400">Packing Plastik Tebal</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column: Specs, Volume Tier Calculator & Order Controls */}
-        <div className="lg:col-span-6 space-y-6">
-          
-          <div>
-            <div className="text-xs font-bold text-brand-400 uppercase tracking-wider mb-1">
-              Spesifikasi Pabrik Tekstil
-            </div>
-            <h1 className="text-3xl font-extrabold text-white font-display">
-              {fabric.name}
-            </h1>
-            <p className="text-sm text-slate-300 mt-2 leading-relaxed">
-              {fabric.description}
-            </p>
-          </div>
-
-          {/* Variant Selector (GSM Options) */}
-          <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3">
-            <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
-              Pilih Varian Gramatur (GSM):
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              {fabric.variants.map((variant) => (
-                <button
-                  key={variant.id}
-                  onClick={() => setSelectedVariantId(variant.id)}
-                  className={`p-3 rounded-xl text-left border transition-all text-xs ${
-                    selectedVariantId === variant.id
-                      ? "bg-brand-600/30 border-brand-500 text-white shadow-lg"
-                      : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
-                  }`}
-                >
-                  <div className="font-bold text-sm text-white">{variant.gsm} GSM</div>
-                  <div className="text-[11px] text-slate-400 mt-0.5">{variant.colorName}</div>
-                  <div className="text-[10px] text-emerald-400 mt-1">
-                    Stok Tersedia: {formatNumber(variant.stockMeters)} m
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Volume Tier Table */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
-              <span>Tabel Harga Bertingkat (Tier Pricing):</span>
-              <span className="text-accent-cyan font-normal text-[11px] lowercase">per meter lari</span>
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-              {fabric.priceTiers.map((tier) => {
-                const isSelectedTier = activeTier.id === tier.id;
-                return (
-                  <div
-                    key={tier.id}
-                    className={`p-3 rounded-xl border text-center transition-all ${
-                      isSelectedTier
-                        ? "bg-accent-cyan/15 border-accent-cyan text-white shadow-md shadow-accent-cyan/10"
-                        : "bg-slate-900/60 border-slate-800 text-slate-400"
-                    }`}
-                  >
-                    <div className="text-[10px] uppercase font-bold text-slate-400">
-                      {tier.maxMeters ? `${tier.minMeters} - ${tier.maxMeters} m` : `≥ ${tier.minMeters} m`}
-                    </div>
-                    <div className={`font-mono font-bold mt-1 text-sm ${isSelectedTier ? "text-accent-cyan" : "text-slate-200"}`}>
-                      {formatRupiah(tier.unitPrice)}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Meter Quantity Slider & Input */}
-          <div className="p-5 rounded-2xl glass-panel border border-slate-800 space-y-4">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                Panjang Pesanan:
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min={1}
-                  max={5000}
-                  value={orderMeters}
-                  onChange={(e) => setOrderMeters(Math.max(1, Number(e.target.value)))}
-                  className="w-28 px-3 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono font-bold text-sm text-right focus:outline-none focus:border-brand-500"
-                />
-                <span className="text-xs text-slate-400 font-semibold">Meter</span>
-              </div>
-            </div>
-
-            <input
-              type="range"
-              min={1}
-              max={1500}
-              step={10}
-              value={orderMeters}
-              onChange={(e) => setOrderMeters(Number(e.target.value))}
-              className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-brand-500"
-            />
-
-            <div className="pt-3 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <span className="text-xs text-slate-400 block">Total Subtotal Bahan:</span>
-                <span className="text-2xl font-black text-white font-mono">
-                  {formatRupiah(subtotal)}
-                </span>
-                <span className="text-[11px] text-slate-500 block">
-                  ({formatRupiah(activeTier.unitPrice)} / m × {formatNumber(orderMeters)} m)
-                </span>
-              </div>
-
-              {/* Action Buttons with B2B Auth Check */}
-              <div className="flex flex-col gap-2 shrink-0">
-                {currentUser ? (
-                  <>
-                    <button
-                      onClick={handleAddToCart}
-                      className="px-5 py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs shadow-lg transition-all flex items-center justify-center gap-2"
-                    >
-                      <ShoppingCart className="w-4 h-4" />
-                      <span>{isAdded ? "Ditambahkan!" : "Pesan Bahan Saja"}</span>
-                    </button>
-
-                    <Link
-                      href={`/custom-sublimation?fabric=${fabric.id}&meters=${orderMeters}`}
-                      className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-accent-cyan border border-accent-cyan/40 font-bold text-xs transition-colors flex items-center justify-center gap-2"
-                    >
-                      <Palette className="w-4 h-4" />
-                      <span>Cetak Desain Sublimasi</span>
-                    </Link>
-                  </>
-                ) : (
-                  <>
-                    <Link
-                      href={`/login?redirect=${encodeURIComponent(`/catalog/${slug}`)}&reason=auth_required`}
-                      className="px-5 py-3 rounded-xl bg-gradient-to-r from-brand-600 via-brand-500 to-amber-500 hover:brightness-110 text-slate-950 font-bold text-xs shadow-xl transition-all flex items-center justify-center gap-2"
-                    >
-                      <Lock className="w-4 h-4" />
-                      <span>Masuk Akun untuk Memesan</span>
-                    </Link>
-
-                    <Link
-                      href={`/login?redirect=${encodeURIComponent(`/custom-sublimation?fabric=${fabric.id}&meters=${orderMeters}`)}&reason=auth_required`}
-                      className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 font-semibold text-xs transition-colors flex items-center justify-center gap-2"
-                    >
-                      <Palette className="w-4 h-4 text-brand-400" />
-                      <span>Masuk untuk Kustom Sublimasi</span>
-                    </Link>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* B2B Partner Information Note when not logged in */}
-            {authChecked && !currentUser && (
-              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-300 flex items-center gap-2">
-                <Lock className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>
-                  Kemitraan B2B: Masuk ke akun Anda untuk menerbitkan Surat Perintah Kerja (SPK), memesan roll kain, atau upload file desain sublimasi.
-                </span>
-              </div>
-            )}
-
-          </div>
-
-          {/* Full Technical Specifications Sheet */}
-          <div className="rounded-xl bg-slate-950/60 border border-slate-800/80 p-4 space-y-2 text-xs">
-            <h4 className="font-bold text-slate-300 uppercase tracking-wider text-[11px]">
-              Tabel Parameter Teknis Tekstil:
-            </h4>
-            <div className="grid grid-cols-2 gap-2 text-slate-400 pt-1">
-              <div><span className="text-slate-500">Komposisi:</span> {fabric.composition}</div>
-              <div><span className="text-slate-500">Lebar Kain:</span> {fabric.widthInch}&quot; (~{Math.round(fabric.widthInch * 2.54)} cm)</div>
-              <div><span className="text-slate-500">Struktur Benang:</span> {fabric.weaveType}</div>
-              <div><span className="text-slate-500">Uji Susut Heatpress:</span> &lt; 1.5% @ 210°C</div>
-              <div><span className="text-slate-500">Tingkat Penetrasi:</span> Sisi Depan 100%, Belakang 75-85%</div>
-              <div><span className="text-slate-500">Sertifikat:</span> OEKO-TEX Standard 100 Class 1</div>
-            </div>
-          </div>
-
-        </div>
-
-      </div>
-
-    </div>
+    <>
+      <JsonLd schema={[productSchema, breadcrumbSchema, webPageSchema]} id="ld-product" />
+      <ProductDetailClient
+        initialFabric={product}
+        slug={params.slug}
+        relatedProducts={related}
+      />
+    </>
   );
 }

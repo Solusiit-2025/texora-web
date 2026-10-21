@@ -31,6 +31,11 @@ model User {
   companyName   String?
   taxId         String?        // NPWP untuk B2B
   role          Role           @default(CUSTOMER)
+  // 2FA (TOTP) - Autentikasi Dua Faktor
+  twoFactorEnabled     Boolean  @default(false)
+  twoFactorSecret      String?  // Base32 secret (disimpan terenkripsi saat transit via HTTPS)
+  twoFactorBackupCodes String?  // JSON array hash bcrypt (kode cadangan 10 digit)
+  twoFactorEnabledAt   DateTime?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -378,6 +383,25 @@ model AuditLog {
 // 10. CMS & KONTEN WEBSITE (Storefront Dynamic Content)
 // -----------------------------------------------------------
 
+// Cache terjemahan AI (Gemini) untuk konten yang dikelola lewat CMS/database.
+// Sumber kebenaran tetap teks Bahasa Indonesia; terjemahan hanya hasil turunan
+// dan otomatis dibuat ulang (re-translate) jika teks aslinya diubah.
+model ContentTranslation {
+  id          String   @id @default(cuid())
+  entity      String   // "hero" | "testimonial" | "faq" | "product" | "siteContent" | "pricing"
+  entityId    String   // id baris / key siteContent / slug produk
+  field       String   // nama kolom teks, mis. "answer", "caption", "description"
+  locale      String   // en | zh | ja | de | ar (id TIDAK disimpan = default)
+  source      String   @db.Text // teks Indonesia SAAT diterjemahkan (deteksi basi/stale)
+  translation String   @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([entity, entityId, field, locale])
+  @@index([locale])
+  @@map("content_translations")
+}
+
 model HeroSlide {
   id             String   @id @default(cuid())
   order          Int      @default(0)
@@ -416,6 +440,92 @@ model FaqItem {
   updatedAt DateTime @updatedAt
 
   @@map("cms_faq_items")
+}
+
+// -----------------------------------------------------------
+// 10b. PERMINTAAN PENAWARAN (RFQ / Request for Quote)
+// Mode "web publish + CMS": pengunjung tidak checkout, tapi meminta
+// penawaran harga (B2B textile: harga per roll, termin, MOQ).
+// -----------------------------------------------------------
+
+model QuoteRequest {
+  id           String   @id @default(cuid())
+  name         String
+  company      String?
+  email        String
+  phone        String?
+  country      String?  // negara buyer (untuk ekspor)
+  productIds   String   @default("[]") @db.Text // JSON array id/slug produk
+  productsText String?  @db.Text // ringkasan produk (bisa diubah admin)
+  meters       Int?     // estimasi kebutuhan dalam meter
+  needsSample  Boolean  @default(false) // ingin sample swatch gratis
+  message      String?  @db.Text
+  fileUrl      String?  // file referensi (artwork/spec) yang di-upload
+  fileName     String?
+  locale       String   @default("id") // bahasa halaman saat submit
+  source       String   @default("website") // website | catalog | product
+  status       String   @default("NEW") // NEW | CONTACTED | QUOTED | WON | LOST
+  notes        String?  @db.Text // catatan internal tim sales
+  leadId       String?  // relasi ke pipeline CRM
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("quote_requests")
+}
+
+// -----------------------------------------------------------
+// 11b. ARTIKEL / PUSAT PANDUAN TEKSTIL (Blog B2B)
+// Mode "web publish + CMS": artikel edukatif untuk menjangkau buyer
+// yang belum siap menawar (top-of-funnel), sekaligus kanal internal
+// linking ke halaman katalog & form Minta Penawaran.
+// -----------------------------------------------------------
+
+model Article {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  title           String
+  excerpt         String   @db.Text // ringkasan 1-2 kalimat (dipakai di card & meta description)
+  body            String   @db.Text // HTML hasil RichTextEditor (disanitasi saat disimpan)
+  coverImage      String?
+  category        String   @default("panduan") // sportswear | hijab-fashion | home-living | merchandise | proses
+  articleType     String   @default("panduan") // panduan | tips | case-study | news
+  tags            String   @default("[]") @db.Text // JSON array tag
+  relatedProducts String   @default("[]") @db.Text // JSON array slug produk (internal linking)
+  author          String   @default("Tim Tekstil Texora")
+  authorRole      String?
+  readMinutes     Int      @default(4)
+  seoTitle        String?
+  seoDescription  String?
+  isPublished     Boolean  @default(false)
+  publishedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([isPublished, publishedAt])
+  @@index([category])
+  @@map("cms_articles")
+}
+
+// -----------------------------------------------------------
+// 11. BACKUP DATABASE (Audit Trail & Scheduled Backup)
+// -----------------------------------------------------------
+
+model BackupLog {
+  id          String   @id @default(cuid())
+  filename    String   // Nama file backup di disk
+  sizeBytes   BigInt   @default(0)
+  tables      String   @default("[]") // JSON array nama tabel yang dibackup
+  recordCount Int      @default(0)
+  status      String   @default("SUCCESS") // SUCCESS | FAILED
+  trigger     String   @default("MANUAL") // MANUAL | SCHEDULED
+  message     String?
+  createdBy   String?  // User ID yang memicu (untuk manual)
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("backup_logs")
 }
 
 model SiteContent {

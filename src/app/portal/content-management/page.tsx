@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   LayoutTemplate,
   Plus,
@@ -15,15 +16,38 @@ import {
   MessageSquare,
   HelpCircle,
   FileText,
+  Layers,
   Sliders,
   Sparkles,
   X,
   ExternalLink,
   Share2,
+  BookOpen,
+  Activity,
+  Shuffle,
+  Languages,
 } from "lucide-react";
 import { formatRupiah } from "@/lib/utils";
+import { ImageUpload } from "@/components/common/ImageUpload";
+import { RichTextEditor } from "@/components/common/RichTextEditor";
+import { RichContent } from "@/components/common/RichContent";
+import { SeoHealthPanel } from "@/components/common/SeoHealthPanel";
+import { RedirectManager } from "@/components/common/RedirectManager";
+import { TranslationManager } from "@/components/common/TranslationManager";
+import ArticleManager from "./ArticleManager";
+import { CmsTabBar } from "@/components/portal/CmsTabBar";
 
-type TabType = "hero" | "testimonials" | "faqs" | "content" | "social" | "pricing";
+type TabType =
+  | "hero"
+  | "testimonials"
+  | "faqs"
+  | "content"
+  | "social"
+  | "pricing"
+  | "pages"
+  | "artikel"
+  | "seo"
+  | "translations";
 
 interface HeroSlideItem {
   id: string;
@@ -79,11 +103,57 @@ const DEFAULT_SOCIAL_FORM: SocialLinkItem[] = [
   { id: "whatsapp", label: "WhatsApp Sales", href: "https://wa.me/6287889856066?text=Halo%20Texora%2C%20saya%20ingin%20bertanya%20tentang%20kain%20sublimasi.", handle: "+62 878-8985-6066", isActive: true, order: 6 },
 ];
 
-export default function ContentManagementPage() {
+/**
+ * Modul halaman yang dapat dinonaktifkan dari dashboard.
+ * Sumber data: `seo.pages[path].enabled` (sumber tunggal, sinkron dengan tab SEO & AI).
+ */
+const MODULE_TOGGLES: Array<{ path: string; label: string; description: string }> = [
+  {
+    path: "/custom-sublimation",
+    label: "Kustom Sublimasi",
+    description:
+      "Simulator visualizer & pemesanan sublimasi kustom. Menu nav disembunyikan, halaman menampilkan pesan tidak tersedia, dan modul dikeluarkan dari sitemap.",
+  },
+  {
+    path: "/track-order",
+    label: "Lacak Pesanan",
+    description:
+      "Halaman pelacakan SPK & nomor resi kargo. Menu nav disembunyikan dan modul dikeluarkan dari sitemap.",
+  },
+  {
+    path: "/catalog",
+    label: "Katalog Produk",
+    description:
+      "Katalog kain sublimasi. Menonaktifkan modul menyembunyikan katalog dari navigasi dan search engine.",
+  },
+  {
+    path: "/about",
+    label: "Tentang Kami",
+    description:
+      "Profil perusahaan & kapasitas produksi. Disembunyikan dari navigasi dan sitemap.",
+  },
+  {
+    path: "/contact",
+    label: "Hubungi Kami",
+    description:
+      "Form kontak & informasi penjualan B2B. Disembunyikan dari navigasi dan sitemap.",
+  },
+];
+
+function ContentManagementInner() {
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabType>("hero");
+
+  useEffect(() => {
+    const tab = searchParams.get("tab") as TabType | null;
+    if (tab && ["hero","testimonials","faqs","content","social","pricing","pages","artikel","seo","catalog","translations"].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [showGuide, setShowGuide] = useState(false);
 
   const [heroSlides, setHeroSlides] = useState<HeroSlideItem[]>([]);
   const [testimonials, setTestimonials] = useState<TestimonialItem[]>([]);
@@ -93,6 +163,20 @@ export default function ContentManagementPage() {
 
   // Modals state
   const [modalType, setModalType] = useState<"hero" | "testimonial" | "faq" | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  const [seoData, setSeoData] = useState<any>(null);
+  const [seoSelectedPage, setSeoSelectedPage] = useState<string>("/");
+  const [currentRole, setCurrentRole] = useState<string>("");
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.authenticated && d.user) setCurrentRole(d.user.role);
+      })
+      .catch(() => {});
+  }, []);
   const [editingItem, setEditingItem] = useState<any>(null);
 
   // Forms
@@ -133,6 +217,18 @@ export default function ContentManagementPage() {
     description: "Tersedia termin pembayaran 30/60 hari untuk mitra terverifikasi, sampel swatch, dan PIC sales khusus.",
     actionText: "Minta penawaran",
     actionLink: "/contact",
+  });
+
+  const [pagesData, setPagesData] = useState({
+    aboutHeroImage: "/images/hero/hero-rotary.jpg",
+    aboutTitle: "Satu atap, dari bahan mentah hingga gulungan siap kargo.",
+    aboutDescription:
+      "Berpusat di Tugu Utara, Tanjung Priok, Jakarta Utara, kami menggabungkan penyediaan kain poliester siap sublimasi dengan jasa cetak roll-ke-roll.",
+    aboutCaption: "“Kalender rotary 210°C mengunci tinta dispersi ke dalam serat benang, menghasilkan warna yang menyatu — bukan menempel di permukaan kain.”",
+    contactAddress: "Tugu Utara, Tanjung Priok, Jakarta Utara",
+    contactEmail: "sales@texora.co.id",
+    contactPhone: "+62 878-8985-6066",
+    footerCopyright: "© 2026 PT. Texora Visi Prima. All rights reserved.",
   });
 
   // Dynamic Pricing state for Management CMS
@@ -189,6 +285,16 @@ export default function ContentManagementPage() {
         })
         .catch(() => {});
 
+      // Load SEO settings
+      fetch("/api/seo")
+        .then((r) => r.json())
+        .then((d) => {
+          if (d?.success && d.data) {
+            setSeoData(d.data);
+          }
+        })
+        .catch(() => {});
+
       const res = await fetch("/api/cms");
       const json = await res.json();
       if (json.success && json.data) {
@@ -224,6 +330,13 @@ export default function ContentManagementPage() {
         if (b2bRow?.value) {
           try {
             setB2bData(JSON.parse(b2bRow.value));
+          } catch {}
+        }
+
+        const pagesRow = json.data.siteContent?.find((s: any) => s.key === "site.pages");
+        if (pagesRow?.value) {
+          try {
+            setPagesData((prev) => ({ ...prev, ...JSON.parse(pagesRow.value) }));
           } catch {}
         }
       }
@@ -483,6 +596,95 @@ export default function ContentManagementPage() {
     }
   };
 
+  const handleSavePagesContent = async () => {
+    setSubmitting(true);
+    try {
+      await fetch("/api/cms", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "siteContent",
+          data: {
+            key: "site.pages",
+            group: "pages",
+            label: "Konten Halaman Statis (About/Contact/Footer)",
+            value: JSON.stringify(pagesData),
+          },
+        }),
+      });
+      showNotice("success", "Konten halaman statis berhasil disimpan!");
+      await loadData();
+    } catch (err: any) {
+      showNotice("error", err.message || "Gagal menyimpan konten halaman.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleToggleModule = async (path: string) => {
+    if (!seoData) return;
+    const currentEnabled = seoData.pages?.[path]?.enabled !== false;
+    const nextEnabled = !currentEnabled;
+
+    // Optimistic update
+    const optimistic = {
+      ...seoData,
+      pages: {
+        ...seoData.pages,
+        [path]: { ...seoData.pages[path], enabled: nextEnabled },
+      },
+    };
+    setSeoData(optimistic);
+    setSubmitting(true);
+
+    try {
+      const res = await fetch("/api/seo", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings: optimistic }),
+      });
+      const json = await res.json();
+      if (json?.success) {
+        setSeoData(json.data);
+        showNotice(
+          "success",
+          `Modul ${path} berhasil ${nextEnabled ? "diaktifkan" : "dinonaktifkan"}.`
+        );
+      } else {
+        // Rollback
+        setSeoData(seoData);
+        showNotice("error", json?.error || "Gagal mengubah visibilitas modul.");
+      }
+    } catch (err: any) {
+      setSeoData(seoData);
+      showNotice("error", err.message || "Gagal mengubah visibilitas modul.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSaveSeo = async () => {
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/seo", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings: seoData }),
+      });
+      const json = await res.json();
+      if (json?.success) {
+        setSeoData(json.data);
+        showNotice("success", "Pengaturan SEO berhasil disimpan!");
+      } else {
+        showNotice("error", json?.error || "Gagal menyimpan SEO.");
+      }
+    } catch (err: any) {
+      showNotice("error", err.message || "Gagal menyimpan SEO.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   // Handler for Social Links (disimpan ke DB via SiteContent social.links)
   const handleSaveSocialLinks = async () => {
     setSubmitting(true);
@@ -512,6 +714,281 @@ export default function ContentManagementPage() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const CMS_GUIDE_DETAILS: Record<
+    string,
+    { title: string; desc: string; steps: string[]; fields?: { label: string; hint: string }[]; tips?: string[] }
+  > = {
+    hero: {
+      title: "Panduan Hero Slider",
+      desc: "Modul untuk mengelola slide showcase utama di homepage. Slide berputar otomatis dengan efek crossfade.",
+      steps: [
+        "Klik 'Tambah Slide Baru' untuk membuat slide.",
+        "Isi kolom sesuai penjelasan di bawah.",
+        "Klik Simpan. Edit/hapus slide via ikon di kartu slide.",
+        "Gunakan preview gambar untuk memastikan tampilan.",
+      ],
+      fields: [
+        { label: "Tag / Kategori", hint: "Label kecil di atas slide, mis. 'Mesin Cetak Sublim Digital'." },
+        { label: "Caption", hint: "Kalimat penjelas slide, ditampilkan di bawah judul." },
+        { label: "SEO Alt", hint: "Teks alternatif gambar untuk SEO & aksesibilitas." },
+        { label: "URL Gambar Utama", hint: "Gambar utama slide (kiri/large)." },
+        { label: "URL Gambar Detail", hint: "Gambar pendukung (kanan/kecil)." },
+        { label: "Nomor Urutan", hint: "Urutan tampil slide (1 tampil pertama)." },
+        { label: "Aktif", hint: "Nonaktifkan untuk menyembunyikan slide tanpa menghapus." },
+      ],
+    },
+    testimonials: {
+      title: "Panduan Testimoni Mitra",
+      desc: "Modul untuk mengelola ulasan mitra yang tampil di homepage.",
+      steps: [
+        "Klik 'Tambah Testimoni' untuk menambah ulasan.",
+        "Isi kolom sesuai penjelasan di bawah.",
+        "Edit/hapus via ikon di kartu testimoni.",
+        "Non-aktifkan testimoni yang tidak ingin ditampilkan.",
+      ],
+      fields: [
+        { label: "Nama", hint: "Nama pemberi ulasan, mis. 'Budi Kurniawan'." },
+        { label: "Organisasi", hint: "Nama perusahaan mitra, mis. 'Apex Athletic Apparel'." },
+        { label: "Kutipan", hint: "Isi ulasan/quote yang tampil." },
+        { label: "Urutan", hint: "Urutan tampil testimoni." },
+        { label: "Aktif", hint: "Nonaktifkan untuk menyembunyikan tanpa menghapus." },
+      ],
+    },
+    faqs: {
+      title: "Panduan FAQ",
+      desc: "Modul untuk mengelola daftar pertanyaan umum dengan penyunting teks kaya (rich text).",
+      steps: [
+        "Klik 'Tambah Pertanyaan' untuk menambah FAQ.",
+        "Tulis pertanyaan pada kolom Pertanyaan.",
+        "Susun jawaban pada editor kaya: tebal, miring, heading, daftar, tautan, atau blok kode.",
+        "Klik Simpan Pertanyaan.",
+        "Edit/hapus via ikon di item FAQ.",
+      ],
+      fields: [
+        { label: "Pertanyaan", hint: "Pertanyaan yang sering ditanyakan pelanggan." },
+        { label: "Jawaban Lengkap", hint: "Editor teks kaya. Mendukung heading, daftar poin/nomor, kutipan, tautan, dan kode. Konten otomatis disanitasi (anti-XSS)." },
+        { label: "Urutan", hint: "Urutan tampil pertanyaan." },
+        { label: "Aktif", hint: "Nonaktifkan untuk menyembunyikan." },
+      ],
+    },
+    content: {
+      title: "Panduan Statistik & Banner B2B",
+      desc: "Modul untuk mengatur metrik statistik pabrik dan banner CTA B2B di homepage.",
+      steps: [
+        "Ubah nilai & label statistik (3 metrik).",
+        "Ubah judul, deskripsi, teks tombol, dan link banner B2B.",
+        "Klik 'Simpan Perubahan Teks' untuk menerapkan.",
+      ],
+      fields: [
+        { label: "Metrik (Nilai & Label)", hint: "Angka pencapaian, mis. nilai '10.000 m', label 'Kapasitas harian'." },
+        { label: "Judul Penawaran B2B", hint: "Judul banner CTA bagian bawah homepage." },
+        { label: "Deskripsi Fasilitas", hint: "Penjelasan singkat fasilitas B2B." },
+        { label: "Teks Tombol", hint: "Label tombol, mis. 'Minta penawaran'." },
+        { label: "Tautan Aksi", hint: "Tujuan link saat tombol diklik." },
+      ],
+    },
+    social: {
+      title: "Panduan Media Sosial",
+      desc: "Modul untuk mengelola tautan media sosial storefront (footer & floating dock).",
+      steps: [
+        "Ubah Label, URL (https://), dan Handle akun.",
+        "Aktifkan/non-aktifkan toggle untuk menyembunyikan ikon.",
+        "Klik 'Simpan Tautan Sosial ke Database'.",
+      ],
+      fields: [
+        { label: "Label Tampilan", hint: "Nama akun yang tampil, mis. 'Instagram Xora Hijab'." },
+        { label: "URL Profil", hint: "Harus diawali https://." },
+        { label: "Handle", hint: "Username akun, mis. '@xora_hijab'." },
+        { label: "Aktif", hint: "Nonaktifkan untuk menyembunyikan ikon." },
+      ],
+    },
+    pricing: {
+      title: "Panduan Tarif & Jasa Desain",
+      desc: "Modul untuk mengatur tarif layanan secara dinamis.",
+      steps: [
+        "Ubah biaya jasa desain dan tarif cetak sublimasi per meter.",
+        "Ubah judul layanan, deskripsi, dan kebijakan revisi.",
+        "Klik 'Simpan & Terapkan Tarif Layanan'.",
+        "Nilai otomatis tersinkron ke simulator & keranjang.",
+      ],
+      fields: [
+        { label: "Biaya Jasa Desain", hint: "Harga jasa desain per motif/SPK (Rupiah)." },
+        { label: "Judul Layanan", hint: "Nama layanan yang tampil di storefront." },
+        { label: "Deskripsi Layanan", hint: "Cakupan layanan jasa desain." },
+        { label: "Tarif Cetak/m", hint: "Biaya cetak & rotary heatpress per meter." },
+        { label: "Ketentuan Revisi", hint: "Kebijakan revisi & proofing desain." },
+      ],
+    },
+    pages: {
+      title: "Panduan Halaman Statis & Visibilitas Modul",
+      desc: "Modul untuk mengelola konten halaman About, Contact, Footer, sekaligus mengaktifkan atau menonaktifkan modul website (Kustom Sublimasi, Lacak Pesanan, Katalog, Tentang Kami, Hubungi Kami) langsung dari dashboard.",
+      steps: [
+        "Bagian 'Visibilitas Modul Halaman': geser toggle untuk mengaktifkan/menonaktifkan modul. Perubahan langsung tersimpan (tidak perlu klik tombol simpan).",
+        "Ubah URL gambar hero About, judul, deskripsi, caption.",
+        "Ubah alamat, email, telepon untuk halaman Contact.",
+        "Ubah copyright footer.",
+        "Klik 'Simpan Konten Halaman'.",
+      ],
+      fields: [
+        { label: "Toggle Visibilitas", hint: "Hanya Administrator yang bisa mengubah. Modul nonaktif: menu nav hilang, halaman menampilkan 'Halaman sedang tidak tersedia', dan modul dikeluarkan dari sitemap." },
+        { label: "URL Gambar Hero About", hint: "Gambar utama halaman Tentang Kami." },
+        { label: "Judul About", hint: "Judul utama bagian profil." },
+        { label: "Deskripsi About", hint: "Paragraf penjelasan profil perusahaan." },
+        { label: "Caption/Quote", hint: "Kutipan di atas gambar." },
+        { label: "Alamat/Email/Telepon", hint: "Info kontak halaman Hubungi Kami." },
+        { label: "Copyright Footer", hint: "Teks hak cipta di footer." },
+      ],
+    },
+    artikel: {
+      title: "Panduan Artikel & Pusat Panduan Tekstil",
+      desc: "Modul untuk menulis artikel edukatif yang menjangkau calon buyer sebelum mereka siap menawar. Setiap artikel bisa ditautkan ke produk katalog dan diakhiri ajakan meminta penawaran.",
+      steps: [
+        "Klik 'Tulis Artikel Baru' untuk membuat artikel.",
+        "Isi judul (kunci SEO), ringkasan, dan isi artikel dengan Heading 2/3 agar daftar isi otomatis.",
+        "Pilih kategori & tipe, lalu hubungkan kain yang dibahas ke produk katalog.",
+        "Gunakan tombol 'Preview' untuk melihat tampilan sebelum disimpan.",
+        "Klik 'Simpan & Terbitkan' agar tayang, atau 'Simpan Draft' untuk menyimpan dulu.",
+        "Terjemahan ke 5 bahasa lain dibuat otomatis di background setelah disimpan.",
+      ],
+      fields: [
+        { label: "Judul Artikel", hint: "Targetkan satu kata kunci utama, mis. 'cara memilih kain sublimasi'." },
+        { label: "Ringkasan (Excerpt)", hint: "1-2 kalimat, dipakai di kartu artikel dan meta description." },
+        { label: "Kategori", hint: "Mengikuti taksonomi kain: sportswear, hijab, home living, merchandise, proses." },
+        { label: "Kain yang Dibahas", hint: "Menautkan artikel ke produk katalog untuk internal linking dan konversi." },
+        { label: "SEO & Penulis", hint: "Opsional: SEO title/description khusus + nama & jabatan penulis." },
+      ],
+    },
+    seo: {
+      title: "Panduan SEO & AI Settings",
+      desc: "Modul untuk mengelola metadata SEO, structured data, dan kesiapan AI crawler agar konten ramah Google, ChatGPT, Claude, Perplexity, dan mesin pencari lain.",
+      steps: [
+        "Buka 'SEO & AI Health Check' di bagian atas untuk melihat skor & temuan audit.",
+        "Pilih halaman dari daftar untuk mengedit metadata.",
+        "Isi Meta Title (maks 60) & Description (maks 160).",
+        "Isi Excerpt - ini yang dikutip oleh AI assistant saat menjawab pertanyaan pengguna.",
+        "Pilih tipe schema yang sesuai (Product untuk katalog, FAQ untuk halaman FAQ).",
+        "Klik 'Simpan Pengaturan SEO'.",
+        "Klik 'Audit Ulang' untuk memastikan skor membaik.",
+      ],
+      fields: [
+        { label: "SEO & AI Health Check", hint: "Skor 0-100 yang menilai metadata, structured data, AI-readiness (llms.txt, AI Plugin, allowlist crawler), technical SEO, dan kelengkapan konten." },
+        { label: "Meta Title", hint: "Judul di hasil pencarian, ideal 15-60 karakter." },
+        { label: "Meta Description", hint: "Ringkasan di hasil pencarian, ideal 120-160 karakter." },
+        { label: "Excerpt", hint: "Ringkasan singkat untuk kutipan bot AI. Wajib diisi agar AI dapat mengutip konten Anda dengan akurat." },
+        { label: "Tipe Schema", hint: "Structured data: Article/FAQ/Product/Organization. Mengaktifkan rich result Google." },
+        { label: "Custom Slug", hint: "URL ramah SEO (opsional)." },
+        { label: "Status Aktif", hint: "Hanya Administrator yang dapat mengubah. Modul nonaktif otomatis noindex & dikeluarkan dari sitemap." },
+      ],
+    },
+  };
+
+  const CMS_MODULE_TIPS: Record<string, string[]> = {
+    hero: [
+      "Gunakan resolusi tinggi (min 1920px) dan rasio 16:9 untuk gambar utama agar tajam di layar besar.",
+      "Batasi teks pada slide: satu pesan utama per slide agar mudah dicerna.",
+      "Urutkan slide paling penting di urutan pertama.",
+      "Sertakan CTA yang jelas dan arahkan ke halaman yang relevan.",
+    ],
+    testimonials: [
+      "Pilih ulasan yang spesifik dan menyebut manfaat nyata (angka, hasil).",
+      "Gunakan nama asli + perusahaan untuk meningkatkan kepercayaan.",
+      "Rutin perbarui testimoni agar terlihat aktif.",
+    ],
+    faqs: [
+      "Gunakan pertanyaan yang benar-benar sering ditanya pelanggan.",
+      "Jawab singkat, jelas, dan langsung ke inti.",
+      "Manfaatkan FAQ untuk SEO: jawaban yang baik bisa tampil di 'People Also Ask' Google.",
+      "Pakai editor kaya untuk memecah jawaban panjang menjadi daftar poin agar mudah dipindai.",
+      "Tambahkan tautan ke halaman katalog atau contact dari dalam jawaban untuk memberi CTA internal.",
+    ],
+    content: [
+      "Angka statistik harus realistis dan bisa dipertanggungjawabkan.",
+      "Judul banner B2B harus mengandung kata kunci layanan utama.",
+    ],
+    social: [
+      "Pastikan semua URL mengarah ke profil yang benar.",
+      "Nonaktifkan platform yang tidak aktif agar tidak terkesan kosong.",
+    ],
+    pricing: [
+      "Tetapkan tarif yang kompetitif dan konsisten dengan katalog.",
+      "Jelaskan kebijakan revisi agar tidak ada miskomunikasi.",
+    ],
+    pages: [
+      "Tulis deskripsi profil perusahaan dengan kata kunci lokasi & layanan.",
+      "Sertakan info kontak yang lengkap dan akurat.",
+      "Matikan modul yang belum siap tayang agar pengunjung tidak menemukan halaman kosong.",
+      "Setelah mengaktifkan modul, cek di tab SEO & AI bahwa metadata halaman sudah sesuai.",
+      "Perubahan toggle bersifat instan — tidak perlu menekan tombol simpan.",
+    ],
+    artikel: [
+      "Tulis artikel untuk pertanyaan yang sering masuk ke tim sales, bukan untuk sekadar mengulang deskripsi produk.",
+      "Setiap artikel harus ditautkan ke minimal satu produk katalog (field 'Kain yang Dibahas').",
+      "Akhiri dengan ajakan bertindak: tombol Minta Penawaran & Unduh Katalog PDF sudah terpasang otomatis.",
+      "Gunakan Heading 2 dan 3, jangan Heading 1, supaya struktur artikel rapi dan daftar isi terbentuk.",
+      "Jadwalkan publikasi bertahap agar website selalu punya konten baru tanpa menumpuk.",
+    ],
+    seo: [
+      "Tulis Meta Title < 60 karakter dan Meta Description < 160 karakter.",
+      "Gunakan kata kunci utama di awal title dan description.",
+      "Pilih schema sesuai jenis konten agar AI memahami struktur data.",
+      "Excerpt adalah bahan kutipan AI assistant - tulis dalam 1-2 kalimat yang factually lengkap.",
+      "Website sudah menyediakan /llms.txt, /llms-full.txt, dan manifest AI Plugin secara otomatis.",
+      "20 AI crawler (GPTBot, ClaudeBot, PerplexityBot, Google-Extended, dll) sudah diizinkan di robots.txt.",
+      "Pantau skor SEO & AI Health Check secara berkala - targetkan Grade A (90+).",
+    ],
+  };
+
+  const CMS_SEO_TIPS: Record<string, string[]> = {
+    artikel: [
+      "Satu artikel = satu kata kunci utama. Jangan menggabungkan topik dalam satu artikel.",
+      "Gunakan Heading 2/3 yang mengandung kata kunci turunan, misalnya 'Setting Heat Press 210 Derajat'.",
+      "Isi meta description dengan ringkasan yang menyebut sumber produk Texora.",
+      "Tambahkan tautan ke produk katalog agar artikel memperkuat topical authority.",
+      "Artikel yang menyebut angka teknis (suhu, GSM, MOQ) lebih banyak dikutip AI assistant.",
+    ],
+    hero: [
+      "Isi kolom SEO Alt dengan deskripsi gambar yang mengandung kata kunci.",
+      "Nama file gambar sebaiknya deskriptif, bukan IMG_001.jpg.",
+    ],
+    testimonials: [
+      "Testimoni dengan kata kunci produk akan memperkuat sinyal SEO lokal.",
+    ],
+    faqs: [
+      "Gunakan markup FAQPage (tersedia di tab SEO & AI) agar jawaban bisa jadi rich result.",
+    ],
+    content: [
+      "Sertakan kata kunci di judul dan deskripsi banner B2B.",
+    ],
+    social: [
+      "Konsistensi nama akun memperkuat branding dan kepercayaan.",
+    ],
+    pricing: [
+      "Harga yang jelas membantu Google menampilkan info akurat di hasil pencarian.",
+    ],
+    pages: [
+      "Gunakan heading (judul) yang berjenjang dan mengandung kata kunci.",
+      "Tambahkan structured data Organization agar profil perusahaan terbaca AI.",
+      "Modul yang dinonaktifkan otomatis diberi meta robots noindex dan dikeluarkan dari sitemap.xml.",
+      "Aktifkan kembali modul beserta metadata SEO-nya agar ranking tidak ikut hilang.",
+    ],
+    seo: [
+      "Pastikan sitemap.xml dan robots.txt diperbarui otomatis.",
+      "Gunakan structured data (JSON-LD) untuk Article/FAQ/Product/Breadcrumb.",
+      "Izinkan AI crawler (GPTBot, PerplexityBot) merayapi halaman publik.",
+    ],
+  };
+
+  const CMS_GUIDES: Record<string, string> = {
+    hero: "Kelola slide utama homepage. Tambah/edit/hapus slide, atur gambar utama & detail, tag, caption, urutan, dan status aktif. Klik 'Tambah Slide Baru' untuk membuat slide baru.",
+    testimonials: "Kelola ulasan mitra yang tampil di homepage. Tambah testimoni, edit kutipan/nama/organisasi, atur urutan, dan status aktif.",
+    faqs: "Kelola daftar pertanyaan umum. Tambah/edit/hapus pertanyaan & jawaban, atur urutan dan status aktif.",
+    content: "Atur metrik statistik pabrik (angka & label) dan banner CTA B2B (judul, deskripsi, teks tombol, link). Klik 'Simpan Perubahan Teks' untuk menerapkan.",
+    social: "Kelola tautan media sosial storefront (label, URL, handle, aktif/non-aktif). Klik 'Simpan Tautan Sosial ke Database' setelah mengubah.",
+    pricing: "Atur tarif jasa desain, tarif cetak sublimasi per meter, judul layanan, dan kebijakan revisi. Nilai langsung tersinkron ke simulator & keranjang.",
+    pages: "Kelola konten halaman statis: gambar & teks About, info kontak, dan copyright footer. Klik 'Simpan Konten Halaman' setelah mengubah.",
+    seo: "Atur metadata SEO & AI: meta title, description, excerpt, tipe schema, dan slug per halaman. Lihat preview hasil pencarian Google secara langsung.",
   };
 
   return (
@@ -550,6 +1027,15 @@ export default function ContentManagementPage() {
         </div>
 
         <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setShowGuide(true)}
+            className="px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-brand-500/50 text-slate-300 hover:text-white text-xs font-semibold transition-all flex items-center gap-1.5"
+            title="Panduan penggunaan"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-brand-400" />
+            <span>Panduan</span>
+          </button>
           <a
             href="/"
             target="_blank"
@@ -571,41 +1057,9 @@ export default function ContentManagementPage() {
         </div>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="flex items-center gap-2 border-b border-slate-800 pb-3 overflow-x-auto">
-        {[
-          { key: "hero", label: "Hero Slider Utama", icon: ImageIcon, count: heroSlides.length },
-          { key: "testimonials", label: "Testimoni Mitra", icon: MessageSquare, count: testimonials.length },
-          { key: "faqs", label: "FAQ & Tanya Jawab", icon: HelpCircle, count: faqs.length },
-          { key: "content", label: "Statistik & Banner B2B", icon: FileText, count: 2 },
-          { key: "social", label: "Media Sosial", icon: Share2, count: socialLinks.filter((s) => s.isActive).length },
-          { key: "pricing", label: "Tarif & Jasa Desain", icon: Sliders, count: "Atur" },
-        ].map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.key;
-          return (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => setActiveTab(tab.key as TabType)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
-                isActive
-                  ? "bg-brand-500 text-slate-950 shadow-lg shadow-brand-500/20"
-                  : "bg-slate-900 text-slate-400 hover:text-white border border-slate-800"
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5" />
-              <span>{tab.label}</span>
-              <span
-                className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono ${
-                  isActive ? "bg-slate-950/30 text-slate-950" : "bg-slate-800 text-slate-400"
-                }`}
-              >
-                {tab.count}
-              </span>
-            </button>
-          );
-        })}
+      {/* Tab bar horizontal (selalu terlihat, tidak menunggu data) */}
+      <div className="sticky top-0 z-30 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 bg-slate-950/90 backdrop-blur border-b border-slate-800">
+        <CmsTabBar activeTab={activeTab} />
       </div>
 
       {/* Loading state */}
@@ -615,6 +1069,8 @@ export default function ContentManagementPage() {
           <p className="text-sm font-semibold text-white">Memuat konten CMS dari database...</p>
         </div>
       )}
+
+
 
       {/* TAB 1: HERO SLIDER */}
       {!loading && activeTab === "hero" && (
@@ -794,7 +1250,10 @@ export default function ContentManagementPage() {
                     </span>
                     <h3 className="text-xs font-bold text-white">{faq.question}</h3>
                   </div>
-                  <p className="text-xs text-slate-400 pl-7 leading-relaxed">{faq.answer}</p>
+                  <RichContent
+                    html={faq.answer}
+                    className="text-xs text-slate-400 pl-7 leading-relaxed"
+                  />
                 </div>
 
                 <div className="flex items-center gap-1.5 shrink-0">
@@ -935,7 +1394,7 @@ export default function ContentManagementPage() {
 
       {/* TAB 5: MEDIA SOSIAL */}
       {!loading && activeTab === "social" && (
-        <div className="space-y-6 max-w-4xl">
+        <div className="space-y-6 w-full">
           <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-2">
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
               <Share2 className="w-4 h-4 text-brand-400" />
@@ -947,7 +1406,7 @@ export default function ContentManagementPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {socialLinks.map((s, idx) => (
               <div
                 key={s.id}
@@ -1209,6 +1668,514 @@ export default function ContentManagementPage() {
         </form>
       )}
 
+      {/* TAB 7: HALAMAN STATIS */}
+      {!loading && activeTab === "pages" && (
+        <div className="space-y-6 w-full">
+          {/* VISIBILITAS MODUL - Nonaktifkan modul dari dashboard */}
+          <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <EyeOff className="w-4 h-4 text-brand-400" />
+                  Visibilitas Modul Halaman
+                </h3>
+                <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                  Matikan modul yang belum siap dipakai. Modul nonaktif akan hilang dari menu
+                  navigasi, menampilkan halaman &quot;Halaman sedang tidak tersedia&quot; saat
+                  diakses langsung, dan dikeluarkan dari sitemap search engine.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {MODULE_TOGGLES.map((mod) => {
+                const enabled = seoData?.pages?.[mod.path]?.enabled !== false;
+                const canToggle = currentRole === "ADMINISTRATOR";
+                return (
+                  <div
+                    key={mod.path}
+                    className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between gap-4"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-bold text-white">{mod.label}</span>
+                        <code className="text-[10px] font-mono text-slate-500 bg-slate-900 px-1.5 py-0.5 rounded">
+                          {mod.path}
+                        </code>
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                            enabled
+                              ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/40"
+                              : "bg-slate-800 text-slate-500 border-slate-700"
+                          }`}
+                        >
+                          {enabled ? "Aktif" : "Nonaktif"}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                        {mod.description}
+                      </p>
+                    </div>
+
+                    {canToggle ? (
+                      <button
+                        type="button"
+                        onClick={() => handleToggleModule(mod.path)}
+                        disabled={submitting}
+                        title={enabled ? "Klik untuk menonaktifkan modul" : "Klik untuk mengaktifkan modul"}
+                        className={`relative w-12 h-6 rounded-full shrink-0 transition-colors disabled:opacity-50 ${
+                          enabled ? "bg-emerald-500" : "bg-slate-700"
+                        }`}
+                      >
+                        <span
+                          className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                            enabled ? "translate-x-[1.5rem]" : "translate-x-0.5"
+                          }`}
+                        />
+                      </button>
+                    ) : (
+                      <span className="text-[10px] text-slate-500 shrink-0 text-right leading-tight">
+                        Hanya Administrator
+                        <br />
+                        yang dapat mengubah
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {currentRole !== "ADMINISTRATOR" && (
+              <p className="text-[10px] text-amber-400/80 flex items-center gap-1.5">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>
+                  Anda dapat melihat status modul, namun hanya Administrator yang dapat
+                  mengaktifkan atau menonaktifkannya.
+                </span>
+              </p>
+            )}
+          </div>
+
+          <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
+            <h3 className="text-sm font-bold text-white">Konten Halaman About</h3>
+            <div className="space-y-3 text-xs">
+              <div>
+                <ImageUpload
+                  label="Gambar Hero About"
+                  value={pagesData.aboutHeroImage}
+                  onChange={(url) => setPagesData({ ...pagesData, aboutHeroImage: url })}
+                  onError={(m) => showNotice("error", m)}
+                />
+              </div>
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Judul About</label>
+                <input value={pagesData.aboutTitle} onChange={(e) => setPagesData({ ...pagesData, aboutTitle: e.target.value })} className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white" />
+              </div>
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Deskripsi About</label>
+                <textarea rows={3} value={pagesData.aboutDescription} onChange={(e) => setPagesData({ ...pagesData, aboutDescription: e.target.value })} className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white" />
+              </div>
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Caption/Quote About</label>
+                <textarea rows={2} value={pagesData.aboutCaption} onChange={(e) => setPagesData({ ...pagesData, aboutCaption: e.target.value })} className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white" />
+              </div>
+            </div>
+          </div>
+
+          <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
+            <h3 className="text-sm font-bold text-white">Konten Halaman Contact</h3>
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Alamat</label>
+                <input value={pagesData.contactAddress} onChange={(e) => setPagesData({ ...pagesData, contactAddress: e.target.value })} className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white" />
+              </div>
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Email</label>
+                <input value={pagesData.contactEmail} onChange={(e) => setPagesData({ ...pagesData, contactEmail: e.target.value })} className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white" />
+              </div>
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Telepon/WhatsApp</label>
+                <input value={pagesData.contactPhone} onChange={(e) => setPagesData({ ...pagesData, contactPhone: e.target.value })} className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white" />
+              </div>
+            </div>
+          </div>
+
+          <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
+            <h3 className="text-sm font-bold text-white">Footer</h3>
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Copyright Footer</label>
+                <input value={pagesData.footerCopyright} onChange={(e) => setPagesData({ ...pagesData, footerCopyright: e.target.value })} className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white" />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              type="button"
+              disabled={submitting}
+              onClick={handleSavePagesContent}
+              className="px-6 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-400 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg shadow-brand-500/20"
+            >
+              {submitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+              <span>Simpan Konten Halaman</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL PREVIEW GAMBAR */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
+          onClick={() => setPreviewImage(null)}
+        >
+          <img
+            src={previewImage}
+            alt="Preview"
+            className="max-h-[90vh] max-w-[90vw] object-contain rounded-xl shadow-2xl"
+          />
+        </div>
+      )}
+
+      {/* MODAL PANDUAN */}
+      {showGuide && CMS_GUIDE_DETAILS[activeTab] && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="max-w-lg w-full max-h-[85vh] overflow-y-auto glass-panel p-6 rounded-3xl border border-brand-500/30 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-brand-400" />
+                {CMS_GUIDE_DETAILS[activeTab].title}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowGuide(false)}
+                className="w-8 h-8 rounded-full bg-slate-900 text-slate-400 hover:text-white flex items-center justify-center"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-300 leading-relaxed">{CMS_GUIDE_DETAILS[activeTab].desc}</p>
+            <div className="space-y-2">
+              <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Langkah-langkah</p>
+              <ol className="space-y-2 text-xs text-slate-200 list-decimal list-inside">
+                {CMS_GUIDE_DETAILS[activeTab].steps.map((s, i) => (
+                  <li key={i} className="leading-relaxed">{s}</li>
+                ))}
+              </ol>
+            </div>
+            {CMS_GUIDE_DETAILS[activeTab].fields && (
+              <div className="space-y-2">
+                <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Penjelasan Kolom</p>
+                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                  {CMS_GUIDE_DETAILS[activeTab].fields!.map((f, i) => (
+                    <div key={i} className="flex items-start gap-2 text-xs">
+                      <span className="text-brand-400 font-bold shrink-0">{f.label}:</span>
+                      <span className="text-slate-300 leading-relaxed">{f.hint}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="space-y-2 rounded-xl bg-brand-500/5 border border-brand-500/20 p-3">
+              <p className="text-[10px] uppercase font-bold text-brand-300 tracking-wider flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" /> Tips Pengelolaan Profesional
+              </p>
+              <ul className="space-y-1.5 text-xs text-slate-300 list-disc list-inside">
+                {(CMS_MODULE_TIPS[activeTab] || []).map((t, i) => (
+                  <li key={i}>{t}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="space-y-2 rounded-xl bg-emerald-500/5 border border-emerald-500/20 p-3">
+              <p className="text-[10px] uppercase font-bold text-emerald-300 tracking-wider flex items-center gap-1.5">
+                <ExternalLink className="w-3.5 h-3.5" /> Tips SEO &amp; AI Optimizer
+              </p>
+              <ul className="space-y-1.5 text-xs text-slate-300 list-disc list-inside">
+                {(CMS_SEO_TIPS[activeTab] || []).map((t, i) => (
+                  <li key={i}>{t}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => setShowGuide(false)}
+                className="px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-400 text-slate-950 font-bold text-xs"
+              >
+                Mengerti
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 8: SEO & AI SETTINGS */}
+      {/* TAB: ARTIKEL / PUSAT PANDUAN TEKSTIL */}
+      {!loading && activeTab === "artikel" && (
+        <section aria-label="Manajemen Artikel">
+          <div className="mb-4">
+            <h2 className="text-lg font-display font-bold text-white">
+              Artikel &amp; Pusat Panduan Tekstil
+            </h2>
+            <p className="text-xs text-slate-400 mt-1 max-w-3xl leading-relaxed">
+              Artikel edukatif yang menjangkau calon buyer sebelum mereka siap
+              menawar. Tiap artikel bisa ditautkan ke produk katalog dan diakhiri
+              CTA &quot;Minta Penawaran&quot;. Setelah disimpan, isi diterjemahkan
+              otomatis ke 5 bahasa lain (English, 中文, 日本語, Deutsch, العربية).
+            </p>
+          </div>
+          <ArticleManager />
+        </section>
+      )}
+
+      {!loading && activeTab === "seo" && seoData && (
+        <div className="space-y-6 w-full">
+          {/* SEO & AI Health Check */}
+          <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Activity className="w-4 h-4 text-brand-400" />
+                SEO &amp; AI Health Check
+              </h3>
+              <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                Pemeriksaan otomatis terhadap metadata, structured data (JSON-LD), kesiapan AI
+                crawler, technical SEO, dan kualitas konten. Skor diperbarui setiap Anda
+                melakukan audit ulang.
+              </p>
+            </div>
+            <SeoHealthPanel />
+          </div>
+
+          {/* Redirect Manager */}
+          <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Shuffle className="w-4 h-4 text-brand-400" />
+                Redirect Manager
+              </h3>
+              <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                Alihkan URL lama ke URL baru (status 301) agar peringkat SEO tidak hilang saat
+                struktur URL berubah. Perubahan berlaku otomatis tanpa deploy ulang.
+              </p>
+            </div>
+            <RedirectManager />
+          </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            {/* Daftar Halaman */}
+            <div className="glass-panel p-5 rounded-3xl border border-slate-800 space-y-2">
+              <h3 className="text-sm font-bold text-white">Halaman</h3>
+              {Object.keys(seoData.pages || {}).map((path) => {
+                const enabled = seoData.pages[path]?.enabled !== false;
+                return (
+                  <div
+                    key={path}
+                    className={`rounded-xl border transition-colors ${
+                      seoSelectedPage === path ? "border-brand-500/40 bg-brand-500/10" : "border-transparent hover:bg-slate-800/60"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2 px-3 py-2">
+                      <button
+                        type="button"
+                        onClick={() => setSeoSelectedPage(path)}
+                        className="flex-1 text-left text-xs font-semibold text-slate-300 hover:text-white truncate"
+                      >
+                        {path}
+                      </button>
+                      {currentRole === "ADMINISTRATOR" ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSeoData({
+                              ...seoData,
+                              pages: {
+                                ...seoData.pages,
+                                [path]: { ...seoData.pages[path], enabled: !enabled },
+                              },
+                            })
+                          }
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                            enabled
+                              ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/40"
+                              : "bg-slate-800 text-slate-500 border-slate-700"
+                          }`}
+                          title={enabled ? "Klik untuk menonaktifkan" : "Klik untuk mengaktifkan"}
+                        >
+                          {enabled ? "Aktif" : "Nonaktif"}
+                        </button>
+                      ) : (
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                            enabled
+                              ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/40"
+                              : "bg-slate-800 text-slate-500 border-slate-700"
+                          }`}
+                        >
+                          {enabled ? "Aktif" : "Nonaktif"}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Editor */}
+            <div className="glass-panel p-5 rounded-3xl border border-slate-800 space-y-4">
+              <h3 className="text-sm font-bold text-white">Editor Metadata</h3>
+              <div>
+                <label className="text-[10px] font-bold uppercase text-slate-500">Meta Title (max 60)</label>
+                <input
+                  value={seoData.pages[seoSelectedPage]?.title || ""}
+                  maxLength={60}
+                  onChange={(e) =>
+                    setSeoData({
+                      ...seoData,
+                      pages: { ...seoData.pages, [seoSelectedPage]: { ...seoData.pages[seoSelectedPage], title: e.target.value } },
+                    })
+                  }
+                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase text-slate-500">Meta Description (max 160)</label>
+                <textarea
+                  rows={3}
+                  maxLength={160}
+                  value={seoData.pages[seoSelectedPage]?.description || ""}
+                  onChange={(e) =>
+                    setSeoData({
+                      ...seoData,
+                      pages: { ...seoData.pages, [seoSelectedPage]: { ...seoData.pages[seoSelectedPage], description: e.target.value } },
+                    })
+                  }
+                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase text-slate-500">Excerpt / Ringkasan</label>
+                <textarea
+                  rows={2}
+                  value={seoData.pages[seoSelectedPage]?.excerpt || ""}
+                  onChange={(e) =>
+                    setSeoData({
+                      ...seoData,
+                      pages: { ...seoData.pages, [seoSelectedPage]: { ...seoData.pages[seoSelectedPage], excerpt: e.target.value } },
+                    })
+                  }
+                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase text-slate-500">Tipe Schema</label>
+                <select
+                  value={seoData.pages[seoSelectedPage]?.schemaType || "none"}
+                  onChange={(e) =>
+                    setSeoData({
+                      ...seoData,
+                      pages: { ...seoData.pages, [seoSelectedPage]: { ...seoData.pages[seoSelectedPage], schemaType: e.target.value } },
+                    })
+                  }
+                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white mt-1"
+                >
+                  <option value="none">None</option>
+                  <option value="article">Article</option>
+                  <option value="faq">FAQ</option>
+                  <option value="product">Product</option>
+                  <option value="organization">Organization</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase text-slate-500">Custom Slug</label>
+                <input
+                  value={seoData.pages[seoSelectedPage]?.slug || ""}
+                  onChange={(e) =>
+                    setSeoData({
+                      ...seoData,
+                      pages: { ...seoData.pages, [seoSelectedPage]: { ...seoData.pages[seoSelectedPage], slug: e.target.value } },
+                    })
+                  }
+                  placeholder="opsional"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white mt-1"
+                />
+              </div>
+            </div>
+
+            {/* SERP Preview */}
+            <div className="space-y-4">
+              <div className="glass-panel p-5 rounded-3xl border border-slate-800">
+                <h3 className="text-sm font-bold text-white mb-3">Preview Hasil Google</h3>
+                <div className="bg-white rounded-xl p-4 text-[#1a0dab]">
+                  <p className="text-[11px] text-[#006621] truncate">
+                    {`texora.co.id${seoSelectedPage === "/" ? "" : seoSelectedPage}`}
+                  </p>
+                  <p className="text-base leading-snug font-medium cursor-pointer">
+                    {seoData.pages[seoSelectedPage]?.title || ""}
+                  </p>
+                  <p className="text-xs text-[#545454] leading-snug mt-1">
+                    {seoData.pages[seoSelectedPage]?.description || ""}
+                  </p>
+                </div>
+              </div>
+              <div className="glass-panel p-5 rounded-3xl border border-slate-800 space-y-2">
+                <h3 className="text-sm font-bold text-white">Pengaturan Global</h3>
+                <label className="text-[10px] font-bold uppercase text-slate-500 block">Judul Situs</label>
+                <input
+                  value={seoData.global?.title || ""}
+                  onChange={(e) => setSeoData({ ...seoData, global: { ...seoData.global, title: e.target.value } })}
+                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+                />
+                <label className="text-[10px] font-bold uppercase text-slate-500 block mt-2">Keywords</label>
+                <input
+                  value={seoData.global?.keywords || ""}
+                  onChange={(e) => setSeoData({ ...seoData, global: { ...seoData.global, keywords: e.target.value } })}
+                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+                />
+                <label className="text-[10px] font-bold uppercase text-slate-500 block mt-2">OG Image URL</label>
+                <input
+                  value={seoData.global?.ogImage || ""}
+                  onChange={(e) => setSeoData({ ...seoData, global: { ...seoData.global, ogImage: e.target.value } })}
+                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              type="button"
+              disabled={submitting}
+              onClick={handleSaveSeo}
+              className="px-6 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-400 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg shadow-brand-500/20"
+            >
+              {submitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+              <span>Simpan Pengaturan SEO</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 9: TERJEMAHAN (AI Content Translation) */}
+      {!loading && activeTab === "translations" && (
+        <div className="space-y-6 w-full">
+          <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Languages className="w-4 h-4 text-brand-400" />
+                Manajemen Terjemahan Multi-Bahasa
+              </h3>
+              <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                Konten CMS Anda diterjemahkan otomatis ke 5 bahasa oleh Google Gemini dan
+                di-cache di database. Di sini Anda bisa memantau, menyunting manual, atau
+                memicu terjemahan ulang seluruh konten.
+              </p>
+            </div>
+            <TranslationManager />
+          </div>
+        </div>
+      )}
+
       {/* MODAL HERO SLIDE */}
       {modalType === "hero" && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
@@ -1263,27 +2230,19 @@ export default function ContentManagementPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-300 font-semibold mb-1">URL Gambar Utama</label>
-                  <input
-                    type="text"
-                    required
-                    value={heroForm.mainImage}
-                    onChange={(e) => setHeroForm({ ...heroForm, mainImage: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-300 font-semibold mb-1">URL Gambar Detail</label>
-                  <input
-                    type="text"
-                    required
-                    value={heroForm.secondaryImage}
-                    onChange={(e) => setHeroForm({ ...heroForm, secondaryImage: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white"
-                  />
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <ImageUpload
+                  label="Gambar Utama"
+                  value={heroForm.mainImage}
+                  onChange={(url) => setHeroForm({ ...heroForm, mainImage: url })}
+                  onError={(m) => showNotice("error", m)}
+                />
+                <ImageUpload
+                  label="Gambar Detail"
+                  value={heroForm.secondaryImage}
+                  onChange={(url) => setHeroForm({ ...heroForm, secondaryImage: url })}
+                  onError={(m) => showNotice("error", m)}
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -1438,14 +2397,12 @@ export default function ContentManagementPage() {
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Jawaban Lengkap</label>
-                <textarea
-                  rows={4}
-                  required
-                  value={faqForm.answer}
-                  onChange={(e) => setFaqForm({ ...faqForm, answer: e.target.value })}
+                <RichTextEditor
+                  label="Jawaban Lengkap"
+                  value={faqForm.answer || ""}
+                  onChange={(html) => setFaqForm({ ...faqForm, answer: html })}
                   placeholder="Penjelasan teknis dan prosedural..."
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white"
+                  minHeight={180}
                 />
               </div>
 
@@ -1470,5 +2427,26 @@ export default function ContentManagementPage() {
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * Wrapper dengan Suspense boundary.
+ * `useSearchParams()` pada halaman ini (untuk sub-tab `?tab=seo`) memaksa
+ * client-side rendering, sehingga harus dibungkus Suspense agar build
+ * production (static prerender) tidak gagal.
+ */
+export default function ContentManagementPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-6 lg:p-8 space-y-6">
+          <div className="h-10 w-64 rounded-xl bg-slate-900/60 animate-pulse" />
+          <div className="h-96 rounded-3xl bg-slate-900/60 animate-pulse" />
+        </div>
+      }
+    >
+      <ContentManagementInner />
+    </Suspense>
   );
 }

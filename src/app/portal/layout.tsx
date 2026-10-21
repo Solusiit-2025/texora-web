@@ -4,33 +4,21 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
-  LayoutDashboard,
-  Users,
-  Layers,
-  Package,
-  FileText,
-  Settings,
-  Barcode,
   ArrowLeft,
-  ShieldAlert,
-  TrendingUp,
-  BarChart3,
-  Scissors,
-  FileCheck,
-  Sliders,
-  ClipboardList,
-  Inbox,
-  MessagesSquare,
-  MessageCircle,
-  Mail,
+  LogOut,
   Menu,
   X,
-  ShoppingCart,
-  Landmark,
-  LayoutTemplate,
-  LogOut,
 } from "lucide-react";
 import { isRouteAllowed } from "@/lib/auth/rbac";
+import { getMenuIcon } from "@/components/portal/menu-icons";
+import {
+  DEFAULT_ROLE_MENU,
+  PORTAL_MENU_GROUPS,
+  PortalMenuGroup,
+  PortalUserRole,
+  ROLE_DEFINITIONS,
+} from "@/config/portal-menu";
+import { CMS_TABS } from "@/config/cms-tabs";
 
 export default function PortalLayout({
   children,
@@ -45,11 +33,9 @@ export default function PortalLayout({
     setMobileOpen(false);
   }, [pathname]);
 
-  const [currentUser, setCurrentUser] = useState<any>({
-    name: "Pricilia Kishin Hassanannd",
-    role: "ADMINISTRATOR",
-    email: "admin@texora.co.id",
-  });
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  const [menuGroups, setMenuGroups] = useState<PortalMenuGroup[]>([]);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -62,6 +48,27 @@ export default function PortalLayout({
       .catch(() => {});
   }, []);
 
+  // Muat menu portal sesuai hak akses role (Role & Menu Management)
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await fetch("/api/rbac/menu?scope=me");
+        const json = await res.json();
+        if (!cancelled && json?.success && Array.isArray(json.data?.groups)) {
+          setMenuGroups(json.data.groups);
+        }
+      } catch {
+        // Fallback ke default saat API tidak tersedia
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const handleLogout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
@@ -69,124 +76,62 @@ export default function PortalLayout({
     window.location.href = "/login";
   };
 
-  const navigation = [
-    {
-      title: "Executive Overview",
-      items: [
-        { name: "Dashboard Analitik", href: "/portal/dashboard", icon: LayoutDashboard },
-      ],
-    },
-    {
-      title: "CRM & Penjualan (PRD §3.3)",
-      items: [
-        { name: "Social Listening & Prospek", href: "/portal/social-media", icon: MessagesSquare },
-        { name: "WhatsApp", href: "/portal/crm/inbox", icon: MessageCircle },
-        { name: "Webmail Sales", href: "/portal/crm/webmail", icon: Mail },
-        { name: "Pipeline Leads & Deals", href: "/portal/crm/leads", icon: TrendingUp },
-        { name: "Database Pelanggan 360°", href: "/portal/crm/customers", icon: Users },
-        { name: "Rekap Penjualan & Sales Order", href: "/portal/sales-report", icon: BarChart3 },
-      ],
-    },
-    {
-      title: "OMS & Digital Proofing (PRD §3.2)",
-      items: [
-        { name: "Antrean Pesanan & SPK", href: "/portal/oms/orders", icon: ClipboardList },
-        { name: "Approval Digital Proof", href: "/portal/oms/custom-orders", icon: FileCheck },
-        { name: "Faktur & CoreTax PPN", href: "/portal/oms/invoices", icon: FileText },
-      ],
-    },
-    {
-      title: "Gudang & Logistik (PRD §13)",
-      items: [
-        { name: "Stok Roll & Barcode", href: "/portal/warehouse/inventory", icon: Barcode },
-        { name: "Pemotongan & Ekspedisi", href: "/portal/warehouse/fulfillment", icon: Scissors },
-      ],
-    },
-    {
-      title: "Finance & Akuntansi (Executive)",
-      items: [
-        { name: "Laporan Keuangan & Laba Rugi", href: "/portal/finance", icon: Landmark },
-      ],
-    },
-    {
-      title: "Purchasing & Pengadaan",
-      items: [
-        { name: "Purchasing & Supplier", href: "/portal/purchasing", icon: ShoppingCart },
-      ],
-    },
-    {
-      title: "Katalog & Pengaturan",
-      items: [
-        { name: "Katalog Kain & Pricing", href: "/portal/catalog-management", icon: Sliders },
-        { name: "CMS Konten Website", href: "/portal/content-management", icon: LayoutTemplate },
-        { name: "Log Audit & 2FA Admin", href: "/portal/audit-logs", icon: ShieldAlert },
-        { name: "Konfigurasi Sistem & RBAC", href: "/portal/settings", icon: Settings },
-      ],
-    },
-  ];
+  /**
+   * Fallback ketika API menu gagal: pakai default role + aturan ROUTE_PERMISSIONS.
+   */
+  const buildFallbackGroups = (role?: string): PortalMenuGroup[] => {
+    if (!role) return [];
+    const allowed = new Set(DEFAULT_ROLE_MENU[role as PortalUserRole] ?? []);
+    return PORTAL_MENU_GROUPS.map((group) => ({
+      ...group,
+      items: group.items.filter(
+        (item) =>
+          allowed.has(item.id) && isRouteAllowed(item.href, role)
+      ),
+    })).filter((group) => group.items.length > 0);
+  };
+
+  const visibleGroups =
+    menuGroups.length > 0 ? menuGroups : buildFallbackGroups(currentUser?.role);
+
+  const roleMeta = ROLE_DEFINITIONS.find((r) => r.role === currentUser?.role);
+  const roleShort =
+    roleMeta?.shortLabel ??
+    (currentUser?.role
+      ? currentUser.role.replace(/[^A-Za-z0-9]/g, "").slice(0, 3).toUpperCase()
+      : "STF");
 
   const renderNavGroups = (onNavigate?: () => void) => (
     <div className="p-4 space-y-6">
-      {navigation.map((group, idx) => {
-        const allowedItems = group.items.filter((item) =>
-          isRouteAllowed(item.href, currentUser?.role)
-        );
-        if (allowedItems.length === 0) return null;
-
-        return (
-          <div key={idx} className="space-y-1">
-            <div className="px-3 text-[10px] uppercase font-bold tracking-wider flex items-center gap-1.5">
-              <span className="text-slate-500">{group.title}</span>
-            </div>
-            {allowedItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = pathname === item.href;
-              const isHighlight = (item as any).highlight;
-
-              if (isHighlight) {
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={onNavigate}
-                    className={`relative flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all overflow-hidden border ${
-                      isActive
-                        ? "bg-gradient-to-r from-emerald-600 via-brand-600 to-brand-600 text-white border-emerald-400/50 shadow-[0_0_18px_rgba(16,185,129,0.35)]"
-                        : "bg-emerald-500/10 text-white border-emerald-500/30 hover:bg-emerald-500/20 hover:border-emerald-400/60"
-                    }`}
-                  >
-                    <span className="relative flex h-2 w-2 shrink-0">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
-                    </span>
-                    <Icon className="w-4 h-4 text-emerald-300 shrink-0" />
-                    <span className="flex-1 truncate">{item.name}</span>
-                    <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/90 text-white text-[9px] font-black tracking-wider shadow shrink-0">
-                      {(item as any).badge ?? "NEW"}
-                    </span>
-                  </Link>
-                );
-              }
-
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={onNavigate}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all min-h-[44px] ${
-                    isActive
-                      ? "bg-brand-600 text-white shadow-lg shadow-brand-600/30"
-                      : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-                  }`}
-                >
-                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-white" : "text-slate-400"}`} />
-                  <span className="truncate">{item.name}</span>
-                </Link>
-              );
-            })}
+      {visibleGroups.map((group, idx) => (
+        <div key={group.id} className="space-y-1">
+          <div className="px-3 text-[10px] uppercase font-bold tracking-wider flex items-center gap-1.5">
+            <span className="text-slate-500">{group.title}</span>
           </div>
-        );
-      })}
+          {group.items.map((item) => {
+            const Icon = getMenuIcon(item.icon);
+            const isActive = pathname === item.href;
+
+            return (
+              <Link
+                key={item.id}
+                href={item.href}
+                onClick={onNavigate}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all min-h-[44px] ${
+                  isActive
+                    ? "bg-brand-600 text-white shadow-lg shadow-brand-600/30"
+                    : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                }`}
+              >
+                <Icon
+                  className={`w-4 h-4 shrink-0 ${isActive ? "text-white" : "text-slate-400"}`}
+                />
+                <span className="truncate">{item.name}</span>
+              </Link>
+            );
+          })}
+        </div>
+      ))}
     </div>
   );
 
@@ -218,12 +163,30 @@ export default function PortalLayout({
           {renderNavGroups()}
         </div>
 
+          {/* Submenu CMS (hanya di halaman Content Management) */}
+          {pathname?.startsWith("/portal/content-management") && (
+            <div className="p-4 border-t border-slate-800 space-y-1">
+              <div className="px-3 text-[10px] uppercase font-bold tracking-wider text-slate-500 mb-1">
+                Submenu CMS
+              </div>
+              {CMS_TABS.map((t) => (
+                <Link
+                  key={t.key}
+                  href={`/portal/content-management?tab=${t.key}`}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors"
+                >
+                  <span className="truncate">{t.label}</span>
+                </Link>
+              ))}
+            </div>
+          )}
+
         {/* Bottom User Role Card & Exit */}
         <div className="p-4 border-t border-slate-800 space-y-2">
           <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between min-w-0 gap-2">
             <div className="flex items-center gap-2 min-w-0">
               <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center text-xs shrink-0">
-                {currentUser?.role === "ADMINISTRATOR" ? "ADM" : currentUser?.role === "SALES_REP" ? "SLS" : "GDG"}
+                {roleShort}
               </div>
               <div className="min-w-0">
                 <div className="text-xs font-bold text-white truncate">{currentUser?.name || "User Texora"}</div>
@@ -282,7 +245,7 @@ export default function PortalLayout({
               <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between min-w-0 gap-2">
                 <div className="flex items-center gap-2 min-w-0">
                   <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center text-xs shrink-0">
-                    {currentUser?.role === "ADMINISTRATOR" ? "ADM" : currentUser?.role === "SALES_REP" ? "SLS" : "GDG"}
+                    {roleShort}
                   </div>
                   <div className="min-w-0">
                     <div className="text-xs font-bold text-white truncate">{currentUser?.name || "User Texora"}</div>

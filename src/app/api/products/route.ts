@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { MOCK_FABRICS } from "@/lib/mock-data";
+import { normalizeLocale, localizeRows } from "@/lib/content-translator";
 
 export const dynamic = "force-dynamic";
 
@@ -70,7 +70,18 @@ export async function GET(request: Request) {
     });
 
     if (dbFabrics.length > 0) {
-      const formatted = dbFabrics.map(formatFabric);
+      let formatted = dbFabrics.map(formatFabric);
+      // ?lang=xx -> deskripsi produk diterjemahkan on-demand (di-cache DB).
+      const lang = normalizeLocale(searchParams.get("lang"));
+      if (lang) {
+        formatted = await localizeRows(
+          "product",
+          formatted,
+          (p: any) => p.slug || p.id,
+          ["description"],
+          lang
+        );
+      }
       return NextResponse.json({
         success: true,
         source: "database",
@@ -78,37 +89,21 @@ export async function GET(request: Request) {
         data: formatted,
       });
     }
+
+    // Tidak ada data di database — jangan tampilkan data hardcode/mock.
+    return NextResponse.json({
+      success: true,
+      source: "database",
+      total: 0,
+      data: [],
+    });
   } catch (error) {
-    console.warn("Falling back to mock fabrics due to DB error:", error);
-  }
-
-  // Graceful fallback to MOCK_FABRICS if DB is empty or fails
-  let fabrics = [...MOCK_FABRICS];
-
-  if (slug) {
-    fabrics = fabrics.filter((f) => f.slug === slug);
-  }
-
-  if (category && category !== "ALL" && category !== "All") {
-    fabrics = fabrics.filter((f) => f.category === category);
-  }
-
-  if (query) {
-    const q = query.toLowerCase();
-    fabrics = fabrics.filter(
-      (f) =>
-        f.name.toLowerCase().includes(q) ||
-        f.composition.toLowerCase().includes(q) ||
-        f.weaveType.toLowerCase().includes(q)
+    console.error("Gagal memuat produk dari database:", error);
+    return NextResponse.json(
+      { success: false, error: "Gagal memuat data katalog." },
+      { status: 500 }
     );
   }
-
-  return NextResponse.json({
-    success: true,
-    source: "fallback",
-    total: fabrics.length,
-    data: fabrics,
-  });
 }
 
 export async function POST(request: Request) {

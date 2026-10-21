@@ -1,3 +1,5 @@
+import { findMenuItemByPath } from "@/config/portal-menu";
+
 export type UserRole = "ADMINISTRATOR" | "SALES_REP" | "WAREHOUSE_STAFF" | "CUSTOMER";
 
 export interface RouteRule {
@@ -63,9 +65,10 @@ export function isRouteAllowed(pathname: string, role?: string): boolean {
 }
 
 /**
- * Returns default landing page for a role after successful login
+ * Returns default landing page for a role after successful login.
+ * Untuk role custom, gunakan `RoleDefinition.defaultRoute` dari role-store.
  */
-export function getDefaultDashboard(role: UserRole): string {
+export function getDefaultDashboard(role?: string): string {
   switch (role) {
     case "ADMINISTRATOR":
       return "/portal/dashboard";
@@ -76,6 +79,29 @@ export function getDefaultDashboard(role: UserRole): string {
     case "CUSTOMER":
       return "/customer/dashboard";
     default:
-      return "/";
+      return "/portal/dashboard";
   }
+}
+
+/**
+ * Cek apakah akses sebuah rute portal ditolak oleh konfigurasi
+ * Role & Menu Management (peta menu per role).
+ *
+ * - Token lama tanpa klaim `menu` -> pakai aturan ROUTE_PERMISSIONS.
+ * - Administrator -> selalu diizinkan.
+ * - Rute yang tidak terdaftar pada registry menu -> pakai aturan ROUTE_PERMISSIONS.
+ */
+export function isMenuDenied(
+  pathname: string,
+  role?: string,
+  menuIds?: string[]
+): boolean {
+  if (!role) return false;
+  if (role === "ADMINISTRATOR") return false;
+  if (!Array.isArray(menuIds)) return false;
+
+  const item = findMenuItemByPath(pathname);
+  if (!item) return false;
+
+  return !menuIds.includes(item.id);
 }

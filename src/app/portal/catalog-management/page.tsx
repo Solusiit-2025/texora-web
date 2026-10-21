@@ -19,6 +19,9 @@ import {
 } from "lucide-react";
 import { formatRupiah } from "@/lib/utils";
 import { FabricProduct } from "@/types";
+import { ImageUpload } from "@/components/common/ImageUpload";
+import { RichTextEditor } from "@/components/common/RichTextEditor";
+import { htmlToPlainText } from "@/lib/sanitize";
 
 export default function CatalogManagementPage() {
   const [fabrics, setFabrics] = useState<FabricProduct[]>([]);
@@ -345,7 +348,7 @@ export default function CatalogManagementPage() {
                     {fabric.name}
                   </h3>
                   <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
-                    {fabric.description}
+                    {htmlToPlainText(fabric.description, 140)}
                   </p>
 
                   <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800/80 space-y-1.5 text-[11px]">
@@ -467,13 +470,12 @@ export default function CatalogManagementPage() {
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Deskripsi Singkat</label>
-                <textarea
-                  rows={2}
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                <RichTextEditor
+                  label="Deskripsi Produk"
+                  value={formData.description || ""}
+                  onChange={(html) => setFormData({ ...formData, description: html })}
                   placeholder="Karakteristik kain, kegunaan utama, daya serap sublimasi..."
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl py-2 px-3 text-white placeholder-slate-500 focus:outline-none focus:border-brand-500"
+                  minHeight={180}
                 />
               </div>
 
@@ -566,13 +568,11 @@ export default function CatalogManagementPage() {
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">URL Gambar Thumbnail</label>
-                <input
-                  type="text"
+                <ImageUpload
+                  label="Gambar Thumbnail"
                   value={formData.thumbnailUrl}
-                  onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })}
-                  placeholder="https://..."
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl py-2 px-3 text-white focus:outline-none focus:border-brand-500"
+                  onChange={(url) => setFormData({ ...formData, thumbnailUrl: url })}
+                  onError={(m) => showNotice("error", m)}
                 />
               </div>
 

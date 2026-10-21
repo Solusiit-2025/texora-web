@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { normalizeLocale, localizeObject } from "@/lib/content-translator";
 
 export const dynamic = "force-dynamic";
 
@@ -11,8 +12,10 @@ const DEFAULT_PRICING = {
   revisionPolicy: "Termasuk 2x revisi minor & digital 3D proofing mockup sebelum naik mesin cetak.",
 };
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const lang = normalizeLocale(new URL(request.url).searchParams.get("lang"));
+
     const rows = await prisma.siteContent.findMany({
       where: {
         group: "pricing",
@@ -29,9 +32,22 @@ export async function GET() {
       ? Number(map.get("pricing.sublimation_print_fee")) || DEFAULT_PRICING.sublimationPrintFee
       : DEFAULT_PRICING.sublimationPrintFee;
 
-    const designServiceTitle = map.get("pricing.design_service_title") || DEFAULT_PRICING.designServiceTitle;
-    const designServiceDescription = map.get("pricing.design_service_description") || DEFAULT_PRICING.designServiceDescription;
-    const revisionPolicy = map.get("pricing.revision_policy") || DEFAULT_PRICING.revisionPolicy;
+    let designServiceTitle = map.get("pricing.design_service_title") || DEFAULT_PRICING.designServiceTitle;
+    let designServiceDescription = map.get("pricing.design_service_description") || DEFAULT_PRICING.designServiceDescription;
+    let revisionPolicy = map.get("pricing.revision_policy") || DEFAULT_PRICING.revisionPolicy;
+
+    if (lang) {
+      const localized = await localizeObject(
+        "pricing",
+        "global",
+        { designServiceTitle, designServiceDescription, revisionPolicy },
+        ["designServiceTitle", "designServiceDescription", "revisionPolicy"],
+        lang
+      );
+      designServiceTitle = localized.designServiceTitle;
+      designServiceDescription = localized.designServiceDescription;
+      revisionPolicy = localized.revisionPolicy;
+    }
 
     return NextResponse.json({
       success: true,

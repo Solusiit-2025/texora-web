@@ -1,8 +1,8 @@
 import { type SocialComment } from '@prisma/client';
 
-// Mockup mode: kalau GEMINI_API_KEY kosong, pakai analisis lokal
+// Mockup mode: kalau NINEROUTER_API_KEY dan GEMINI_API_KEY kosong, pakai analisis lokal
 // tanpa call API sama sekali. Aman untuk demo / mockup.
-export const isMockAiMode = !process.env.GEMINI_API_KEY;
+export const isMockAiMode = !process.env.NINEROUTER_API_KEY && !process.env.GEMINI_API_KEY;
 
 const POSITIVE_KEYWORDS = [
   'bagus',
@@ -91,18 +91,39 @@ Return your response as JSON without any markdown:
 `;
 
   try {
-    const { GoogleGenAI } = await import('@google/genai');
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        temperature: 0.3,
-        responseMimeType: 'application/json',
-      },
-    });
+    let text = "";
+    if (process.env.NINEROUTER_API_KEY) {
+      const baseURL = (process.env.NINEROUTER_BASE_URL || "http://localhost:20128/v1").replace(/\/+$/, "");
+      const res = await fetch(`${baseURL}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.NINEROUTER_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: process.env.NINEROUTER_MODEL || "google/gemini-2.5-flash",
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.3,
+          response_format: { type: "json_object" },
+        }),
+      });
+      if (!res.ok) throw new Error(`9Router error ${res.status}`);
+      const json = await res.json();
+      text = json?.choices?.[0]?.message?.content ?? "";
+    } else {
+      const { GoogleGenAI } = await import('@google/genai');
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+      const response = await ai.models.generateContent({
+        model: process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
+        contents: prompt,
+        config: {
+          temperature: 0.3,
+          responseMimeType: 'application/json',
+        },
+      });
+      text = response.text ?? '';
+    }
 
-    const text = response.text ?? '';
     const parsed = JSON.parse(text.trim());
     const sentiment = String(parsed.sentiment ?? 'NEUTRAL').toUpperCase();
 

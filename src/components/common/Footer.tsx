@@ -1,8 +1,38 @@
 import Link from "next/link";
-import { Layers, ShieldCheck, Award, Truck, Sparkles, Mail, Phone, MapPin } from "lucide-react";
+import { Layers, ShieldCheck, Award, Truck, Sparkles, Mail, Phone, MapPin, FileText, Download, BookOpen } from "lucide-react";
 import { SocialLinks } from "./SocialLinks";
+import { getStorefrontProducts } from "@/lib/storefront-data";
+import { CATEGORY_SEO } from "@/lib/category-seo";
+import { T } from "@/lib/i18n/LanguageContext";
+import { getRequestLocale } from "@/lib/server-locale";
 
-export function Footer() {
+/**
+ * Footer website.
+ *
+ * Di-render sebagai SERVER component agar:
+ *  - Link katalog mengarah ke halaman PRODUK SPESIFIK (bukan dead-end ke
+ *    /catalog) sehingga jalur crawl internal ke halaman produk meningkat.
+ *  - Konten tetap terbaca crawler tanpa eksekusi JavaScript.
+ */
+export async function Footer() {
+  // Prefix bahasa untuk link internal (server-side, konsisten dengan URL halaman).
+  const locale = await getRequestLocale();
+  const lp = (href: string) => {
+    if (!href || locale === "id") return href;
+    // Segment dibaca tanpa query string / hash.
+    const pathname = href.split(/[?#]/)[0];
+    const seg = pathname.replace(/^\//, "").split("/")[0];
+    if (!["", "catalog", "kategori", "about", "contact", "custom-sublimation", "request-quote"].includes(seg)) {
+      return href;
+    }
+    if (pathname === "/" && !/[?#]/.test(href)) return `/${locale}`;
+    return `/${locale}${href.startsWith("/") ? href : `/${href}`}`;
+  };
+  const products = await getStorefrontProducts();
+
+  // 6 produk teratas untuk link katalog di footer
+  const featuredProducts = products.slice(0, 6);
+
   return (
     <footer className="w-full bg-slate-950 border-t border-slate-800/80 pt-12 lg:pt-14 3xl:pt-16 pb-10 lg:pb-12 mt-auto">
       <div className="texora-container">
@@ -14,8 +44,12 @@ export function Footer() {
               <Award className="w-6 h-6" />
             </div>
             <div>
-              <h4 className="text-sm font-semibold text-white">Standar Oeko-Tex</h4>
-              <p className="text-xs text-slate-400">Tinta ramah lingkungan & anti-alergi</p>
+              <h3 className="text-sm font-semibold text-white">
+                <T k="footer.badge.oeko.title" fallback="Standar Oeko-Tex" />
+              </h3>
+              <p className="text-xs text-slate-400">
+                <T k="footer.badge.oeko.desc" fallback="Tinta ramah lingkungan & anti-alergi" />
+              </p>
             </div>
           </div>
 
@@ -24,8 +58,12 @@ export function Footer() {
               <Sparkles className="w-6 h-6" />
             </div>
             <div>
-              <h4 className="text-sm font-semibold text-white">1440 DPI Precision</h4>
-              <p className="text-xs text-slate-400">Hasil warna pekat & gradasi tajam</p>
+              <h3 className="text-sm font-semibold text-white">
+                <T k="footer.badge.dpi.title" fallback="1440 DPI Precision" />
+              </h3>
+              <p className="text-xs text-slate-400">
+                <T k="footer.badge.dpi.desc" fallback="Hasil warna pekat & gradasi tajam" />
+              </p>
             </div>
           </div>
 
@@ -34,8 +72,12 @@ export function Footer() {
               <ShieldCheck className="w-6 h-6" />
             </div>
             <div>
-              <h4 className="text-sm font-semibold text-white">Volume Tier Pricing</h4>
-              <p className="text-xs text-slate-400">Diskon otomatis per rol & partai besar</p>
+              <h3 className="text-sm font-semibold text-white">
+                <T k="footer.badge.pricing.title" fallback="Volume Tier Pricing" />
+              </h3>
+              <p className="text-xs text-slate-400">
+                <T k="footer.badge.pricing.desc" fallback="Diskon otomatis per rol & partai besar" />
+              </p>
             </div>
           </div>
 
@@ -44,8 +86,12 @@ export function Footer() {
               <Truck className="w-6 h-6" />
             </div>
             <div>
-              <h4 className="text-sm font-semibold text-white">Kargo Khusus Roll</h4>
-              <p className="text-xs text-slate-400">Kemasan anti-lembab & ekspedisi kargo</p>
+              <h3 className="text-sm font-semibold text-white">
+                <T k="footer.badge.cargo.title" fallback="Kargo Khusus Roll" />
+              </h3>
+              <p className="text-xs text-slate-400">
+                <T k="footer.badge.cargo.desc" fallback="Kemasan anti-lembab & ekspedisi kargo" />
+              </p>
             </div>
           </div>
         </div>
@@ -59,6 +105,8 @@ export function Footer() {
                 <img
                   src="/icons/texora-logo.png"
                   alt="PT. Texora Visi Prima"
+                  width={48}
+                  height={48}
                   className="w-full h-full object-contain filter drop-shadow-[0_1.5px_2px_rgba(15,23,42,0.45)]"
                 />
               </div>
@@ -67,7 +115,10 @@ export function Footer() {
               </span>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed pr-6">
-              Pabrik & manufaktur cetak sublimasi kain industri terintegrasi. Menyuplai kebutuhan bahan kain poliester khusus jersey olahraga, hijab voal, gaun satin, dan merchandise komersial untuk ratusan brand garmen di Indonesia.
+              <T
+                k="footer.company.desc"
+                fallback="Pabrik & manufaktur cetak sublimasi kain industri terintegrasi. Menyuplai kebutuhan bahan kain poliester khusus jersey olahraga, hijab voal, gaun satin, dan merchandise komersial untuk ratusan brand garmen di Indonesia."
+              />
             </p>
             <div className="flex items-start gap-2 pt-2 text-xs text-slate-400">
               <MapPin className="w-4 h-4 text-brand-400 shrink-0 mt-0.5" />
@@ -77,38 +128,81 @@ export function Footer() {
             </div>
             <div className="pt-3">
               <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2.5">
-                Ikuti Kami
+                <T k="footer.ikuti" />
               </p>
               <SocialLinks />
             </div>
           </div>
 
-          <div>
-            <h4 className="text-sm font-semibold text-white mb-4 uppercase tracking-wider">Katalog Kain</h4>
+          <nav aria-labelledby="footer-katalog-heading">
+            <h2 id="footer-katalog-heading" className="text-sm font-semibold text-white mb-4 uppercase tracking-wider">
+              <T k="nav.catalog" />
+            </h2>
             <ul className="space-y-2.5 text-xs text-slate-400">
-              <li><Link href="/catalog" className="hover:text-brand-300">Dryfit Milano (Sportswear)</Link></li>
-              <li><Link href="/catalog" className="hover:text-brand-300">Voal Ultrafine (Hijab)</Link></li>
-              <li><Link href="/catalog" className="hover:text-brand-300">Polyester Silk Satin</Link></li>
-              <li><Link href="/catalog" className="hover:text-brand-300">Scuba Neoprene Stretch</Link></li>
-              <li><Link href="/catalog" className="hover:text-brand-300">Spandex Lycra Athletic</Link></li>
-              <li><Link href="/catalog" className="hover:text-brand-300">Canvas Poly 8oz</Link></li>
+              {featuredProducts.length > 0 ? (
+                featuredProducts.map((p) => (
+                  <li key={p.id}>
+                    <Link
+                      href={lp(`/catalog/${p.slug}`)}
+                      className="hover:text-brand-300 transition-colors"
+                      title={`${p.name} — ${p.composition}`}
+                    >
+                      {p.name}
+                    </Link>
+                  </li>
+                ))
+              ) : (
+                <>
+                  <li><Link href={lp("/catalog")} className="hover:text-brand-300">Katalog Kain Sublimasi</Link></li>
+                  <li><Link href={lp("/catalog")} className="hover:text-brand-300">Dryfit Milano (Sportswear)</Link></li>
+                  <li><Link href={lp("/catalog")} className="hover:text-brand-300">Voal Ultrafine (Hijab)</Link></li>
+                </>
+              )}
+              <li>
+                <Link href={lp("/catalog")} className="hover:text-brand-300 font-medium inline-flex items-center gap-1">
+                  <Layers className="w-3 h-3" />
+                  <T k="footer.semua" />
+                </Link>
+              </li>
             </ul>
-          </div>
+            <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold mt-4 mb-2">
+              <T k="footer.panduan" />
+            </p>
+            <ul className="space-y-2.5 text-xs text-slate-400">
+              {CATEGORY_SEO.map((c) => (
+                <li key={c.slug}>
+                  <Link
+                    href={lp(`/kategori/${c.slug}`)}
+                    className="hover:text-brand-300 transition-colors"
+                  >
+                    {c.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          <nav aria-labelledby="footer-layanan-heading">
+            <h2 id="footer-layanan-heading" className="text-sm font-semibold text-white mb-4 uppercase tracking-wider">
+              <T k="footer.layanan" />
+            </h2>
+            <ul className="space-y-2.5 text-xs text-slate-400">
+              <li><Link href={lp("/about")} className="hover:text-brand-300 font-medium"><T k="footer.links.about" fallback="Tentang Kami & Kapasitas Pabrik" /></Link></li>
+              <li><Link href={lp("/artikel")} className="hover:text-brand-300 font-medium flex items-center gap-1.5"><BookOpen className="w-3 h-3 text-brand-400" /><T k="nav.artikel" fallback="Artikel & Panduan" /></Link></li>
+              <li><Link href={lp("/request-quote")} className="hover:text-brand-300 font-medium flex items-center gap-1.5"><FileText className="w-3 h-3 text-brand-400" /><T k="footer.links.quote" fallback="Minta Penawaran Harga" /></Link></li>
+              <li><a href="/api/catalog/pdf" download className="hover:text-brand-300 font-medium flex items-center gap-1.5"><Download className="w-3 h-3 text-brand-400" /><T k="footer.links.pdf" fallback="Unduh Katalog PDF" /></a></li>
+              <li><Link href={lp("/custom-sublimation")} className="hover:text-accent-cyan font-medium"><T k="footer.links.visualizer" fallback="Unggah Desain & Visualizer" /></Link></li>
+              <li><Link href="/track-order" className="hover:text-brand-300"><T k="footer.links.track" fallback="Lacak Status Pesanan (SPK)" /></Link></li>
+              <li><Link href={lp("/contact")} className="hover:text-brand-300"><T k="footer.links.sample" fallback="Permintaan Sampel Kain" /></Link></li>
+              <li><Link href={lp("/contact")} className="hover:text-brand-300"><T k="footer.links.b2b" fallback="Kontrak Suplai Pabrik B2B" /></Link></li>
+              <li><Link href="/register" className="hover:text-brand-300"><T k="footer.links.partner" fallback="Daftar Kemitraan B2B" /></Link></li>
+            </ul>
+          </nav>
 
           <div>
-            <h4 className="text-sm font-semibold text-white mb-4 uppercase tracking-wider">Layanan & Fitur</h4>
-            <ul className="space-y-2.5 text-xs text-slate-400">
-              <li><Link href="/about" className="hover:text-brand-300 font-medium">Tentang Kami & Kapasitas Pabrik</Link></li>
-              <li><Link href="/custom-sublimation" className="hover:text-accent-cyan font-medium">Unggah Desain & Visualizer</Link></li>
-              <li><Link href="/track-order" className="hover:text-brand-300">Lacak Status Pesanan (SPK)</Link></li>
-              <li><Link href="/contact" className="hover:text-brand-300">Permintaan Sampel Kain</Link></li>
-              <li><Link href="/contact" className="hover:text-brand-300">Kontrak Suplai Pabrik B2B</Link></li>
-              <li><Link href="/portal/dashboard" className="hover:text-accent-magenta">Portal Manajemen Karyawan</Link></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="text-sm font-semibold text-white mb-4 uppercase tracking-wider">Hubungi Sales & CS</h4>
+            <h2 className="text-sm font-semibold text-white mb-4 uppercase tracking-wider">
+              <T k="footer.hubungi" />
+            </h2>
             <div className="space-y-3 text-xs text-slate-400">
               <a
                 href="https://wa.me/6287889856066"
@@ -127,8 +221,10 @@ export function Footer() {
                 <span>admin@texoraprima.com</span>
               </a>
               <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-300 mt-2">
-                <span className="font-semibold text-white block mb-0.5">Layanan Kantor & CS:</span>
-                Senin – Sabtu: 08:00 – 17:00 WIB
+                <span className="font-semibold text-white block mb-0.5">
+                  <T k="footer.office" />
+                </span>
+                <T k="footer.hours" />
               </div>
             </div>
           </div>
@@ -137,7 +233,7 @@ export function Footer() {
 
         {/* Bottom copyright */}
         <div className="border-t border-slate-800/60 pt-8 flex flex-col md:flex-row items-center justify-between text-xs text-slate-500">
-          <p>© {new Date().getFullYear()} PT. Texora Visi Prima. All Rights Reserved. Platform E-Commerce & CRM Suite.</p>
+          <p>© {new Date().getFullYear()} PT. Texora Visi Prima. All Rights Reserved. Platform E-Commerce &amp; CRM Suite.</p>
           <div className="flex space-x-6 mt-4 md:mt-0">
             <span className="text-slate-500">Next.js App Router</span>
             <span className="text-slate-500">•</span>
@@ -145,7 +241,7 @@ export function Footer() {
             <span className="text-slate-500">•</span>
             <span className="text-slate-500">PostgreSQL</span>
             <span className="text-slate-500">•</span>
-            <span className="text-slate-500">Docker & Nginx</span>
+            <span className="text-slate-500">Docker &amp; Nginx</span>
           </div>
         </div>
 

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getMenuAccessMap } from "@/lib/rbac/menu-store";
+import { getRoleDefinitionById, resolveUserRoleId } from "@/lib/rbac/role-store";
 import {
   comparePassword,
   hashPassword,
@@ -9,10 +11,47 @@ import {
   getDefaultDashboard,
   TokenPayload,
 } from "@/lib/auth";
+import { signTwoFactorChallenge } from "@/lib/auth/2fa-challenge";
 
 export const dynamic = "force-dynamic";
 
+// Simple in-memory rate limiter (per IP). Catatan: untuk multi-instance gunakan Redis/Upstash.
+const RATE_LIMIT_WINDOW_MS = Number(process.env.LOGIN_RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000; // 15 menit
+// Maks percobaan login per IP per window. Default 5 (aman untuk produksi).
+// Bisa dinaikkan lewat env untuk environment testing/automation.
+const RATE_LIMIT_MAX = Number(process.env.LOGIN_RATE_LIMIT_MAX) || 5;
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return { allowed: true };
+  }
+  if (entry.count >= RATE_LIMIT_MAX) {
+    return { allowed: false, retryAfter: Math.ceil((entry.resetAt - now) / 1000) };
+  }
+  entry.count += 1;
+  return { allowed: true };
+}
+
 export async function POST(req: NextRequest) {
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("x-real-ip") ||
+    "unknown";
+
+  const rl = checkRateLimit(ip);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: `Terlalu banyak percobaan login. Coba lagi dalam ${rl.retryAfter} detik.`,
+      },
+      { status: 429 }
+    );
+  }
   try {
     const body = await req.json();
     const { email, password } = body;
@@ -32,6 +71,14 @@ export async function POST(req: NextRequest) {
     });
 
     if (!user) {
+      try {
+        await prisma.auditLog.create({
+          data: {
+            action: "LOGIN_FAILED",
+            description: `Percobaan login gagal: email ${cleanEmail} tidak ditemukan.`,
+          },
+        });
+      } catch {}
       return NextResponse.json(
         { success: false, error: "Akun dengan email tersebut tidak ditemukan." },
         { status: 401 }
@@ -57,18 +104,65 @@ export async function POST(req: NextRequest) {
     }
 
     if (!passwordMatches) {
+      try {
+        await prisma.auditLog.create({
+          data: {
+            action: "LOGIN_FAILED",
+            userId: user.id,
+            description: `Percobaan login gagal: password salah untuk ${cleanEmail}.`,
+          },
+        });
+      } catch {}
       return NextResponse.json(
         { success: false, error: "Password yang Anda masukkan salah." },
         { status: 401 }
       );
     }
 
+    // Peran efektif (mendukung role custom) + halaman tujuan dari definisi role
+    const effectiveRole = await resolveUserRoleId(user.id, user.role);
+    const roleDef = await getRoleDefinitionById(effectiveRole);
+    const menuMap = await getMenuAccessMap();
+
+    // ==========================================================
+    // TAHAP 2FA - Kode TOTP / Kode Cadangan wajib diverifikasi
+    // ==========================================================
+    if (user.twoFactorEnabled && user.twoFactorSecret) {
+      const challengeToken = signTwoFactorChallenge({
+        sub: user.id,
+        email: user.email,
+        name: user.name,
+        role: effectiveRole,
+        companyName: user.companyName,
+        dash: roleDef?.defaultRoute,
+        menu: menuMap[effectiveRole] ?? [],
+        purpose: "2fa",
+      });
+
+      await prisma.auditLog.create({
+        data: {
+          action: "LOGIN_2FA_CHALLENGE",
+          userId: user.id,
+          description: `Password benar untuk ${cleanEmail}, menunggu verifikasi 2FA.`,
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        requires2FA: true,
+        challengeToken,
+        message: "Kode verifikasi dua faktor diperlukan.",
+      });
+    }
+
     const payload: TokenPayload = {
       sub: user.id,
       email: user.email,
       name: user.name,
-      role: user.role as TokenPayload["role"],
+      role: effectiveRole,
       companyName: user.companyName,
+      dash: roleDef?.defaultRoute,
+      menu: menuMap[effectiveRole] ?? [],
     };
 
     // Issue tokens
@@ -82,7 +176,7 @@ export async function POST(req: NextRequest) {
       data: { refreshToken: hashedRefreshToken },
     });
 
-    const redirectTo = getDefaultDashboard(user.role as any);
+    const redirectTo = roleDef?.defaultRoute ?? getDefaultDashboard(effectiveRole);
 
     const response = NextResponse.json({
       success: true,
@@ -91,7 +185,7 @@ export async function POST(req: NextRequest) {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role,
+        role: effectiveRole,
         companyName: user.companyName,
       },
       redirectTo,

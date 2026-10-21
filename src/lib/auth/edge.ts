@@ -18,6 +18,8 @@ export async function verifyAccessTokenEdge(token: string): Promise<TokenPayload
       name: payload.name as string,
       role: payload.role as TokenPayload["role"],
       companyName: (payload.companyName as string) || null,
+      dash: (payload.dash as string) || undefined,
+      menu: Array.isArray(payload.menu) ? (payload.menu as string[]) : undefined,
     };
   } catch {
     return null;
@@ -34,6 +36,8 @@ export async function verifyRefreshTokenEdge(token: string): Promise<TokenPayloa
       name: payload.name as string,
       role: payload.role as TokenPayload["role"],
       companyName: (payload.companyName as string) || null,
+      dash: (payload.dash as string) || undefined,
+      menu: Array.isArray(payload.menu) ? (payload.menu as string[]) : undefined,
     };
   } catch {
     return null;

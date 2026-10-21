@@ -5,8 +5,23 @@ export interface TokenPayload {
   sub: string; // User ID
   email: string;
   name: string;
-  role: "ADMINISTRATOR" | "SALES_REP" | "WAREHOUSE_STAFF" | "CUSTOMER";
+  /**
+   * Kunci peran efektif pengguna. Bukan lagi union terbatas: role custom
+   * dibuat dari /portal/settings/users-rbac dan disimpan sebagai override
+   * (lihat src/lib/rbac/role-store.ts) tanpa mengubah enum Prisma.
+   */
+  role: string;
   companyName?: string | null;
+  /**
+   * Halaman tujuan setelah login (dari definisi role).
+   */
+  dash?: string;
+  /**
+   * Snapshot id menu portal yang boleh diakses oleh role pengguna.
+   * Diisi dari Role & Menu Management (src/lib/rbac/menu-store.ts).
+   * undefined = token lama sebelum fitur ini aktif (fallback ke ROUTE_PERMISSIONS).
+   */
+  menu?: string[];
 }
 
 const ACCESS_SECRET = process.env.JWT_SECRET || "texora_jwt_access_secret_super_secure_key_2026_x89";
@@ -57,6 +72,8 @@ export async function verifyAccessTokenEdge(token: string): Promise<TokenPayload
       name: payload.name as string,
       role: payload.role as TokenPayload["role"],
       companyName: (payload.companyName as string) || null,
+      dash: (payload.dash as string) || undefined,
+      menu: Array.isArray(payload.menu) ? (payload.menu as string[]) : undefined,
     };
   } catch {
     return null;
@@ -73,6 +90,8 @@ export async function verifyRefreshTokenEdge(token: string): Promise<TokenPayloa
       name: payload.name as string,
       role: payload.role as TokenPayload["role"],
       companyName: (payload.companyName as string) || null,
+      dash: (payload.dash as string) || undefined,
+      menu: Array.isArray(payload.menu) ? (payload.menu as string[]) : undefined,
     };
   } catch {
     return null;

@@ -1,10 +1,52 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { getAuthenticatedUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import {
   DEFAULT_SOCIAL_LINKS,
   SOCIAL_LINKS_KEY,
   normalizeSocialLinks,
 } from "@/config/social";
+import {
+  normalizeLocale,
+  localizeRows,
+  localizeSiteContentRows,
+  preTranslateFields,
+} from "@/lib/content-translator";
+import { normalizeArticleInput } from "@/lib/article-utils";
+
+/** Fire-and-forget: terjemahkan konten yg baru disimpan ke semua bahasa. */
+function schedulePreTranslate(type: string, data: any, record: any) {
+  if (!record) return;
+  try {
+    const id = String(record.id ?? data?.key ?? "");
+    if (type === "heroSlide") {
+      preTranslateFields("hero", id, { tag: data.tag, caption: data.caption, alt: data.alt }, ["tag", "caption", "alt"]).catch(() => {});
+    } else if (type === "testimonial") {
+      preTranslateFields("testimonial", id, { quote: data.quote }, ["quote"]).catch(() => {});
+    } else if (type === "faq") {
+      preTranslateFields("faq", id, { question: data.question, answer: data.answer }, ["question", "answer"]).catch(() => {});
+    } else if (type === "siteContent" && data?.key === "site.pages") {
+      try {
+        const obj = JSON.parse(data.value);
+        preTranslateFields("siteContent", "site.pages", obj, ["aboutTitle", "aboutDescription", "aboutCaption"]).catch(() => {});
+      } catch {}
+    } else if (type === "siteContent" && data?.key === "homepage.cta_b2b") {
+      try {
+        const obj = JSON.parse(data.value);
+        preTranslateFields("siteContent", "homepage.cta_b2b", obj, ["title", "description", "actionText"]).catch(() => {});
+      } catch {}
+    } else if (type === "article") {
+      preTranslateFields(
+        "article",
+        id,
+        { title: data.title, excerpt: data.excerpt, body: data.body },
+        ["title", "excerpt", "body"]
+      ).catch(() => {});
+    }
+  } catch {
+    /* jangan ganggu alur simpan konten */
+  }
+}
 
 export const dynamic = "force-dynamic";
 
@@ -111,12 +153,27 @@ const DEFAULT_FAQS = [
 
 export async function GET(request: Request) {
   try {
-    const [heroSlides, testimonials, faqs, siteContent] = await Promise.all([
+    // ?lang=xx -> terjemahkan konten on-demand (cache DB) untuk pembaca asing.
+    const lang = normalizeLocale(new URL(request.url).searchParams.get("lang"));
+
+    const [heroSlidesRaw, testimonialsRaw, faqsRaw, siteContentRaw] = await Promise.all([
       prisma.heroSlide.findMany({ orderBy: { order: "asc" } }).catch(() => []),
       prisma.testimonial.findMany({ orderBy: { order: "asc" } }).catch(() => []),
       prisma.faqItem.findMany({ orderBy: { order: "asc" } }).catch(() => []),
       prisma.siteContent.findMany().catch(() => []),
     ]);
+
+    let heroSlides = heroSlidesRaw.length > 0 ? heroSlidesRaw : DEFAULT_HERO_SLIDES;
+    let testimonials = testimonialsRaw.length > 0 ? testimonialsRaw : DEFAULT_TESTIMONIALS;
+    let faqs = faqsRaw.length > 0 ? faqsRaw : DEFAULT_FAQS;
+    let siteContent = siteContentRaw;
+
+    if (lang) {
+      heroSlides = await localizeRows("hero", heroSlides, (s: any) => String(s.id), ["tag", "caption", "alt"], lang);
+      testimonials = await localizeRows("testimonial", testimonials, (s: any) => String(s.id), ["quote"], lang);
+      faqs = await localizeRows("faq", faqs, (s: any) => String(s.id), ["question", "answer"], lang);
+      siteContent = await localizeSiteContentRows(siteContent, lang);
+    }
 
     let socialLinks = DEFAULT_SOCIAL_LINKS;
     const socialRow = siteContent.find((s: any) => s.key === SOCIAL_LINKS_KEY);
@@ -129,10 +186,10 @@ export async function GET(request: Request) {
     return NextResponse.json({
       success: true,
       data: {
-        heroSlides: heroSlides.length > 0 ? heroSlides : DEFAULT_HERO_SLIDES,
-        testimonials: testimonials.length > 0 ? testimonials : DEFAULT_TESTIMONIALS,
-        faqs: faqs.length > 0 ? faqs : DEFAULT_FAQS,
-        siteContent: siteContent,
+        heroSlides,
+        testimonials,
+        faqs,
+        siteContent,
         socialLinks,
       },
     });
@@ -150,8 +207,12 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const user = await getAuthenticatedUser(request);
+    if (!user || user.role !== "ADMINISTRATOR") {
+      return NextResponse.json({ success: false, error: "Hanya Administrator yang dapat mengubah konten." }, { status: 403 });
+    }
     const { type, data } = await request.json();
 
     if (!type || !data) {
@@ -186,12 +247,40 @@ export async function POST(request: Request) {
         },
         update: { value },
       });
+    } else if (type === "article") {
+      const payload = normalizeArticleInput(data);
+      if (!payload.title) {
+        return NextResponse.json(
+          { success: false, error: "Judul artikel wajib diisi." },
+          { status: 400 }
+        );
+      }
+      // Slug harus unik
+      const clash = await prisma.article.findUnique({ where: { slug: payload.slug } });
+      if (clash) {
+        payload.slug = `${payload.slug}-${Date.now().toString(36).slice(-4)}`;
+      }
+      created = await prisma.article.create({ data: payload as any });
     } else {
       return NextResponse.json(
         { success: false, error: "Tipe konten tidak valid." },
         { status: 400 }
       );
     }
+
+    try {
+      await prisma.auditLog.create({
+        data: {
+          action: "CMS_CREATE",
+          userId: user.id,
+          description: `Administrator menambah konten CMS tipe ${type}.`,
+        },
+      });
+    } catch {}
+
+    // Pre-translate (fire-and-forget) agar konten baru langsung tersedia
+    // dalam bahasa asing tanpa menunggu pengunjung asing datang.
+    schedulePreTranslate(type, data, created);
 
     return NextResponse.json({
       success: true,
@@ -207,8 +296,12 @@ export async function POST(request: Request) {
   }
 }
 
-export async function PUT(request: Request) {
+export async function PUT(request: NextRequest) {
   try {
+    const user = await getAuthenticatedUser(request);
+    if (!user || user.role !== "ADMINISTRATOR") {
+      return NextResponse.json({ success: false, error: "Hanya Administrator yang dapat mengubah konten." }, { status: 403 });
+    }
     const { type, id, data } = await request.json();
 
     if (!type || !data) {
@@ -243,12 +336,55 @@ export async function PUT(request: Request) {
         },
         update: { value },
       });
+    } else if (type === "article") {
+      const current = await prisma.article.findUnique({ where: { id } });
+      if (!current) {
+        return NextResponse.json(
+          { success: false, error: "Artikel tidak ditemukan." },
+          { status: 404 }
+        );
+      }
+      const payload = normalizeArticleInput(data, current);
+      if (!payload.title) {
+        return NextResponse.json(
+          { success: false, error: "Judul artikel wajib diisi." },
+          { status: 400 }
+        );
+      }
+      // Slip uniqueness: jika slug diubah dan dipakai artikel lain -> tolak
+      if (payload.slug !== current.slug) {
+        const clash = await prisma.article.findUnique({ where: { slug: payload.slug } });
+        if (clash) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: `Slug "${payload.slug}" sudah dipakai artikel lain.`,
+            },
+            { status: 409 }
+          );
+        }
+      }
+      updated = await prisma.article.update({ where: { id }, data: payload as any });
     } else {
       return NextResponse.json(
         { success: false, error: "Tipe konten tidak valid." },
         { status: 400 }
       );
     }
+
+    try {
+      await prisma.auditLog.create({
+        data: {
+          action: "CMS_UPDATE",
+          userId: user.id,
+          description: `Administrator memperbarui konten CMS tipe ${type}.`,
+        },
+      });
+    } catch {}
+
+    // Pre-translate (fire-and-forget) — cache lama otomatis dianggap basi
+    // karena source teks berubah, lalu dibuat ulang.
+    schedulePreTranslate(type, data, updated);
 
     return NextResponse.json({
       success: true,
@@ -264,8 +400,12 @@ export async function PUT(request: Request) {
   }
 }
 
-export async function DELETE(request: Request) {
+export async function DELETE(request: NextRequest) {
   try {
+    const user = await getAuthenticatedUser(request);
+    if (!user || user.role !== "ADMINISTRATOR") {
+      return NextResponse.json({ success: false, error: "Hanya Administrator yang dapat mengubah konten." }, { status: 403 });
+    }
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type");
     const id = searchParams.get("id");
@@ -285,6 +425,8 @@ export async function DELETE(request: Request) {
       await prisma.faqItem.delete({ where: { id } });
     } else if (type === "siteContent") {
       await prisma.siteContent.delete({ where: { id } });
+    } else if (type === "article") {
+      await prisma.article.delete({ where: { id } });
     } else {
       return NextResponse.json(
         { success: false, error: "Tipe konten tidak valid." },
@@ -292,6 +434,15 @@ export async function DELETE(request: Request) {
       );
     }
 
+    try {
+      await prisma.auditLog.create({
+        data: {
+          action: "CMS_DELETE",
+          userId: user.id,
+          description: `Administrator menghapus konten CMS tipe ${type}.`,
+        },
+      });
+    } catch {}
     return NextResponse.json({
       success: true,
       message: "Konten berhasil dihapus.",

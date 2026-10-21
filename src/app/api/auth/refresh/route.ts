@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getMenuAccessMap } from "@/lib/rbac/menu-store";
+import { getRoleDefinitionById, resolveUserRoleId } from "@/lib/rbac/role-store";
 import {
   REFRESH_COOKIE_NAME,
   verifyRefreshToken,
@@ -66,12 +68,18 @@ export async function POST(req: NextRequest) {
       return response;
     }
 
+    const effectiveRole = await resolveUserRoleId(user.id, user.role);
+    const roleDef = await getRoleDefinitionById(effectiveRole);
+    const menuMap = await getMenuAccessMap();
+
     const payload: TokenPayload = {
       sub: user.id,
       email: user.email,
       name: user.name,
-      role: user.role as TokenPayload["role"],
+      role: effectiveRole,
       companyName: user.companyName,
+      dash: roleDef?.defaultRoute,
+      menu: menuMap[effectiveRole] ?? [],
     };
 
     // Rotate tokens (Issue new access token and rotated refresh token)
@@ -92,7 +100,7 @@ export async function POST(req: NextRequest) {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role,
+        role: effectiveRole,
         companyName: user.companyName,
       },
     });

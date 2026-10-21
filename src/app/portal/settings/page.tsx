@@ -25,10 +25,13 @@ import {
   ExternalLink,
   Activity,
   AlertTriangle,
+  DatabaseBackup,
 } from "lucide-react";
+import { TwoFactorPanel } from "@/components/common/TwoFactorPanel";
+import { BackupPanel } from "@/components/common/BackupPanel";
 
 export default function PortalSettingsPage() {
-  const [activeTab, setActiveTab] = useState<"RBAC" | "ERP" | "CLOUDFLARE" | "SECURITY" | "WHATSAPP">("RBAC");
+  const [activeTab, setActiveTab] = useState<"RBAC" | "ERP" | "CLOUDFLARE" | "SECURITY" | "WHATSAPP" | "BACKUP">("RBAC");
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   // WhatsApp settings
@@ -183,13 +186,6 @@ export default function PortalSettingsPage() {
     setTimeout(() => setSaveSuccess(null as any), 3500);
   };
 
-  const usersList = [
-    { name: "Ir. Gunawan Setiadi", email: "admin@texora.co.id", role: "ADMINISTRATOR", twoFactor: "Aktif", status: "Aktif" },
-    { name: "Dian Permata", email: "sales@texora.co.id", role: "SALES_REP", twoFactor: "Aktif", status: "Aktif" },
-    { name: "Agus Santoso", email: "logistik@texora.co.id", role: "WAREHOUSE_STAFF", twoFactor: "Non-Aktif", status: "Aktif" },
-    { name: "Hendra Wijaya", email: "hendra@garmentkreatif.com", role: "CUSTOMER", twoFactor: "Opsional", status: "Aktif" },
-  ];
-
   return (
     <div className="p-6 lg:p-8 space-y-8">
       
@@ -224,6 +220,7 @@ export default function PortalSettingsPage() {
           { id: "ERP", label: "Integrasi Webhook ERP", icon: Webhook },
           { id: "CLOUDFLARE", label: "CDN & Cache Cloudflare", icon: Cloud },
           { id: "SECURITY", label: "Kebijakan Keamanan & 2FA", icon: Lock },
+          { id: "BACKUP", label: "Backup Database", icon: DatabaseBackup },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -563,60 +560,55 @@ export default function PortalSettingsPage() {
       {activeTab === "RBAC" && (
         <div className="space-y-6">
           <div className="glass-panel rounded-3xl border border-slate-800 overflow-hidden">
-            <div className="p-5 border-b border-slate-800 flex items-center justify-between">
+            <div className="p-5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h3 className="text-base font-display font-bold text-white">Daftar Pengguna & Peran Sistem</h3>
-                <p className="text-xs text-slate-400">Pengaturan Role-Based Access Control sesuai PRD §3.3.</p>
+                <h3 className="text-base font-display font-bold text-white">
+                  Hak Akses Menu per Peran
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Pengaturan Role-Based Access Control sesuai PRD §3.3 - dikelola pada modul
+                  Role &amp; Menu Management.
+                </p>
               </div>
-              <button
-                type="button"
-                onClick={() => alert("Membuka form undangan pengguna baru...")}
-                className="px-3 py-1.5 rounded-xl bg-brand-500 text-slate-950 font-bold text-xs"
+              <Link
+                href="/portal/settings/users-rbac"
+                className="px-3 py-1.5 rounded-xl bg-brand-500 text-slate-950 font-bold text-xs flex items-center gap-1.5 hover:brightness-110 transition-all"
               >
-                + Undang User
-              </button>
+                <KeyRound className="w-3.5 h-3.5" />
+                Kelola Role &amp; Menu
+              </Link>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-900/80 text-[10px] uppercase tracking-wider text-slate-400 border-b border-slate-800">
-                  <tr>
-                    <th className="py-3 px-4 font-bold">Nama & Email</th>
-                    <th className="py-3 px-4 font-bold">Peran (Role)</th>
-                    <th className="py-3 px-4 font-bold">Status 2FA</th>
-                    <th className="py-3 px-4 font-bold">Status Akun</th>
-                    <th className="py-3 px-4 font-bold text-right">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/80">
-                  {usersList.map((u, i) => (
-                    <tr key={i} className="hover:bg-slate-900/40">
-                      <td className="py-3.5 px-4">
-                        <div className="font-bold text-white">{u.name}</div>
-                        <div className="text-[10px] text-slate-400 font-mono">{u.email}</div>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <span className="px-2 py-0.5 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-300 text-[10px] font-bold">
-                          {u.role}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 font-mono text-[11px] text-emerald-400">
-                        {u.twoFactor}
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold">
-                          {u.status}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 text-right">
-                        <button className="text-xs text-slate-400 hover:text-white font-semibold">
-                          Ubah Hak
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                {
+                  role: "ADMINISTRATOR",
+                  scope: "Seluruh modul portal + konfigurasi sistem",
+                },
+                {
+                  role: "SALES_REP",
+                  scope: "CRM, pipeline leads, social listening, OMS sales order",
+                },
+                {
+                  role: "WAREHOUSE_STAFF",
+                  scope: "Gudang, stok roll, pemotongan, ekspedisi, purchasing",
+                },
+                {
+                  role: "CUSTOMER",
+                  scope: "Portal pelanggan (/customer) tanpa menu portal internal",
+                },
+              ].map((item) => (
+                <div
+                  key={item.role}
+                  className="p-4 rounded-xl bg-slate-950/60 border border-slate-800"
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <ShieldCheck className="w-4 h-4 text-brand-400" />
+                    <span className="text-xs font-bold text-white">{item.role}</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-snug">{item.scope}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -723,7 +715,8 @@ export default function PortalSettingsPage() {
 
       {/* Tab 4: Security */}
       {activeTab === "SECURITY" && (
-        <form onSubmit={handleSave} className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-6 max-w-3xl">
+        <div className="space-y-6 max-w-3xl">
+        <form onSubmit={handleSave} className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-6">
           <div>
             <h3 className="text-lg font-display font-bold text-white flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-brand-400" />
@@ -768,6 +761,43 @@ export default function PortalSettingsPage() {
             </button>
           </div>
         </form>
+
+        {/* Panel 2FA Akun Pribadi */}
+        <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-5">
+          <div>
+            <h3 className="text-lg font-display font-bold text-white flex items-center gap-2">
+              <Smartphone className="w-5 h-5 text-brand-400" />
+              <span>Autentikasi Dua Faktor Akun Saya</span>
+            </h3>
+            <p className="text-xs text-slate-400 mt-1">
+              Lindungi akun Anda dengan kode TOTP 6-digit dari aplikasi autentikator
+              (Google Authenticator / Microsoft Authenticator / 1Password). Kode cadangan
+              otomatis dibuatkan sebagai jaring pengaman.
+            </p>
+          </div>
+
+          <TwoFactorPanel />
+        </div>
+        </div>
+      )}
+
+      {/* Tab 5: Backup Database */}
+      {activeTab === "BACKUP" && (
+        <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-6 max-w-3xl">
+          <div>
+            <h3 className="text-lg font-display font-bold text-white flex items-center gap-2">
+              <DatabaseBackup className="w-5 h-5 text-brand-400" />
+              <span>Backup &amp; Pemulihan Database</span>
+            </h3>
+            <p className="text-xs text-slate-400 mt-1">
+              Ekspor seluruh data Texora (katalog, pesanan, CRM, konten CMS, audit log) ke file
+              JSON yang aman di server. Dijalankan otomatis setiap 24 jam dan dapat dipicu
+              manual kapan saja.
+            </p>
+          </div>
+
+          <BackupPanel />
+        </div>
       )}
 
     </div>

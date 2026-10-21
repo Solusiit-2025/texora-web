@@ -123,6 +123,7 @@ export async function POST(req: NextRequest) {
       name: newUser.name,
       role: newUser.role as TokenPayload["role"],
       companyName: newUser.companyName,
+      menu: [],
     };
 
     const accessToken = signAccessToken(payload);

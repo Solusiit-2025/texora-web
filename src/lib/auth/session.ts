@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { resolveUserRoleId } from "@/lib/rbac/role-store";
 import { ACCESS_COOKIE_NAME, REFRESH_COOKIE_NAME } from "./cookies";
 import { verifyAccessToken, verifyRefreshToken, TokenPayload } from "./jwt";
 
@@ -8,7 +9,8 @@ export interface AuthenticatedUser {
   id: string;
   email: string;
   name: string;
-  role: "ADMINISTRATOR" | "SALES_REP" | "WAREHOUSE_STAFF" | "CUSTOMER";
+  /** Kunci peran efektif (termasuk role custom). */
+  role: string;
   companyName: string | null;
   phoneNumber?: string | null;
 }
@@ -69,11 +71,14 @@ export async function getAuthenticatedUser(
 
     if (!user) return null;
 
+    // Peran efektif: override role custom > kolom enum `role`
+    const effectiveRole = await resolveUserRoleId(user.id, user.role);
+
     return {
       id: user.id,
       email: user.email,
       name: user.name,
-      role: user.role as AuthenticatedUser["role"],
+      role: effectiveRole,
       companyName: user.companyName,
       phoneNumber: user.phoneNumber,
     };
