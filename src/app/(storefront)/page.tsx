@@ -50,34 +50,36 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function HomePage() {
   const lang = await getContentLocale();
-  const [products, faqs, heroSlides, testimonials] = await Promise.all([
-    getStorefrontProducts(),
-    getStorefrontFaqs(),
-    getStorefrontHeroSlides(),
-    getStorefrontTestimonials(),
-  ]);
 
-  const stats = await getSiteContentValue<Array<{ v: string; k: string }>>(
-    "homepage.stats",
-    [
-      { v: "10.000 m", k: "Kapasitas harian" },
-      { v: "18 jenis", k: "Kain siap sublim" },
-      { v: "400+", k: "Mitra garmen" },
-    ]
-  );
+  // SEMUA query homepage paralel (DB remote ~180ms/query, jadi sequential
+  // akan menumpuk waktu tunggu).
+  const [products, faqs, heroSlides, testimonials, stats, b2bCta] =
+    await Promise.all([
+      getStorefrontProducts(),
+      getStorefrontFaqs(),
+      getStorefrontHeroSlides(),
+      getStorefrontTestimonials(),
+      getSiteContentValue<Array<{ v: string; k: string }>>(
+        "homepage.stats",
+        [
+          { v: "10.000 m", k: "Kapasitas harian" },
+          { v: "18 jenis", k: "Kain siap sublim" },
+          { v: "400+", k: "Mitra garmen" },
+        ]
+      ),
+      getSiteContentValue("homepage.cta_b2b", {
+        title: "Butuh pasokan rutin di atas 5.000 meter per bulan?",
+        description:
+          "Tersedia termin pembayaran 30/60 hari untuk mitra terverifikasi, sampel swatch, dan PIC sales khusus.",
+        actionText: "Minta penawaran",
+        actionLink: "/contact",
+      }),
+    ]);
 
   let productsOut = products;
   let faqsOut = faqs;
   let heroSlidesOut = heroSlides;
   let testimonialsOut = testimonials;
-
-  const b2bCta = await getSiteContentValue("homepage.cta_b2b", {
-    title: "Butuh pasokan rutin di atas 5.000 meter per bulan?",
-    description:
-      "Tersedia termin pembayaran 30/60 hari untuk mitra terverifikasi, sampel swatch, dan PIC sales khusus.",
-    actionText: "Minta penawaran",
-    actionLink: "/contact",
-  });
 
   // Tahap 2: terjemahkan konten DB utk URL berprefik bahasa (cache DB).
   let statsOut = stats;

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { cached, invalidateCache } from "@/lib/cache";
 
 export interface SeoPageMeta {
   title: string;
@@ -88,15 +89,30 @@ function readJson<T>(raw: string | null | undefined, fallback: T): T {
 }
 
 export async function getSeoSettings(): Promise<SeoSettings> {
-  const [globalRow, pagesRow] = await Promise.all([
-    prisma.siteContent.findUnique({ where: { key: SEO_GLOBAL_KEY } }).catch(() => null),
-    prisma.siteContent.findUnique({ where: { key: SEO_PAGES_KEY } }).catch(() => null),
-  ]);
+  // Cache 60 detik: setting SEO jarang berubah, tapi dibaca di SEMUA halaman
+  // (layout + SeoHead + PageGate + Navbar). Tanpa cache = 2 query DB per page.
+  return cached(
+    "seo.settings",
+    async () => {
+      const [globalRow, pagesRow] = await Promise.all([
+        prisma.siteContent
+          .findUnique({ where: { key: SEO_GLOBAL_KEY } })
+          .catch(() => null),
+        prisma.siteContent
+          .findUnique({ where: { key: SEO_PAGES_KEY } })
+          .catch(() => null),
+      ]);
 
-  const global = readJson<SeoGlobal>(globalRow?.value, DEFAULT_SEO.global);
-  const pages = readJson<Record<string, SeoPageMeta>>(pagesRow?.value, DEFAULT_SEO.pages);
+      const global = readJson<SeoGlobal>(globalRow?.value, DEFAULT_SEO.global);
+      const pages = readJson<Record<string, SeoPageMeta>>(
+        pagesRow?.value,
+        DEFAULT_SEO.pages
+      );
 
-  return { global, pages };
+      return { global, pages };
+    },
+    { ttl: 60_000, stale: 600_000 }
+  );
 }
 
 export async function saveSeoSettings(settings: SeoSettings): Promise<void> {
@@ -110,4 +126,6 @@ export async function saveSeoSettings(settings: SeoSettings): Promise<void> {
     create: { key: SEO_PAGES_KEY, group: "seo", label: "SEO Per Halaman", value: JSON.stringify(settings.pages) },
     update: { value: JSON.stringify(settings.pages) },
   });
+  // Buang cache supaya perubahan langsung terlihat
+  invalidateCache("seo.settings");
 }

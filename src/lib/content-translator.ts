@@ -16,6 +16,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import { cached, invalidateCache } from "@/lib/cache";
 
 export const TRANSLATION_LOCALES = ["en", "zh", "ja", "de", "ar"] as const;
 export type TranslationLocale = (typeof TRANSLATION_LOCALES)[number];
@@ -576,12 +577,25 @@ export async function localizeRows<T extends Record<string, any>>(
   try {
     const ids = rows.map((r) => String(getId(r)));
 
-    // 1. Ambil cache yang ada dari database
-    const cached = await prisma.contentTranslation.findMany({
-      where: { entity, locale: lang, entityId: { in: ids }, field: { in: fields } },
-    });
+    // 1. Ambil cache yang ada dari database.
+    //    Cache 60 detik: DB remote ~180ms/query, dan halaman versi bahasa
+    //    asing memanggil localizeRows berkali-kali (hero, faq, produk, dll).
+    const translationRows = await cached(
+      `translations:${entity}:${lang}`,
+      () =>
+        prisma.contentTranslation.findMany({
+          where: { entity, locale: lang },
+        }),
+      { ttl: 60_000, stale: 600_000 }
+    );
+
     const cache = new Map<string, CacheEntry>(
-      cached.map((c) => [`${c.entityId}|${c.field}`, { source: c.source, text: c.translation }])
+      translationRows
+        .filter((c) => ids.includes(String(c.entityId)) && fields.includes(c.field))
+        .map((c) => [
+          `${c.entityId}|${c.field}`,
+          { source: c.source, text: c.translation },
+        ])
     );
 
     // 2. Terapkan hasil cache ke salinan rows.
@@ -860,6 +874,10 @@ export async function translateItems(
       });
     })
   );
+
+  // Cache terjemahan di memory jadi basi -> buang supaya request berikutnya
+  // langsung memakai versi terbaru.
+  invalidateCache("translations:");
 
   return saved;
 }

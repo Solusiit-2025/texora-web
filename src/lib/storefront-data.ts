@@ -7,6 +7,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import { cached, invalidateCache } from "@/lib/cache";
 import type { FabricProduct } from "@/types";
 
 export interface StorefrontProduct {
@@ -70,18 +71,26 @@ function mapProduct(p: any): StorefrontProduct {
 
 /** Ambil seluruh produk katalog (server-side). */
 export async function getStorefrontProducts(): Promise<StorefrontProduct[]> {
-  try {
-    const rows = await prisma.fabricProduct.findMany({
-      include: {
-        variants: true,
-        priceTiers: { orderBy: { minMeters: "asc" } },
-      },
-      orderBy: { createdAt: "asc" },
-    });
-    return rows.map(mapProduct);
-  } catch {
-    return [];
-  }
+  // Cache 60 detik: query ini berat (products + variants + priceTiers, ~1 detik
+  // di DB remote) dan dipakai di homepage, katalog, kategori, detail produk.
+  return cached(
+    "storefront.products",
+    async () => {
+      try {
+        const rows = await prisma.fabricProduct.findMany({
+          include: {
+            variants: true,
+            priceTiers: { orderBy: { minMeters: "asc" } },
+          },
+          orderBy: { createdAt: "asc" },
+        });
+        return rows.map(mapProduct);
+      } catch {
+        return [];
+      }
+    },
+    { ttl: 60_000, stale: 600_000 }
+  );
 }
 
 /** Ambil satu produk berdasarkan slug (server-side). */
@@ -130,61 +139,79 @@ export interface StorefrontTestimonial {
 
 /** Ambil FAQ aktif (server-side) untuk JSON-LD FAQPage. */
 export async function getStorefrontFaqs(): Promise<StorefrontFaq[]> {
-  try {
-    const rows = await prisma.faqItem.findMany({
-      where: { isActive: true },
-      orderBy: { order: "asc" },
-    });
-    return rows.map((f) => ({
-      id: f.id,
-      question: f.question,
-      answer: f.answer,
-      order: f.order,
-    }));
-  } catch {
-    return [];
-  }
+  return cached(
+    "storefront.faqs",
+    async () => {
+      try {
+        const rows = await prisma.faqItem.findMany({
+          where: { isActive: true },
+          orderBy: { order: "asc" },
+        });
+        return rows.map((f) => ({
+          id: f.id,
+          question: f.question,
+          answer: f.answer,
+          order: f.order,
+        }));
+      } catch {
+        return [];
+      }
+    },
+    { ttl: 60_000, stale: 600_000 }
+  );
 }
 
 /** Ambil slide hero aktif (server-side). */
 export async function getStorefrontHeroSlides(): Promise<StorefrontHeroSlide[]> {
-  try {
-    const rows = await prisma.heroSlide.findMany({
-      where: { isActive: true },
-      orderBy: { order: "asc" },
-    });
-    return rows.map((s) => ({
-      id: s.id,
-      order: s.order,
-      tag: s.tag,
-      caption: s.caption,
-      alt: s.alt,
-      mainImage: s.mainImage,
-      secondaryImage: s.secondaryImage,
-      isActive: s.isActive,
-    }));
-  } catch {
-    return [];
-  }
+  return cached(
+    "storefront.hero",
+    async () => {
+      try {
+        const rows = await prisma.heroSlide.findMany({
+          where: { isActive: true },
+          orderBy: { order: "asc" },
+        });
+        return rows.map((s) => ({
+          id: s.id,
+          order: s.order,
+          tag: s.tag,
+          caption: s.caption,
+          alt: s.alt,
+          mainImage: s.mainImage,
+          secondaryImage: s.secondaryImage,
+          isActive: s.isActive,
+        }));
+      } catch {
+        return [];
+      }
+    },
+    { ttl: 60_000, stale: 600_000 }
+  );
 }
 
 /** Ambil testimoni aktif (server-side). */
 export async function getStorefrontTestimonials(): Promise<StorefrontTestimonial[]> {
-  try {
-    const rows = await prisma.testimonial.findMany({
-      where: { isActive: true },
-      orderBy: { order: "asc" },
-    });
-    return rows.map((t) => ({
-      id: t.id,
-      name: t.name,
-      org: t.org,
-      quote: t.quote,
-      order: t.order,
-    }));
-  } catch {
-    return [];
-  }
+  return cached(
+    "storefront.testimonials",
+    async () => {
+      try {
+        const rows = await prisma.testimonial.findMany({
+          where: { isActive: true },
+          orderBy: { order: "asc" },
+        });
+        return rows.map((t) => ({
+          id: t.id,
+          name: t.name,
+          org: t.org,
+          quote: t.quote,
+          order: t.order,
+        }));
+      } catch {
+        return [];
+      }
+    },
+    { ttl: 60_000, stale: 600_000 }
+  );
 }
 
 /** Ambil nilai satu key site content (server-side). */
@@ -192,13 +219,25 @@ export async function getSiteContentValue<T = any>(
   key: string,
   fallback: T
 ): Promise<T> {
-  try {
-    const row = await prisma.siteContent.findUnique({ where: { key } });
-    if (!row?.value) return fallback;
-    return JSON.parse(row.value) as T;
-  } catch {
-    return fallback;
-  }
+  return cached(
+    `sitecontent:${key}`,
+    async () => {
+      try {
+        const row = await prisma.siteContent.findUnique({ where: { key } });
+        if (!row?.value) return fallback;
+        return JSON.parse(row.value) as T;
+      } catch {
+        return fallback;
+      }
+    },
+    { ttl: 60_000, stale: 600_000 }
+  );
+}
+
+/** Buang cache konten storefront (dipanggil setelah admin menyimpan konten). */
+export function invalidateStorefrontCache(): void {
+  invalidateCache("storefront.");
+  invalidateCache("sitecontent:");
 }
 
 /* ==========================================================================
@@ -293,35 +332,43 @@ function mapArticle(a: any): StorefrontArticle {
 export async function getStorefrontArticles(
   options: { lang?: string | null; category?: string | null; limit?: number } = {}
 ): Promise<StorefrontArticle[]> {
-  try {
-    const rows = await prisma.article.findMany({
-      where: {
-        isPublished: true,
-        ...(options.category && options.category !== "all"
-          ? { category: options.category }
-          : {}),
-      },
-      orderBy: { publishedAt: "desc" },
-      take: options.limit ?? 100,
-    });
+  const category = options.category || "all";
+  const limit = options.limit ?? 100;
+  const lang = options.lang || "id";
 
-    const articles = rows.map(mapArticle);
+  return cached(
+    `storefront.articles:${category}:${limit}`,
+    async () => {
+      try {
+        const rows = await prisma.article.findMany({
+          where: {
+            isPublished: true,
+            ...(category !== "all" ? { category } : {}),
+          },
+          orderBy: { publishedAt: "desc" },
+          take: limit,
+        });
 
-    if (options.lang && options.lang !== "id") {
-      const { localizeRows } = await import("@/lib/content-translator");
-      return localizeRows(
-        "article",
-        articles,
-        (a) => a.id,
-        ["title", "excerpt", "body", "seoTitle"],
-        options.lang
-      );
-    }
+        const articles = rows.map(mapArticle);
 
-    return articles;
-  } catch {
-    return [];
-  }
+        if (lang !== "id") {
+          const { localizeRows } = await import("@/lib/content-translator");
+          return localizeRows(
+            "article",
+            articles,
+            (a) => a.id,
+            ["title", "excerpt", "body", "seoTitle"],
+            lang
+          );
+        }
+
+        return articles;
+      } catch {
+        return [];
+      }
+    },
+    { ttl: 60_000, stale: 600_000 }
+  );
 }
 
 /** Ambil satu artikel publish berdasarkan slug (server-side). */
@@ -329,30 +376,37 @@ export async function getStorefrontArticleBySlug(
   slug: string,
   lang?: string | null
 ): Promise<StorefrontArticle | null> {
-  try {
-    const row = await prisma.article.findFirst({
-      where: { slug, isPublished: true },
-    });
-    if (!row) return null;
+  const useLang = lang || "id";
+  return cached(
+    `storefront.article:${slug}:${useLang}`,
+    async () => {
+      try {
+        const row = await prisma.article.findFirst({
+          where: { slug, isPublished: true },
+        });
+        if (!row) return null;
 
-    const article = mapArticle(row);
+        const article = mapArticle(row);
 
-    if (lang && lang !== "id") {
-      const { localizeRows } = await import("@/lib/content-translator");
-      const [out] = await localizeRows(
-        "article",
-        [article],
-        (a) => a.id,
-        ["title", "excerpt", "body", "seoTitle"],
-        lang
-      );
-      return out;
-    }
+        if (useLang !== "id") {
+          const { localizeRows } = await import("@/lib/content-translator");
+          const [out] = await localizeRows(
+            "article",
+            [article],
+            (a) => a.id,
+            ["title", "excerpt", "body", "seoTitle"],
+            useLang
+          );
+          return out;
+        }
 
-    return article;
-  } catch {
-    return null;
-  }
+        return article;
+      } catch {
+        return null;
+      }
+    },
+    { ttl: 60_000, stale: 600_000 }
+  );
 }
 
 /** Artikel terkait (kategori sama, selain artikel ini). */
@@ -361,14 +415,20 @@ export async function getRelatedArticles(
   excludeId: string,
   limit = 3
 ): Promise<StorefrontArticle[]> {
-  try {
-    const rows = await prisma.article.findMany({
-      where: { isPublished: true, category, id: { not: excludeId } },
-      orderBy: { publishedAt: "desc" },
-      take: limit,
-    });
-    return rows.map(mapArticle);
-  } catch {
-    return [];
-  }
+  return cached(
+    `storefront.related:${category}:${excludeId}:${limit}`,
+    async () => {
+      try {
+        const rows = await prisma.article.findMany({
+          where: { isPublished: true, category, id: { not: excludeId } },
+          orderBy: { publishedAt: "desc" },
+          take: limit,
+        });
+        return rows.map(mapArticle);
+      } catch {
+        return [];
+      }
+    },
+    { ttl: 60_000, stale: 600_000 }
+  );
 }

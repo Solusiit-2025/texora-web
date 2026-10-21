@@ -17,23 +17,45 @@ export const dynamic = "force-dynamic";
 
 // Simple in-memory rate limiter (per IP). Catatan: untuk multi-instance gunakan Redis/Upstash.
 const RATE_LIMIT_WINDOW_MS = Number(process.env.LOGIN_RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000; // 15 menit
-// Maks percobaan login per IP per window. Default 5 (aman untuk produksi).
+// Maks percobaan login GAGAL per IP per window. Default 5 (aman untuk produksi).
 // Bisa dinaikkan lewat env untuk environment testing/automation.
 const RATE_LIMIT_MAX = Number(process.env.LOGIN_RATE_LIMIT_MAX) || 5;
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 
+/**
+ * Periksa apakah IP sedang diblokir.
+ *
+ * PENTING: hanya login yang GAGAL yang dihitung. Versi lama menghitung
+ * semua percobaan, sehingga admin yang login rutin (atau test suite yang
+ * login berkali-kali) ikut terkunci 429 padahal tidak ada serangan.
+ */
 function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
   const now = Date.now();
   const entry = rateLimitMap.get(ip);
   if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    rateLimitMap.delete(ip);
     return { allowed: true };
   }
   if (entry.count >= RATE_LIMIT_MAX) {
     return { allowed: false, retryAfter: Math.ceil((entry.resetAt - now) / 1000) };
   }
-  entry.count += 1;
   return { allowed: true };
+}
+
+/** Catat satu percobaan login gagal. */
+function recordFailedAttempt(ip: string): void {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return;
+  }
+  entry.count += 1;
+}
+
+/** Login berhasil -> reset penghitung (tidak perlu diblokir). */
+function resetFailedAttempts(ip: string): void {
+  rateLimitMap.delete(ip);
 }
 
 export async function POST(req: NextRequest) {
@@ -79,6 +101,7 @@ export async function POST(req: NextRequest) {
           },
         });
       } catch {}
+      recordFailedAttempt(ip);
       return NextResponse.json(
         { success: false, error: "Akun dengan email tersebut tidak ditemukan." },
         { status: 401 }
@@ -113,11 +136,15 @@ export async function POST(req: NextRequest) {
           },
         });
       } catch {}
+      recordFailedAttempt(ip);
       return NextResponse.json(
         { success: false, error: "Password yang Anda masukkan salah." },
         { status: 401 }
       );
     }
+
+    // Login berhasil -> jangan hitung sebagai percobaan bermasalah
+    resetFailedAttempts(ip);
 
     // Peran efektif (mendukung role custom) + halaman tujuan dari definisi role
     const effectiveRole = await resolveUserRoleId(user.id, user.role);

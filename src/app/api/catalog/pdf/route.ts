@@ -67,6 +67,14 @@ const SUBTLE = "#475569";
 /** Cache thumbnail per proses supaya request berikutnya jauh lebih cepat. */
 const thumbCache = new Map<string, Buffer | null>();
 
+/**
+ * Negative cache untuk gambar remote yang gagal diambil (DNS/HTTP error).
+ * Tanpa ini PDF bolak-balik mencoba fetch gambar yang memang tidak bisa
+ * diangkau (mis. Unsplash diblokir jaringan) -> lambat di tiap generate.
+ */
+const remoteFailCache = new Map<string, number>();
+const REMOTE_FAIL_TTL = 10 * 60 * 1000;
+
 /** Ambil bytes gambar (lokal atau remote) tanpa batas ukuran session. */
 async function readImageBytes(url?: string | null): Promise<Buffer | null> {
   if (!url) return null;
@@ -86,17 +94,32 @@ async function readImageBytes(url?: string | null): Promise<Buffer | null> {
   // Gambar remote (mis. Unsplash) - diambil dengan timeout agar tidak
   // menggantung kalau CDN sedang lambat.
   if (/^https?:\/\//i.test(url)) {
+    const failUntil = remoteFailCache.get(url);
+    if (failUntil && Date.now() < failUntil) return null;
+
     try {
       const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 6000);
+      const timer = setTimeout(() => ctrl.abort(), 4000);
       const res = await fetch(url, { signal: ctrl.signal });
       clearTimeout(timer);
-      if (!res.ok) return null;
+      if (!res.ok) {
+        remoteFailCache.set(url, Date.now() + REMOTE_FAIL_TTL);
+        return null;
+      }
       const type = res.headers.get("content-type") || "";
-      if (!type.startsWith("image/")) return null;
+      if (!type.startsWith("image/")) {
+        remoteFailCache.set(url, Date.now() + REMOTE_FAIL_TTL);
+        return null;
+      }
       const buf = Buffer.from(await res.arrayBuffer());
-      return buf.length > 8_000_000 ? null : buf;
+      if (buf.length > 8_000_000) {
+        remoteFailCache.set(url, Date.now() + REMOTE_FAIL_TTL);
+        return null;
+      }
+      return buf;
     } catch {
+      // Jaringan/DNS gagal -> tandai supaya tidak dicoba lagi selama 10 menit
+      remoteFailCache.set(url, Date.now() + REMOTE_FAIL_TTL);
       return null;
     }
   }

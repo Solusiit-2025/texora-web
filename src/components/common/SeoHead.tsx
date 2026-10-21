@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import type { SeoSettings } from "@/lib/seo";
+import { cachedClientFetch } from "@/lib/client-api";
 
 function setMeta(attr: string, key: string, content: string) {
   let el = document.head.querySelector(`meta[${attr}="${key}"]`) as HTMLMetaElement | null;
@@ -18,10 +19,11 @@ export function SeoHead({ initial }: { initial?: SeoSettings | null }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    fetch("/api/seo")
-      .then((r) => r.json())
+    // Dedupe: SeoHead + PageGate + Navbar memakai endpoint yang sama ->
+    // hanya 1 request yang benar-benar terjadi.
+    cachedClientFetch<{ data?: SeoSettings }>("/api/seo")
       .then((json) => {
-        const data: SeoSettings | undefined = json?.data;
+        const data = json?.data;
         if (!data) return;
         applySeo(pathname, data);
       })

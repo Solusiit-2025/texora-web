@@ -47,51 +47,44 @@ export async function GET(req: NextRequest) {
         orderBy: { updatedAt: "desc" },
         take: 300,
       });
-      return NextResponse.json({ success: true, data: rows });
+      return NextResponse.json(
+        { success: true, data: rows },
+        { headers: { "Cache-Control": "no-store" } }
+      );
     }
 
     if (slug) {
-      const row = await prisma.article.findFirst({
-        where: { slug, isPublished: true },
-      });
-      if (!row) {
+      const { getStorefrontArticleBySlug } = await import("@/lib/storefront-data");
+      const article = await getStorefrontArticleBySlug(slug, lang);
+      if (!article) {
         return NextResponse.json(
           { success: false, error: "Artikel tidak ditemukan." },
           { status: 404 }
         );
       }
-      let article: any = row;
-      if (lang) {
-        const [out] = await localizeRows(
-          "article",
-          [row],
-          (r) => r.id,
-          ["title", "excerpt", "body"],
-          lang
-        );
-        article = out;
-      }
-      return NextResponse.json({ success: true, data: article });
-    }
-
-    const rows = await prisma.article.findMany({
-      where: { isPublished: true },
-      orderBy: { publishedAt: "desc" },
-      take: 100,
-    });
-
-    let articles: any = rows;
-    if (lang) {
-      articles = await localizeRows(
-        "article",
-        rows,
-        (r) => r.id,
-        ["title", "excerpt", "body"],
-        lang
+      return NextResponse.json(
+        { success: true, data: article },
+        {
+          headers: {
+            "Cache-Control":
+              "public, max-age=60, s-maxage=300, stale-while-revalidate=600",
+          },
+        }
       );
     }
 
-    return NextResponse.json({ success: true, data: articles });
+    const { getStorefrontArticles } = await import("@/lib/storefront-data");
+    const articles = await getStorefrontArticles({ lang });
+
+    return NextResponse.json(
+      { success: true, data: articles },
+      {
+        headers: {
+          "Cache-Control":
+            "public, max-age=60, s-maxage=300, stale-while-revalidate=600",
+        },
+      }
+    );
   } catch (error: any) {
     console.error("[articles] Gagal memuat artikel:", error);
     return NextResponse.json(

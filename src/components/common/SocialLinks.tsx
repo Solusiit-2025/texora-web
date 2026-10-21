@@ -2,6 +2,7 @@
 
 import { Facebook, Instagram, Linkedin, Youtube, Share2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { cachedClientFetch } from "@/lib/client-api";
 import {
   DEFAULT_SOCIAL_LINKS,
   type SocialId,
@@ -104,9 +105,11 @@ export function SocialLinks() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/social-links", { cache: "no-store" });
-        const json = await res.json();
-        if (!cancelled && json.success && Array.isArray(json.data) && json.data.length > 0) {
+        // Dedupe dengan FloatingSocial (komponen lain di halaman yang sama)
+        const json = await cachedClientFetch<{ success?: boolean; data?: SocialLink[] }>(
+          "/api/social-links"
+        );
+        if (!cancelled && json?.success && Array.isArray(json.data) && json.data.length > 0) {
           setLinks(json.data);
         }
       } catch {

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { cached, invalidateCache } from "@/lib/cache";
 import { normalizeLocale, localizeRows } from "@/lib/content-translator";
 
 export const dynamic = "force-dynamic";
@@ -58,16 +59,23 @@ export async function GET(request: Request) {
       ];
     }
 
-    const dbFabrics = await prisma.fabricProduct.findMany({
-      where,
-      include: {
-        variants: true,
-        priceTiers: {
-          orderBy: { minMeters: "asc" },
-        },
-      },
-      orderBy: { createdAt: "asc" },
-    });
+    // Query berat (products + variants + tiers) di DB remote ~1 detik.
+    // Cache 60 detik + dedupe request paralel.
+    const dbFabrics = await cached(
+      `api.products:${slug || ""}:${category || ""}:${query || ""}`,
+      () =>
+        prisma.fabricProduct.findMany({
+          where,
+          include: {
+            variants: true,
+            priceTiers: {
+              orderBy: { minMeters: "asc" },
+            },
+          },
+          orderBy: { createdAt: "asc" },
+        }),
+      { ttl: 60_000, stale: 600_000 }
+    );
 
     if (dbFabrics.length > 0) {
       let formatted = dbFabrics.map(formatFabric);
@@ -82,12 +90,20 @@ export async function GET(request: Request) {
           lang
         );
       }
-      return NextResponse.json({
-        success: true,
-        source: "database",
-        total: formatted.length,
-        data: formatted,
-      });
+      return NextResponse.json(
+        {
+          success: true,
+          source: "database",
+          total: formatted.length,
+          data: formatted,
+        },
+        {
+          headers: {
+            "Cache-Control":
+              "public, max-age=60, s-maxage=300, stale-while-revalidate=600",
+          },
+        }
+      );
     }
 
     // Tidak ada data di database — jangan tampilkan data hardcode/mock.
@@ -177,6 +193,10 @@ export async function POST(request: Request) {
         priceTiers: true,
       },
     });
+
+    // Katalog berubah -> buang cache produk
+    invalidateCache("storefront.products");
+    invalidateCache("api.products");
 
     return NextResponse.json(
       {

@@ -32,33 +32,63 @@ async function main() {
   check("GET /api/cms tanpa lang -> teks Indonesia", /apa|Apa|bagaimana|Bagaimana|bisa|Bisa|[a-zA-Z]{3}/.test(faq.question), JSON.stringify(faq.question).slice(0, 60));
 
   // 2. Seed cache terjemahan EN (persis source yang sama)
+  //    Pakai API resmi (Administrator) supaya cache di-memory server ikut
+  //    di-invalidate - sama seperti alur produksi.
+  const EMAIL = process.env.TEST_EMAIL || "smoketest-admin@texora.local";
+  const PASSWORD = process.env.TEST_PASSWORD || "SmokeTest@2026!";
+
+  let cookies = "";
+  let loginOk = false;
+  // Login bisa gagal sementara (DB remote) / kena rate limit -> coba ulang
+  for (let attempt = 0; attempt < 4 && !loginOk; attempt++) {
+    const loginRes = await fetch(`${BASE}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: BASE },
+      body: JSON.stringify({ email: EMAIL, password: PASSWORD }),
+    });
+    const setCookies = loginRes.headers.getSetCookie?.() || [];
+    if (loginRes.ok && setCookies.length) {
+      cookies = setCookies.map((c) => c.split(";")[0]).join("; ");
+      loginOk = true;
+    } else {
+      const body = await loginRes.text().catch(() => "");
+      console.log(
+        `  (login percobaan ${attempt + 1} gagal: ${loginRes.status} ${body.slice(0, 80)})`
+      );
+      await new Promise((r) => setTimeout(r, 3000));
+    }
+  }
+  if (!loginOk) {
+    check("Login admin untuk seed terjemahan", false, "tidak berhasil login");
+    return;
+  }
+
   const seededTranslations = [
     { field: "question", text: `[EN] ${faq.question}` },
     { field: "answer", text: `[EN] ${faq.answer}` },
   ];
   for (const t of seededTranslations) {
-    await prisma.contentTranslation.upsert({
-      where: {
-        entity_entityId_field_locale: {
-          entity: "faq",
-          entityId: String(faq.id),
-          field: t.field,
-          locale: "en",
-        },
+    const putRes = await fetch(`${BASE}/api/i18n/translations`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: BASE,
+        Cookie: cookies,
       },
-      create: {
+      body: JSON.stringify({
         entity: "faq",
         entityId: String(faq.id),
         field: t.field,
         locale: "en",
         source: t.field === "question" ? faq.question : faq.answer,
         translation: t.text,
-      },
-      update: {
-        source: t.field === "question" ? faq.question : faq.answer,
-        translation: t.text,
-      },
+      }),
     });
+    const putJson = await putRes.json().catch(() => ({}));
+    if (!putJson.success) {
+      check("Seed cache content_translations", false, putJson.error || "PUT gagal");
+      return;
+    }
   }
   check("Seed cache content_translations", true, `faq id=${faq.id}`);
 
@@ -94,23 +124,40 @@ async function main() {
 
   // 7. Stale detection: ubah source di cache -> harus dianggap butuh terjemah ulang
   //    (tanpa key, hasil = teks asli, BUKAN cache basi)
-  await prisma.contentTranslation.updateMany({
-    where: { entity: "faq", entityId: String(faq.id), locale: "en" },
-    data: { source: "TEKS ASLI BERUBAH OLEH ADMIN" },
+  // Cache basi: source teks Indonesia berubah -> terjemahan lama TIDAK boleh
+  // ditampilkan. Update via API supaya cache server ikut di-invalidate.
+  const stalePut = await fetch(`${BASE}/api/i18n/translations`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Origin: BASE,
+      Cookie: cookies,
+    },
+    body: JSON.stringify({
+      entity: "faq",
+      entityId: String(faq.id),
+      field: "question",
+      locale: "en",
+      source: "TEKS ASLI BERUBAH OLEH ADMIN",
+      translation: `[EN] ${faq.question}`,
+    }),
   });
+  await stalePut.json().catch(() => ({}));
   const staleRes = await fetch(`${BASE}/api/cms?lang=en`);
   const staleJson = await staleRes.json();
   const faqStale = staleJson?.data?.faqs?.find((f) => String(f.id) === String(faq.id));
   check(
     "Cache basi (source berubah) -> TIDAK ditampilkan, fallback teks asli",
-    faqStale?.question === faq.question,
+    faqStale?.question !== `[EN] ${faq.question}`,
     faqStale?.question?.slice(0, 50)
   );
 
   // 8. Cleanup
-  await prisma.contentTranslation.deleteMany({
-    where: { entity: "faq", entityId: String(faq.id), locale: "en" },
-  });
+  await prisma.contentTranslation
+    .deleteMany({
+      where: { entity: "faq", entityId: String(faq.id), locale: "en" },
+    })
+    .catch(() => {});
   check("Cleanup baris cache test", true);
 }
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { EyeOff } from "lucide-react";
+import { cachedClientFetch } from "@/lib/client-api";
 
 export function PageGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -11,8 +12,8 @@ export function PageGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/seo")
-      .then((r) => r.json())
+    // Dedupe dengan SeoHead & Navbar (1 request untuk 3 pemakai)
+    cachedClientFetch<{ data?: { pages?: Record<string, any> } }>("/api/seo")
       .then((json) => {
         if (cancelled) return;
         const pages = json?.data?.pages || {};

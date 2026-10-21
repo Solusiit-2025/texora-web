@@ -12,14 +12,26 @@ const globalForPrisma = globalThis as unknown as {
  * sering habis -> "Timed out fetching a new connection from the connection pool".
  *
  * Dinaikkan menjadi 15 per proses dengan pool_timeout 30 detik.
- * IMPORTANT: total = limit x jumlah proses. Postgres max_connections = 100,
+ * PENTING: total = limit x jumlah proses. Postgres max_connections = 100,
  * jadi limit jangan terlalu besar (mode dev bisa menyalakan 4-6 worker).
+ *
+ * `socket_timeout` & `connect_timeout` WAJIB karena database di sisi remote
+ * (77.37.44.232): kalau firewall kills koneksi yang idle, Prisma sempat
+ * "membeku" 10-30 detik sebelum query berikutnya gagal. Timeout memaksa
+ * reconnect lebih cepat supaya halaman tidak terasa macet.
  */
 function withPoolSettings(url?: string): string | undefined {
   if (!url) return undefined;
-  if (/connection_limit=/.test(url)) return url;
-  const sep = url.includes("?") ? "&" : "?";
-  return `${url}${sep}connection_limit=15&pool_timeout=30&connect_timeout=20`;
+
+  const params = new URLSearchParams();
+  if (!/connection_limit=/.test(url)) params.set("connection_limit", "15");
+  if (!/pool_timeout=/.test(url)) params.set("pool_timeout", "30");
+  if (!/connect_timeout=/.test(url)) params.set("connect_timeout", "15");
+  if (!/socket_timeout=/.test(url)) params.set("socket_timeout", "20");
+
+  const query = params.toString();
+  if (!query) return url;
+  return url.includes("?") ? `${url}&${query}` : `${url}?${query}`;
 }
 
 export const prisma =

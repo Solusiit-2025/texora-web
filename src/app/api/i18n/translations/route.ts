@@ -13,6 +13,7 @@ import {
   translateSingleText,
   type TranslationLocale,
 } from "@/lib/content-translator";
+import { invalidateCache } from "@/lib/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -129,6 +130,9 @@ export async function PUT(req: NextRequest) {
       },
     }).catch(() => {});
 
+    // Cache terjemahan di memory dibuang
+    invalidateCache("translations:");
+
     return NextResponse.json({ success: true, message: "Terjemahan disimpan.", data: row });
   } catch (error: any) {
     console.error("[i18n] Gagal menyimpan override:", error);
@@ -162,6 +166,8 @@ export async function DELETE(req: NextRequest) {
     }
 
     await prisma.contentTranslation.delete({ where: { id } }).catch(() => {});
+    // Cache terjemahan di memory dibuang supaya perubahan langsung terlihat
+    invalidateCache("translations:");
 
     return NextResponse.json({ success: true, message: "Cache terjemahan dihapus." });
   } catch (error: any) {

@@ -13,6 +13,8 @@ import {
   preTranslateFields,
 } from "@/lib/content-translator";
 import { normalizeArticleInput } from "@/lib/article-utils";
+import { cached, invalidateCache } from "@/lib/cache";
+import { invalidateStorefrontCache } from "@/lib/storefront-data";
 
 /** Fire-and-forget: terjemahkan konten yg baru disimpan ke semua bahasa. */
 function schedulePreTranslate(type: string, data: any, record: any) {
@@ -156,12 +158,24 @@ export async function GET(request: Request) {
     // ?lang=xx -> terjemahkan konten on-demand (cache DB) untuk pembaca asing.
     const lang = normalizeLocale(new URL(request.url).searchParams.get("lang"));
 
-    const [heroSlidesRaw, testimonialsRaw, faqsRaw, siteContentRaw] = await Promise.all([
-      prisma.heroSlide.findMany({ orderBy: { order: "asc" } }).catch(() => []),
-      prisma.testimonial.findMany({ orderBy: { order: "asc" } }).catch(() => []),
-      prisma.faqItem.findMany({ orderBy: { order: "asc" } }).catch(() => []),
-      prisma.siteContent.findMany().catch(() => []),
-    ]);
+    // 4 query ke DB remote. Cache 60 detik supaya request berikutnya
+    // (setiap halaman memanggil endpoint ini) tidak kena DB lagi.
+    const raw = await cached(
+      "api.cms.raw",
+      async () => {
+        const [heroSlidesRaw, testimonialsRaw, faqsRaw, siteContentRaw] =
+          await Promise.all([
+            prisma.heroSlide.findMany({ orderBy: { order: "asc" } }).catch(() => []),
+            prisma.testimonial.findMany({ orderBy: { order: "asc" } }).catch(() => []),
+            prisma.faqItem.findMany({ orderBy: { order: "asc" } }).catch(() => []),
+            prisma.siteContent.findMany().catch(() => []),
+          ]);
+        return { heroSlidesRaw, testimonialsRaw, faqsRaw, siteContentRaw };
+      },
+      { ttl: 60_000, stale: 600_000 }
+    );
+
+    const { heroSlidesRaw, testimonialsRaw, faqsRaw, siteContentRaw } = raw;
 
     let heroSlides = heroSlidesRaw.length > 0 ? heroSlidesRaw : DEFAULT_HERO_SLIDES;
     let testimonials = testimonialsRaw.length > 0 ? testimonialsRaw : DEFAULT_TESTIMONIALS;
@@ -183,16 +197,24 @@ export async function GET(request: Request) {
       } catch {}
     }
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        heroSlides,
-        testimonials,
-        faqs,
-        siteContent,
-        socialLinks,
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          heroSlides,
+          testimonials,
+          faqs,
+          siteContent,
+          socialLinks,
+        },
       },
-    });
+      {
+        headers: {
+          "Cache-Control":
+            "public, max-age=60, s-maxage=300, stale-while-revalidate=600",
+        },
+      }
+    );
   } catch (err: any) {
     console.error("Error fetching CMS content:", err);
     return NextResponse.json({
@@ -205,6 +227,12 @@ export async function GET(request: Request) {
       },
     });
   }
+}
+
+/** Buang cache konten setelah admin menyimpan perubahan. */
+function invalidateContentCaches() {
+  invalidateStorefrontCache();
+  invalidateCache("api.");
 }
 
 export async function POST(request: NextRequest) {
@@ -281,6 +309,9 @@ export async function POST(request: NextRequest) {
     // Pre-translate (fire-and-forget) agar konten baru langsung tersedia
     // dalam bahasa asing tanpa menunggu pengunjung asing datang.
     schedulePreTranslate(type, data, created);
+
+    // Konten berubah -> buang cache supaya pengunjung langsung lihat versi baru
+    invalidateContentCaches();
 
     return NextResponse.json({
       success: true,
@@ -386,6 +417,9 @@ export async function PUT(request: NextRequest) {
     // karena source teks berubah, lalu dibuat ulang.
     schedulePreTranslate(type, data, updated);
 
+    // Konten berubah -> buang cache
+    invalidateContentCaches();
+
     return NextResponse.json({
       success: true,
       message: "Konten berhasil diperbarui.",
@@ -443,6 +477,8 @@ export async function DELETE(request: NextRequest) {
         },
       });
     } catch {}
+    // Konten berubah -> buang cache
+    invalidateContentCaches();
     return NextResponse.json({
       success: true,
       message: "Konten berhasil dihapus.",

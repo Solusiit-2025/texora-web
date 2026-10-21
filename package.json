@@ -24,7 +24,9 @@
     "backup:manual": "node scripts/run-backup.mjs",
     "module:toggle": "node scripts/toggle-module.cjs",
     "test:quote": "node scripts/test-quote.mjs",
-    "test:articles": "node scripts/test-articles.mjs"
+    "test:articles": "node scripts/test-articles.mjs",
+    "test:perf": "node scripts/bench-performance.mjs",
+    "test:db": "node scripts/db-latency.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1153.0",

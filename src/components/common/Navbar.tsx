@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ThemeDropdown } from "../theme/ThemeDropdown";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { useI18n, useLocalePath } from "@/lib/i18n/LanguageContext";
+import { cachedClientFetch } from "@/lib/client-api";
 import { loadCart } from "@/lib/cart";
 import { 
   Home,
@@ -131,8 +132,8 @@ export function Navbar({ cartCount: initialCartCount, initialDisabledPaths = [] 
   // Sinkronkan ulang status disable saat berada di halaman (mis. setelah admin
   // toggle modul, navigasi client-side ikut ter-update tanpa reload).
   useEffect(() => {
-    fetch("/api/seo")
-      .then((r) => r.json())
+    // Dedupe: SeoHead & PageGate juga memanggil /api/seo -> 1 request saja
+    cachedClientFetch<{ data?: { pages?: Record<string, any> } }>("/api/seo")
       .then((json) => {
         const pages = json?.data?.pages || {};
         const disabled = Object.keys(pages).filter((p) => pages[p]?.enabled === false);

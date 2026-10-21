@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { cachedClientFetch } from "@/lib/client-api";
 import { 
   ArrowUpRight, 
   ChevronRight, 
@@ -90,9 +91,11 @@ export function FloatingSocial() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/social-links", { cache: "no-store" });
-        const json = await res.json();
-        if (!cancelled && json.success && Array.isArray(json.data) && json.data.length > 0) {
+        // Dedupe dengan SocialLinks di footer (1 request untuk 2 pemakai)
+        const json = await cachedClientFetch<{ success?: boolean; data?: SocialLink[] }>(
+          "/api/social-links"
+        );
+        if (!cancelled && json?.success && Array.isArray(json.data) && json.data.length > 0) {
           setLinks(json.data);
         }
       } catch {
