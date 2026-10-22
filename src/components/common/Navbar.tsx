@@ -8,13 +8,11 @@ import { ThemeDropdown } from "../theme/ThemeDropdown";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { useI18n, useLocalePath } from "@/lib/i18n/LanguageContext";
 import { cachedClientFetch } from "@/lib/client-api";
-import { loadCart } from "@/lib/cart";
 import { 
   Home,
   Building2,
   Layers, 
   Palette, 
-  ShoppingCart, 
   User as UserIcon, 
   Menu, 
   X, 
@@ -29,7 +27,6 @@ import {
 } from "lucide-react";
 
 interface NavbarProps {
-  cartCount?: number;
   /** Daftar path yang dinonaktifkan — di-resolve dari DB oleh layout server
    *  supaya link navigasi benar sejak HTML pertama (tanpa flash, SSR-friendly). */
   initialDisabledPaths?: string[];
@@ -51,7 +48,7 @@ const NAV_LINKS = [
   { key: "nav.consult", href: "/contact" },
 ];
 
-export function Navbar({ cartCount: initialCartCount, initialDisabledPaths = [] }: NavbarProps) {
+export function Navbar({ initialDisabledPaths = [] }: NavbarProps) {
   const pathname = usePathname();
   const { t } = useI18n();
   const localePath = useLocalePath();
@@ -60,8 +57,7 @@ export function Navbar({ cartCount: initialCartCount, initialDisabledPaths = [] 
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
-  // Dynamic real-time cart count & user session state
-  const [cartItemCount, setCartItemCount] = useState<number>(0);
+  // Dynamic user session state
   const [currentUser, setCurrentUser] = useState<{
     id: string;
     name: string;
@@ -72,6 +68,13 @@ export function Navbar({ cartCount: initialCartCount, initialDisabledPaths = [] 
   } | null>(null);
   // Seed awal dari server (SSR) -> tidak ada flash menu nonaktif & link tetap terbaca crawler.
   const [disabledPaths, setDisabledPaths] = useState<string[]>(initialDisabledPaths);
+
+  /**
+   * Apakah user ini boleh mengelola Website & CMS?
+   * Administrator bawaan ATAU role custom yang diberi menu `content`
+   * (mis. role "ADMIN" — Admin Web CMS).
+   */
+  const [canManageCms, setCanManageCms] = useState(false);
 
   // Click anywhere outside to close user dropdown profile
   useEffect(() => {
@@ -101,39 +104,35 @@ export function Navbar({ cartCount: initialCartCount, initialDisabledPaths = [] 
   }, [userMenuOpen]);
 
   useEffect(() => {
-    // 1. Muat data keranjang riil dari storage
-    const syncCart = () => {
-      const items = loadCart();
-      setCartItemCount(items.length);
-    };
-
-    syncCart();
-    window.addEventListener("texora-cart-updated", syncCart);
-    window.addEventListener("storage", syncCart);
-
-    // 2. Ambil sesi autentikasi pengguna
+    // Ambil sesi autentikasi pengguna
     fetch("/api/auth/me")
       .then((res) => res.json())
       .then((data) => {
         if (data.authenticated && data.user) {
           setCurrentUser(data.user);
+          const menuIds = Array.isArray(data.menuIds) ? data.menuIds : [];
+          setCanManageCms(
+            data.user.role === "ADMINISTRATOR" || menuIds.includes("content")
+          );
         } else {
           setCurrentUser(null);
+          setCanManageCms(false);
         }
       })
-      .catch(() => setCurrentUser(null));
-
-    return () => {
-      window.removeEventListener("texora-cart-updated", syncCart);
-      window.removeEventListener("storage", syncCart);
-    };
+      .catch(() => {
+        setCurrentUser(null);
+        setCanManageCms(false);
+      });
   }, []);
 
   // Sinkronkan ulang status disable saat berada di halaman (mis. setelah admin
   // toggle modul, navigasi client-side ikut ter-update tanpa reload).
   useEffect(() => {
-    // Dedupe: SeoHead & PageGate juga memanggil /api/seo -> 1 request saja
-    cachedClientFetch<{ data?: { pages?: Record<string, any> } }>("/api/seo")
+    // Dedupe: SeoHead & PageGate juga memanggil /api/seo -> 1 request saja.
+    // TTL pendek (5s) supaya perubahan visibilitas modul dari CMS cepat terlihat
+    // setelah admin kembali ke storefront (cache penuh dibersihkan lewat
+    // invalidateClientFetch("/api/seo") saat menyimpan).
+    cachedClientFetch<{ data?: { pages?: Record<string, any> } }>("/api/seo", 5_000)
       .then((json) => {
         const pages = json?.data?.pages || {};
         const disabled = Object.keys(pages).filter((p) => pages[p]?.enabled === false);
@@ -143,8 +142,19 @@ export function Navbar({ cartCount: initialCartCount, initialDisabledPaths = [] 
   }, [pathname]);
 
   const dashboardHref =
-    currentUser?.dash ||
-    (currentUser?.role === "CUSTOMER" ? "/customer/dashboard" : "/portal/dashboard");
+    currentUser?.role === "CUSTOMER"
+      ? "/customer/dashboard"
+      : canManageCms
+        ? "/portal/content-management"
+        : currentUser?.dash || "/portal/dashboard";
+
+  /** Label badge peran di tombol profil. */
+  const roleBadge =
+    currentUser?.role === "CUSTOMER"
+      ? "Mitra"
+      : canManageCms
+        ? "Admin CMS"
+        : "Staff";
 
   const visibleNavLinks = NAV_LINKS.filter(
     (item) => !disabledPaths.includes(item.href)
@@ -285,45 +295,6 @@ export function Navbar({ cartCount: initialCartCount, initialDisabledPaths = [] 
               <ThemeDropdown />
             </div>
 
-            {/* Direct Dashboard Shortcut Button (Solusi: Menu Tidak Tersembunyi Lagi) */}
-            {currentUser && (
-              <Link
-                href={dashboardHref}
-                className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-brand-500/20 via-brand-500/10 to-accent-cyan/20 hover:from-brand-500/30 hover:to-accent-cyan/30 border border-brand-400/40 text-brand-200 hover:text-white text-xs font-bold transition-all shadow-sm shadow-brand-500/10 group shrink-0"
-                title="Buka Dashboard Utama Mitra B2B"
-              >
-                <ShieldCheck className="w-3.5 h-3.5 text-brand-400 group-hover:scale-110 transition-transform" />
-                <span>{currentUser.role === "CUSTOMER" ? t("nav.dashMitra") : t("nav.dashPabrik")}</span>
-              </Link>
-            )}
-
-            {/* Shopping Cart Button Capsule with Dynamic Badge Notification (Hanya tampil jika user login) */}
-            {currentUser && (
-              <Link
-                href="/cart"
-                aria-label="Keranjang Belanja"
-                title={cartItemCount > 0 ? `Keranjang: ${cartItemCount} item pesanan` : "Keranjang Belanja"}
-                className="relative p-2.5 rounded-full bg-slate-900/60 hover:bg-slate-800/80 border border-white/10 text-slate-200 hover:text-white transition-all group shadow-lg shadow-black/20"
-              >
-                <ShoppingCart className="w-4 h-4 text-slate-300 group-hover:text-accent-cyan transition-colors" />
-                {cartItemCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 min-w-[1.35rem] h-[1.35rem] px-1 bg-gradient-to-r from-amber-500 to-brand-500 text-slate-950 text-[11px] font-black rounded-full flex items-center justify-center leading-none shadow-md border border-slate-950 animate-in zoom-in-75 duration-200">
-                    {cartItemCount}
-                  </span>
-                )}
-              </Link>
-            )}
-
-            {/* CTA Utama: Minta Penawaran */}
-            <Link
-              href={localePath("/request-quote")}
-              className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-brand-400/50 bg-brand-500/10 hover:bg-brand-500/25 hover:border-brand-300 text-brand-200 hover:text-white text-xs font-bold transition-all shadow-sm shadow-brand-500/10 shrink-0"
-              title={t("nav.requestQuote")}
-            >
-              <FileText className="w-3.5 h-3.5 text-brand-300" />
-              <span>{t("nav.requestQuote")}</span>
-            </Link>
-
             {/* Authentication & Portal Controls */}
             {currentUser ? (
               <div className="relative" ref={userMenuRef}>
@@ -334,7 +305,7 @@ export function Navbar({ cartCount: initialCartCount, initialDisabledPaths = [] 
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                   <span className="max-w-[110px] truncate font-semibold">{currentUser.name.split(" ")[0]}</span>
                   <span className="text-[10px] px-1.5 py-0.5 rounded bg-brand-500/20 text-brand-300 border border-brand-500/40 uppercase font-mono">
-                    {currentUser.role === "CUSTOMER" ? "Mitra" : currentUser.role === "ADMINISTRATOR" ? "Admin" : "Staff"}
+                    {roleBadge}
                   </span>
                   <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
                 </button>
@@ -372,11 +343,12 @@ export function Navbar({ cartCount: initialCartCount, initialDisabledPaths = [] 
                           )}
                         </div>
 
-                        {/* Menu Portal Utama */}
+                        {/* Website & CMS (staff) / Portal Mitra (customer) */}
                         <div className="py-1.5 space-y-0.5">
                           <p className="px-3 pt-1 pb-0.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                            {t("nav.portalSection")}
+                            {canManageCms ? "Website & CMS" : t("nav.portalSection")}
                           </p>
+
                           <Link
                             href={dashboardHref}
                             onClick={() => setUserMenuOpen(false)}
@@ -386,112 +358,92 @@ export function Navbar({ cartCount: initialCartCount, initialDisabledPaths = [] 
                               <ShieldCheck className="w-3.5 h-3.5" />
                             </div>
                             <div>
-                              <div className="font-semibold">{currentUser.role === "CUSTOMER" ? t("nav.dashMitra") : t("nav.dashPabrik")}</div>
-                              <div className="text-[10px] text-slate-400">{t("nav.dashDesc")}</div>
-                            </div>
-                          </Link>
-
-                          <Link
-                            href="/track-order"
-                            onClick={() => setUserMenuOpen(false)}
-                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 transition-colors group"
-                          >
-                            <div className="p-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 group-hover:bg-cyan-500 group-hover:text-slate-950 transition-colors">
-                              <Sparkles className="w-3.5 h-3.5" />
-                            </div>
-                            <div>
-                              <div className="font-semibold">{t("nav.trackRt")}</div>
-                              <div className="text-[10px] text-slate-400">{t("nav.trackRtDesc")}</div>
-                            </div>
-                          </Link>
-
-                          <Link
-                            href="/cart"
-                            onClick={() => setUserMenuOpen(false)}
-                            className="flex items-center justify-between px-3 py-2 rounded-xl text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 transition-colors group"
-                          >
-                            <div className="flex items-center gap-2.5">
-                              <div className="p-1.5 rounded-lg bg-amber-500/20 text-amber-300 group-hover:bg-amber-500 group-hover:text-slate-950 transition-colors">
-                                <ShoppingCart className="w-3.5 h-3.5" />
+                              <div className="font-semibold">
+                                {canManageCms
+                                  ? "Dashboard CMS"
+                                  : currentUser.role === "CUSTOMER"
+                                    ? t("nav.dashMitra")
+                                    : "Dashboard"}
                               </div>
-                              <div>
-                                <div className="font-semibold">{t("nav.cart")}</div>
-                                <div className="text-[10px] text-slate-400">{t("nav.cartDesc")}</div>
+                              <div className="text-[10px] text-slate-400">
+                                {canManageCms
+                                  ? "Kelola konten & katalog website"
+                                  : t("nav.dashDesc")}
                               </div>
                             </div>
-                            {cartItemCount > 0 && (
-                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black shadow-sm">
-                                {cartItemCount}
-                              </span>
-                            )}
                           </Link>
+
+                          {canManageCms ? (
+                            <>
+                              <Link
+                                href="/portal/content-management"
+                                onClick={() => setUserMenuOpen(false)}
+                                className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 transition-colors"
+                              >
+                                <FileText className="w-3.5 h-3.5 text-brand-300" />
+                                <span>Content Management</span>
+                              </Link>
+                              <Link
+                                href="/portal/content-management?tab=artikel"
+                                onClick={() => setUserMenuOpen(false)}
+                                className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 transition-colors"
+                              >
+                                <BookOpen className="w-3.5 h-3.5 text-emerald-400" />
+                                <span>Artikel &amp; Panduan</span>
+                              </Link>
+                              <Link
+                                href="/portal/content-management?tab=seo"
+                                onClick={() => setUserMenuOpen(false)}
+                                className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 transition-colors"
+                              >
+                                <Sparkles className="w-3.5 h-3.5 text-accent-cyan" />
+                                <span>SEO &amp; AI</span>
+                              </Link>
+                              <Link
+                                href="/portal/catalog-management"
+                                onClick={() => setUserMenuOpen(false)}
+                                className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 transition-colors"
+                              >
+                                <Package className="w-3.5 h-3.5 text-emerald-400" />
+                                <span>Katalog Kain</span>
+                              </Link>
+                              <Link
+                                href="/"
+                                onClick={() => setUserMenuOpen(false)}
+                                className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 transition-colors"
+                              >
+                                <Home className="w-3.5 h-3.5 text-slate-400" />
+                                <span>Lihat Website</span>
+                              </Link>
+                              {currentUser.role === "ADMINISTRATOR" && (
+                                <Link
+                                  href="/portal/settings/users-rbac"
+                                  onClick={() => setUserMenuOpen(false)}
+                                  className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 transition-colors"
+                                >
+                                  <ShieldCheck className="w-3.5 h-3.5 text-accent-cyan" />
+                                  <span>User &amp; Role (RBAC)</span>
+                                </Link>
+                              )}
+                            </>
+                          ) : currentUser.role === "CUSTOMER" ? (
+                            <>
+                              <Link
+                                href="/track-order"
+                                onClick={() => setUserMenuOpen(false)}
+                                className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 transition-colors group"
+                              >
+                                <div className="p-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 group-hover:bg-cyan-500 group-hover:text-slate-950 transition-colors">
+                                  <Sparkles className="w-3.5 h-3.5" />
+                                </div>
+                                <div>
+                                  <div className="font-semibold">{t("nav.trackRt")}</div>
+                                  <div className="text-[10px] text-slate-400">{t("nav.trackRtDesc")}</div>
+                                </div>
+                              </Link>
+                            </>
+                          ) : null}
                         </div>
-
-                        {/* Layanan & Produksi */}
-                        <div className="py-1.5 space-y-0.5">
-                          <p className="px-3 pt-1 pb-0.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                            {t("nav.services")}
-                          </p>
-                          <Link
-                            href={localePath("/custom-sublimation")}
-                            onClick={() => setUserMenuOpen(false)}
-                            className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 transition-colors"
-                          >
-                            <Palette className="w-3.5 h-3.5 text-accent-cyan" />
-                            <span>{t("nav.studio")}</span>
-                          </Link>
-
-                          <Link
-                            href={localePath("/catalog")}
-                            onClick={() => setUserMenuOpen(false)}
-                            className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 transition-colors"
-                          >
-                            <Layers className="w-3.5 h-3.5 text-brand-300" />
-                            <span>{t("nav.katalogSub")}</span>
-                          </Link>
-
-                          <Link
-                            href={localePath("/contact")}
-                            onClick={() => setUserMenuOpen(false)}
-                            className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 transition-colors"
-                          >
-                            <Building2 className="w-3.5 h-3.5 text-emerald-400" />
-                            <span>{t("nav.consultSub")}</span>
-                          </Link>
-                        </div>
-
-                        {/* Manajemen (khusus Administrator) */}
-                        {currentUser.role === "ADMINISTRATOR" && (
-                          <div className="py-1.5 space-y-0.5">
-                            <p className="px-3 pt-1 pb-0.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                              {t("nav.cms")}
-                            </p>
-                            <Link
-                              href="/portal/content-management"
-                              onClick={() => setUserMenuOpen(false)}
-                              className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 transition-colors"
-                            >
-                              <Layers className="w-3.5 h-3.5 text-brand-300" />
-                              <span>Content Management</span>
-                            </Link>
-                            <Link
-                              href="/portal/catalog-management"
-                              onClick={() => setUserMenuOpen(false)}
-                              className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 transition-colors"
-                            >
-                              <Package className="w-3.5 h-3.5 text-emerald-400" />
-                              <span>Katalog Kain</span>
-                            </Link>
-                            <Link
-                              href="/portal/settings/users-rbac"
-                              onClick={() => setUserMenuOpen(false)}
-                              className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 transition-colors"
-                            >
-                              <ShieldCheck className="w-3.5 h-3.5 text-accent-cyan" />
-                              <span>User & Role (RBAC)</span>
-                            </Link>
-                          </div>
-                        )}
 
                         {/* Logout */}
                         <div className="pt-1">
@@ -524,20 +476,6 @@ export function Navbar({ cartCount: initialCartCount, initialDisabledPaths = [] 
           <div className="flex md:hidden items-center space-x-2">
             <LanguageSwitcher />
             <ThemeDropdown compact />
-            {currentUser && (
-              <Link
-                href="/cart"
-                className="relative p-2 rounded-lg bg-slate-800 text-slate-200"
-                aria-label="Keranjang"
-              >
-                <ShoppingCart className="w-5 h-5" />
-                {cartItemCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 min-w-[1.25rem] h-[1.25rem] px-1 bg-gradient-to-r from-amber-500 to-brand-500 text-slate-950 text-[10px] font-extrabold rounded-full flex items-center justify-center leading-none shadow-md border border-slate-950">
-                    {cartItemCount}
-                  </span>
-                )}
-              </Link>
-            )}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white transition-colors"
@@ -596,14 +534,6 @@ export function Navbar({ cartCount: initialCartCount, initialDisabledPaths = [] 
             })}
 
             <div className="pt-3 border-t border-slate-800 flex flex-col gap-2">
-              <Link
-                href={localePath("/request-quote")}
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full text-center py-2.5 rounded-xl border border-brand-400/40 bg-brand-500/10 text-brand-200 font-bold text-xs flex items-center justify-center gap-1.5"
-              >
-                <FileText className="w-3.5 h-3.5" />
-                <span>{t("nav.requestQuote")}</span>
-              </Link>
               {currentUser ? (
                 <>
                   <div className="px-3.5 py-2 rounded-xl bg-slate-800/60 border border-slate-700/60 text-xs">
@@ -615,41 +545,52 @@ export function Navbar({ cartCount: initialCartCount, initialDisabledPaths = [] 
                     onClick={() => setMobileMenuOpen(false)}
                     className="w-full text-center py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-sm shadow-lg shadow-brand-600/30"
                   >
-                    {currentUser.role === "CUSTOMER" ? t("nav.dashMitra") : t("nav.dashPabrik")}
+                    {canManageCms
+                      ? "Dashboard CMS"
+                      : currentUser.role === "CUSTOMER"
+                        ? t("nav.dashMitra")
+                        : "Dashboard"}
                   </Link>
-                  <Link
-                    href="/cart"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center justify-between px-3.5 py-2 rounded-xl text-xs text-slate-200 bg-slate-800/80 hover:bg-slate-800 transition-colors"
-                  >
-                    <span className="flex items-center gap-2">
-                      <ShoppingCart className="w-4 h-4 text-accent-cyan" />
-                      <span>Keranjang Belanja</span>
-                    </span>
-                    {cartItemCount > 0 && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                        {cartItemCount} item
-                      </span>
-                    )}
-                  </Link>
-                   {currentUser.role === "ADMINISTRATOR" && (
-                     <>
-                       <Link
-                         href="/portal/content-management"
-                         onClick={() => setMobileMenuOpen(false)}
-                         className="w-full text-center py-2 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-200 font-semibold text-xs border border-slate-700"
-                       >
-                         Content Management
-                       </Link>
-                       <Link
-                         href="/portal/catalog-management"
-                         onClick={() => setMobileMenuOpen(false)}
-                         className="w-full text-center py-2 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-200 font-semibold text-xs border border-slate-700"
-                       >
-                         Katalog Kain
-                       </Link>
-                     </>
-                   )}
+
+                  {canManageCms ? (
+                    <>
+                      <Link
+                        href="/portal/content-management"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="w-full text-center py-2 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-200 font-semibold text-xs border border-slate-700"
+                      >
+                        Content Management
+                      </Link>
+                      <Link
+                        href="/portal/content-management?tab=artikel"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="w-full text-center py-2 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-200 font-semibold text-xs border border-slate-700"
+                      >
+                        Artikel &amp; Panduan
+                      </Link>
+                      <Link
+                        href="/portal/content-management?tab=seo"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="w-full text-center py-2 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-200 font-semibold text-xs border border-slate-700"
+                      >
+                        SEO &amp; AI
+                      </Link>
+                      <Link
+                        href="/portal/catalog-management"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="w-full text-center py-2 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-200 font-semibold text-xs border border-slate-700"
+                      >
+                        Katalog Kain
+                      </Link>
+                      <Link
+                        href="/"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="w-full text-center py-2 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-200 font-semibold text-xs border border-slate-700"
+                      >
+                        Lihat Website
+                      </Link>
+                    </>
+                  ) : null}
                   <button
                     onClick={handleLogout}
                     className="w-full text-center py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 font-semibold text-xs border border-red-500/30"

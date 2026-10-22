@@ -29,6 +29,7 @@ import {
   Type,
 } from "lucide-react";
 import { formatRupiah } from "@/lib/utils";
+import { invalidateClientFetch } from "@/lib/client-api";
 import { DEFAULT_SEO } from "@/lib/seo";
 import { ImageUpload } from "@/components/common/ImageUpload";
 import { RichTextEditor } from "@/components/common/RichTextEditor";
@@ -178,27 +179,23 @@ function ContentManagementInner() {
   const [seoData, setSeoData] = useState<any>(DEFAULT_SEO);
   const [seoSelectedPage, setSeoSelectedPage] = useState<string>("/");
   const [currentRole, setCurrentRole] = useState<string>("");
-  const [currentMenuIds, setCurrentMenuIds] = useState<string[]>([]);
   const [togglingPath, setTogglingPath] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/auth/me")
       .then((r) => r.json())
       .then((d) => {
-        if (d?.authenticated && d.user) {
-          setCurrentRole(d.user.role);
-          setCurrentMenuIds(Array.isArray(d.menuIds) ? d.menuIds : []);
-        }
+        if (d?.authenticated && d.user) setCurrentRole(d.user.role);
       })
       .catch(() => {});
   }, []);
 
-  // Administrator bawaan ATAU role custom (mis. "ADMIN") yang diberi akses
-  // menu CMS (`content`) di Role & Menu Management.
-  const canManageModules =
-    !currentRole ||
-    currentRole === "ADMINISTRATOR" ||
-    currentMenuIds.includes("content");
+  /**
+   * Visibilitas modul halaman (sakelar on/off) HANYA untuk Administrator bawaan.
+   * Role custom seperti "ADMIN" (Admin Web CMS) tetap bisa mengelola konten,
+   * tetapi sakelar visibilitas modul disembunyikan sepenuhnya.
+   */
+  const isSystemAdministrator = !currentRole || currentRole === "ADMINISTRATOR";
 
   const [editingItem, setEditingItem] = useState<any>(null);
 
@@ -256,6 +253,8 @@ function ContentManagementInner() {
 
   // Copy hero homepage (judul, eyebrow, lead, 3 poin, 2 CTA).
   const [heroTextData, setHeroTextData] = useState<HeroText>(DEFAULT_HERO_TEXT);
+  /** Snapshot terakhir yang tersimpan — untuk indikator "belum disimpan" & tombol Batal. */
+  const [savedHeroText, setSavedHeroText] = useState<HeroText>(DEFAULT_HERO_TEXT);
 
   // Dynamic Pricing state for Management CMS
   const [pricingForm, setPricingForm] = useState({
@@ -369,7 +368,9 @@ function ContentManagementInner() {
         const heroTextRow = json.data.siteContent?.find((s: any) => s.key === HERO_TEXT_KEY);
         if (heroTextRow?.value) {
           try {
-            setHeroTextData(normalizeHeroText(JSON.parse(heroTextRow.value)));
+            const next = normalizeHeroText(JSON.parse(heroTextRow.value));
+            setHeroTextData(next);
+            setSavedHeroText(next);
           } catch {}
         }
       }
@@ -686,6 +687,7 @@ function ContentManagementInner() {
         "success",
         "Teks hero disimpan. Terjemahan 5 bahasa diproses otomatis di background."
       );
+      setSavedHeroText(heroTextData);
       await loadData();
     } catch (err: any) {
       showNotice("error", err.message || "Gagal menyimpan teks hero.");
@@ -724,6 +726,9 @@ function ContentManagementInner() {
       const json = await res.json();
       if (json?.success) {
         setSeoData(json.data);
+        // Buang cache client (`/api/seo`) supaya Navbar/PageGate di storefront
+        // langsung memakai daftar modul terbaru saat admin membuka "Toko".
+        invalidateClientFetch("/api/seo");
         showNotice(
           "success",
           `Modul ${path} berhasil ${nextEnabled ? "diaktifkan" : "dinonaktifkan"}.`
@@ -752,6 +757,7 @@ function ContentManagementInner() {
       const json = await res.json();
       if (json?.success) {
         setSeoData(json.data);
+        invalidateClientFetch("/api/seo");
         showNotice("success", "Pengaturan SEO berhasil disimpan!");
       } else {
         showNotice("error", json?.error || "Gagal menyimpan SEO.");
@@ -925,14 +931,14 @@ function ContentManagementInner() {
       title: "Panduan Halaman Statis & Visibilitas Modul",
       desc: "Modul untuk mengelola konten halaman About, Contact, Footer, sekaligus mengaktifkan atau menonaktifkan modul website (Kustom Sublimasi, Lacak Pesanan, Katalog, Tentang Kami, Hubungi Kami) langsung dari dashboard.",
       steps: [
-        "Bagian 'Visibilitas Modul Halaman': geser toggle untuk mengaktifkan/menonaktifkan modul. Perubahan langsung tersimpan (tidak perlu klik tombol simpan).",
+        "Bagian 'Visibilitas Modul Halaman' hanya tampil untuk Administrator: geser toggle untuk mengaktifkan/menonaktifkan modul. Perubahan langsung tersimpan (tidak perlu klik tombol simpan).",
         "Ubah URL gambar hero About, judul, deskripsi, caption.",
         "Ubah alamat, email, telepon untuk halaman Contact.",
         "Ubah copyright footer.",
         "Klik 'Simpan Konten Halaman'.",
       ],
       fields: [
-        { label: "Toggle Visibilitas", hint: "Hanya Administrator yang bisa mengubah. Modul nonaktif: menu nav hilang, halaman menampilkan 'Halaman sedang tidak tersedia', dan modul dikeluarkan dari sitemap." },
+        { label: "Toggle Visibilitas", hint: "Khusus Administrator (role Admin Web CMS tidak melihat bagian ini). Modul nonaktif: menu nav hilang, halaman menampilkan 'Halaman sedang tidak tersedia', dan modul dikeluarkan dari sitemap." },
         { label: "URL Gambar Hero About", hint: "Gambar utama halaman Tentang Kami." },
         { label: "Judul About", hint: "Judul utama bagian profil." },
         { label: "Deskripsi About", hint: "Paragraf penjelasan profil perusahaan." },
@@ -1097,6 +1103,80 @@ function ContentManagementInner() {
     pricing: "Atur tarif jasa desain, tarif cetak sublimasi per meter, judul layanan, dan kebijakan revisi. Nilai langsung tersinkron ke simulator & keranjang.",
     pages: "Kelola konten halaman statis: gambar & teks About, info kontak, dan copyright footer. Klik 'Simpan Konten Halaman' setelah mengubah.",
     seo: "Atur metadata SEO & AI: meta title, description, excerpt, tipe schema, dan slug per halaman. Lihat preview hasil pencarian Google secara langsung.",
+  };
+
+  /**
+   * Batas karakter yang disarankan untuk tiap field hero. Bukan hard limit —
+   * hanya penanda visual supaya copy tetap ringkas dan rapi di mobile.
+   */
+  const HERO_TEXT_LIMITS: Record<keyof HeroText, number> = {
+    badge: 18,
+    eyebrow: 52,
+    title1: 44,
+    title2: 44,
+    title3: 44,
+    lead: 300,
+    badge1: 44,
+    badge2: 44,
+    badge3: 44,
+    ctaPrint: 28,
+    ctaCatalog: 28,
+  };
+
+  const heroTextDirty = JSON.stringify(heroTextData) !== JSON.stringify(savedHeroText);
+
+  /** Satu field hero: label + counter + tombol reset + input/textarea + hint. */
+  const renderHeroField = (
+    key: keyof HeroText,
+    opts: { multiline?: boolean; rows?: number; className?: string } = {}
+  ) => {
+    const meta = HERO_TEXT_FIELD_META.find((f) => f.key === key);
+    if (!meta) return null;
+    const value = heroTextData[key];
+    const limit = HERO_TEXT_LIMITS[key];
+    const over = value.length > limit;
+
+    return (
+      <div key={key} className={opts.className}>
+        <div className="flex items-center justify-between gap-2 mb-1.5">
+          <label className="text-[11px] font-semibold text-slate-300">{meta.label}</label>
+          <div className="flex items-center gap-2 shrink-0">
+            {value !== DEFAULT_HERO_TEXT[key] && (
+              <button
+                type="button"
+                onClick={() => resetHeroTextField(key)}
+                className="text-[10px] font-semibold text-brand-300 hover:text-brand-200"
+              >
+                Reset
+              </button>
+            )}
+            <span
+              className={`text-[10px] font-mono ${over ? "text-amber-400" : "text-slate-500"}`}
+            >
+              {value.length}/{limit}
+            </span>
+          </div>
+        </div>
+
+        {opts.multiline ? (
+          <textarea
+            rows={opts.rows || 3}
+            value={value}
+            onChange={(e) => setHeroTextData({ ...heroTextData, [key]: e.target.value })}
+            className="w-full bg-slate-950/80 border border-slate-700 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none rounded-xl p-2.5 text-xs text-white transition-colors"
+          />
+        ) : (
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => setHeroTextData({ ...heroTextData, [key]: e.target.value })}
+            className="w-full bg-slate-950/80 border border-slate-700 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none rounded-xl p-2.5 text-xs text-white transition-colors"
+          />
+        )}
+
+        {meta.hint && <p className="text-[10px] text-slate-500 mt-1">{meta.hint}</p>}
+      </div>
+    );
   };
 
   return (
@@ -1264,127 +1344,223 @@ function ContentManagementInner() {
 
       {/* TAB 1B: TEKS HERO (copy header homepage) */}
       {!loading && activeTab === "hero-text" && (
-        <div className="space-y-6 max-w-4xl">
-          <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Type className="w-4 h-4 text-brand-400" />
-              <span>Teks Hero Homepage</span>
-            </h3>
-            <p className="text-xs text-slate-400">
-              Seluruh copy header homepage: badge, eyebrow, judul 3 baris, paragraf pengantar,
-              3 poin keunggulan, dan 2 label tombol. Perubahan langsung tampil di storefront
-              setelah disimpan; terjemahan 5 bahasa dibuat otomatis di background.
-            </p>
-
-            <div className="space-y-4 pt-2">
-              {HERO_TEXT_FIELD_META.map((field) => (
-                <div key={field.key}>
-                  <div className="flex items-center justify-between gap-3 mb-1">
-                    <label className="text-xs font-semibold text-slate-300">{field.label}</label>
-                    {heroTextData[field.key] !== DEFAULT_HERO_TEXT[field.key] && (
-                      <button
-                        type="button"
-                        onClick={() => resetHeroTextField(field.key)}
-                        className="text-[10px] font-semibold text-brand-300 hover:text-brand-200"
-                      >
-                        Kembalikan default
-                      </button>
-                    )}
-                  </div>
-                  {field.multiline ? (
-                    <textarea
-                      rows={field.rows || 3}
-                      value={heroTextData[field.key]}
-                      onChange={(e) =>
-                        setHeroTextData({ ...heroTextData, [field.key]: e.target.value })
-                      }
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white"
-                    />
-                  ) : (
-                    <input
-                      type="text"
-                      value={heroTextData[field.key]}
-                      onChange={(e) =>
-                        setHeroTextData({ ...heroTextData, [field.key]: e.target.value })
-                      }
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white"
-                    />
-                  )}
-                  {field.hint && (
-                    <p className="text-[10px] text-slate-500 mt-1">{field.hint}</p>
-                  )}
-                </div>
-              ))}
+        <div className="space-y-6 max-w-5xl">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div>
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
+                <Type className="w-4 h-4 text-brand-400" />
+                Teks Hero Homepage
+              </h2>
+              <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
+                Kelola seluruh copy header homepage. Pratinjau di bawah selalu mengikuti
+                perubahan; terjemahan 5 bahasa dibuat otomatis setelah disimpan.
+              </p>
             </div>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-500/30 bg-brand-500/10 px-3 py-1 text-[10px] font-semibold text-brand-200 shrink-0">
+              <Languages className="w-3 h-3" /> Auto-translate 5 bahasa
+            </span>
           </div>
 
-          {/* Pratinjau ringkas */}
-          <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-3">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Eye className="w-4 h-4 text-brand-400" />
-              <span>Pratinjau</span>
-            </h3>
-            <div className="rounded-2xl bg-slate-950 border border-slate-800 p-5">
-              <span className="inline-flex items-center gap-2 rounded-full border border-brand-500/30 bg-brand-500/10 pl-1.5 pr-3.5 py-1">
-                <span className="inline-flex items-center rounded-full bg-brand-500 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-950">
-                  {heroTextData.badge || "—"}
-                </span>
-                <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-200">
-                  {heroTextData.eyebrow}
-                </span>
-              </span>
-
-              <h1 className="mt-4 font-display text-lg sm:text-xl font-bold leading-snug text-white">
-                {heroTextData.title1}
-                <br />
-                <span className="text-brand-400">{heroTextData.title2}</span>
-                <br />
-                {heroTextData.title3}
-              </h1>
-
-              <p className="mt-3 text-xs leading-relaxed text-slate-300">{heroTextData.lead}</p>
-
-              <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-300">
-                {[heroTextData.badge1, heroTextData.badge2, heroTextData.badge3].map((point, i) => (
-                  <li key={i} className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                    {point}
-                  </li>
-                ))}
-              </ul>
-
-              <div className="mt-4 flex flex-wrap gap-2">
-                <span className="rounded-lg bg-brand-500 px-3 py-1.5 text-[11px] font-bold text-slate-950">
-                  {heroTextData.ctaPrint}
-                </span>
-                <span className="rounded-lg border border-slate-700 px-3 py-1.5 text-[11px] font-semibold text-white">
-                  {heroTextData.ctaCatalog}
-                </span>
+          {/* PRATINJAU — selalu di paling atas form */}
+          <div className="glass-panel rounded-3xl border border-brand-500/25 overflow-hidden shadow-xl shadow-black/20">
+            <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-slate-800 bg-slate-900/70">
+              <div className="flex items-center gap-2 text-xs font-bold text-brand-200">
+                <Eye className="w-3.5 h-3.5" />
+                Pratinjau Langsung
+              </div>
+              <div className="flex items-center gap-1.5" aria-hidden="true">
+                <span className="h-2.5 w-2.5 rounded-full bg-red-400/70" />
+                <span className="h-2.5 w-2.5 rounded-full bg-amber-400/70" />
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/70" />
               </div>
             </div>
-            <p className="text-[10px] text-slate-500">
-              Pratinjau ringkas — tampilan final mengikuti layout storefront (termasuk efek gradient
-              pada judul baris kedua).
-            </p>
+
+            <div className="p-4 sm:p-6 bg-slate-950">
+              <div className="rounded-2xl border border-slate-800 bg-[radial-gradient(ellipse_at_top_left,rgba(56,189,248,0.10),transparent_55%)] p-5 sm:p-8">
+                <span className="inline-flex items-center gap-2 rounded-full border border-brand-500/30 bg-brand-500/10 pl-1.5 pr-3.5 py-1">
+                  <span className="inline-flex items-center rounded-full bg-brand-500 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-950">
+                    {heroTextData.badge || "—"}
+                  </span>
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-200">
+                    {heroTextData.eyebrow || "—"}
+                  </span>
+                </span>
+
+                <h1 className="mt-4 font-display text-xl sm:text-3xl font-bold leading-tight text-white">
+                  {heroTextData.title1}
+                  <br />
+                  <span className="bg-gradient-to-r from-brand-300 via-accent-cyan to-brand-400 bg-clip-text text-transparent">
+                    {heroTextData.title2}
+                  </span>
+                  <br />
+                  {heroTextData.title3}
+                </h1>
+
+                <p className="mt-3 max-w-xl text-xs sm:text-sm leading-relaxed text-slate-300">
+                  {heroTextData.lead}
+                </p>
+
+                <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-[11px] text-slate-300">
+                  {[heroTextData.badge1, heroTextData.badge2, heroTextData.badge3].map(
+                    (point, i) => (
+                      <li key={i} className="flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                        {point}
+                      </li>
+                    )
+                  )}
+                </ul>
+
+                <div className="mt-5 flex flex-wrap gap-2">
+                  <span className="rounded-xl bg-gradient-to-r from-brand-500 to-brand-400 px-4 py-2 text-[11px] font-bold text-slate-950 shadow-lg shadow-brand-500/20">
+                    {heroTextData.ctaPrint}
+                  </span>
+                  <span className="rounded-xl border border-slate-700 bg-slate-900/60 px-4 py-2 text-[11px] font-semibold text-white">
+                    {heroTextData.ctaCatalog}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-5 py-2.5 border-t border-slate-800 bg-slate-900/40 text-[10px] text-slate-500">
+              Pratinjau ringkas — layout final mengikuti storefront (termasuk efek gradient pada
+              judul baris kedua).
+            </div>
           </div>
 
-          <div className="flex items-center justify-between gap-3">
-            <button
-              type="button"
-              onClick={() => setHeroTextData(DEFAULT_HERO_TEXT)}
-              className="text-xs font-semibold text-slate-400 hover:text-white"
-            >
-              Reset semua ke default
-            </button>
-            <button
-              type="button"
-              disabled={submitting}
-              onClick={handleSaveHeroText}
-              className="px-6 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-400 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg shadow-brand-500/20"
-            >
-              {submitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-              <span>Simpan Teks Hero</span>
-            </button>
+          {/* FORM */}
+          <div className="glass-panel rounded-3xl border border-slate-800 divide-y divide-slate-800">
+            {/* 1. Label & Eyebrow */}
+            <div className="p-5 sm:p-6 space-y-4">
+              <div className="flex items-center gap-2">
+                <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-brand-500/15 text-[10px] font-bold text-brand-300">
+                  1
+                </span>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                  Label &amp; Eyebrow
+                </h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {renderHeroField("badge")}
+                {renderHeroField("eyebrow")}
+              </div>
+            </div>
+
+            {/* 2. Judul */}
+            <div className="p-5 sm:p-6 space-y-4">
+              <div className="flex items-center gap-2">
+                <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-brand-500/15 text-[10px] font-bold text-brand-300">
+                  2
+                </span>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                  Judul Utama
+                </h3>
+              </div>
+              <div className="space-y-4">
+                {renderHeroField("title1")}
+                {renderHeroField("title2")}
+                {renderHeroField("title3")}
+              </div>
+            </div>
+
+            {/* 3. Paragraf */}
+            <div className="p-5 sm:p-6 space-y-4">
+              <div className="flex items-center gap-2">
+                <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-brand-500/15 text-[10px] font-bold text-brand-300">
+                  3
+                </span>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                  Paragraf Pengantar
+                </h3>
+              </div>
+              {renderHeroField("lead", { multiline: true, rows: 4 })}
+            </div>
+
+            {/* 4. Poin keunggulan */}
+            <div className="p-5 sm:p-6 space-y-4">
+              <div className="flex items-center gap-2">
+                <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-brand-500/15 text-[10px] font-bold text-brand-300">
+                  4
+                </span>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                  Poin Keunggulan
+                </h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {renderHeroField("badge1")}
+                {renderHeroField("badge2")}
+                {renderHeroField("badge3")}
+              </div>
+            </div>
+
+            {/* 5. CTA */}
+            <div className="p-5 sm:p-6 space-y-4">
+              <div className="flex items-center gap-2">
+                <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-brand-500/15 text-[10px] font-bold text-brand-300">
+                  5
+                </span>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                  Label Tombol CTA
+                </h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {renderHeroField("ctaPrint")}
+                {renderHeroField("ctaCatalog")}
+              </div>
+              <p className="text-[10px] text-slate-500">
+                Tautan tombol tetap mengikuti halaman Studio Sublimasi dan Katalog — hanya
+                labelnya yang dapat diubah di sini.
+              </p>
+            </div>
+          </div>
+
+          {/* Action bar */}
+          <div className="sticky bottom-4 z-20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-slate-700 bg-slate-900/95 px-4 py-3 shadow-2xl shadow-black/40 backdrop-blur">
+            <div className="flex items-center gap-2 text-[11px]">
+              {heroTextDirty ? (
+                <>
+                  <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span className="text-amber-300 font-semibold">
+                    Ada perubahan yang belum disimpan
+                  </span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span className="text-emerald-300 font-semibold">
+                    Semua perubahan sudah tersimpan
+                  </span>
+                </>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => setHeroTextData(DEFAULT_HERO_TEXT)}
+                className="px-3 py-2 rounded-xl text-[11px] font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              >
+                Reset ke default
+              </button>
+              <button
+                type="button"
+                disabled={!heroTextDirty || submitting}
+                onClick={() => setHeroTextData(savedHeroText)}
+                className="px-3 py-2 rounded-xl border border-slate-700 text-[11px] font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={submitting || !heroTextDirty}
+                onClick={handleSaveHeroText}
+                className="px-5 py-2 rounded-xl bg-brand-500 hover:bg-brand-400 text-slate-950 font-bold text-[11px] flex items-center gap-2 shadow-lg shadow-brand-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                {submitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                <span>Simpan Teks Hero</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1906,7 +2082,8 @@ function ContentManagementInner() {
       {/* TAB 7: HALAMAN STATIS */}
       {!loading && activeTab === "pages" && (
         <div className="space-y-6 w-full">
-          {/* VISIBILITAS MODUL - Nonaktifkan modul dari dashboard */}
+          {/* VISIBILITAS MODUL — hanya untuk Administrator bawaan */}
+          {isSystemAdministrator && (
           <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -1925,7 +2102,6 @@ function ContentManagementInner() {
             <div className="space-y-2">
               {MODULE_TOGGLES.map((mod) => {
                 const enabled = seoData?.pages?.[mod.path]?.enabled !== false;
-                const canToggle = canManageModules;
                 const isTogglingThis = togglingPath === mod.path;
                 return (
                   <div
@@ -1953,47 +2129,30 @@ function ContentManagementInner() {
                       </p>
                     </div>
 
-                    {canToggle ? (
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={enabled}
-                        onClick={() => handleToggleModule(mod.path)}
-                        disabled={isTogglingThis}
-                        title={enabled ? "Klik untuk menonaktifkan modul" : "Klik untuk mengaktifkan modul"}
-                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-slate-950 disabled:opacity-50 ${
-                          enabled ? "bg-emerald-500" : "bg-slate-700"
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={enabled}
+                      onClick={() => handleToggleModule(mod.path)}
+                      disabled={isTogglingThis}
+                      title={enabled ? "Klik untuk menonaktifkan modul" : "Klik untuk mengaktifkan modul"}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-slate-950 disabled:opacity-50 ${
+                        enabled ? "bg-emerald-500" : "bg-slate-700"
+                      }`}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                          enabled ? "translate-x-5" : "translate-x-0"
                         }`}
-                      >
-                        <span
-                          aria-hidden="true"
-                          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
-                            enabled ? "translate-x-5" : "translate-x-0"
-                          }`}
-                        />
-                      </button>
-                    ) : (
-                      <span className="text-[10px] text-slate-500 shrink-0 text-right leading-tight">
-                        Hanya Administrator
-                        <br />
-                        yang dapat mengubah
-                      </span>
-                    )}
+                      />
+                    </button>
                   </div>
                 );
               })}
             </div>
-
-            {currentRole && !canManageModules && (
-              <p className="text-[10px] text-amber-400/80 flex items-center gap-1.5">
-                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                <span>
-                  Anda dapat melihat status modul, namun hanya Administrator yang dapat
-                  mengaktifkan atau menonaktifkannya.
-                </span>
-              </p>
-            )}
           </div>
+          )}
 
           <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
             <h3 className="text-sm font-bold text-white">Konten Halaman About</h3>
@@ -2170,6 +2329,17 @@ function ContentManagementInner() {
 
       {!loading && activeTab === "seo" && seoData && (
         <div className="space-y-6 w-full">
+          {!isSystemAdministrator && (
+            <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-[11px] leading-relaxed flex items-start gap-2.5">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>
+                Mode baca-saja: Health Check &amp; preview SEO tetap bisa dilihat, tetapi pengaturan
+                SEO (metadata halaman, pengaturan global, dan redirect) hanya dapat diubah oleh
+                Administrator.
+              </span>
+            </div>
+          )}
+
           {/* SEO & AI Health Check */}
           <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
             <div>
@@ -2186,7 +2356,8 @@ function ContentManagementInner() {
             <SeoHealthPanel />
           </div>
 
-          {/* Redirect Manager */}
+          {/* Redirect Manager — hanya Administrator */}
+          {isSystemAdministrator && (
           <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
             <div>
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
@@ -2200,6 +2371,7 @@ function ContentManagementInner() {
             </div>
             <RedirectManager />
           </div>
+          )}
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
             {/* Daftar Halaman */}
@@ -2222,7 +2394,7 @@ function ContentManagementInner() {
                       >
                         {path}
                       </button>
-                      {canManageModules ? (
+                      {isSystemAdministrator ? (
                         <button
                           type="button"
                           onClick={() =>
@@ -2268,13 +2440,14 @@ function ContentManagementInner() {
                 <input
                   value={seoData.pages[seoSelectedPage]?.title || ""}
                   maxLength={60}
+                  disabled={!isSystemAdministrator}
                   onChange={(e) =>
                     setSeoData({
                       ...seoData,
                       pages: { ...seoData.pages, [seoSelectedPage]: { ...seoData.pages[seoSelectedPage], title: e.target.value } },
                     })
                   }
-                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white mt-1"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white mt-1 disabled:opacity-60 disabled:cursor-not-allowed"
                 />
               </div>
               <div>
@@ -2283,13 +2456,14 @@ function ContentManagementInner() {
                   rows={3}
                   maxLength={160}
                   value={seoData.pages[seoSelectedPage]?.description || ""}
+                  disabled={!isSystemAdministrator}
                   onChange={(e) =>
                     setSeoData({
                       ...seoData,
                       pages: { ...seoData.pages, [seoSelectedPage]: { ...seoData.pages[seoSelectedPage], description: e.target.value } },
                     })
                   }
-                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white mt-1"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white mt-1 disabled:opacity-60 disabled:cursor-not-allowed"
                 />
               </div>
               <div>
@@ -2297,26 +2471,28 @@ function ContentManagementInner() {
                 <textarea
                   rows={2}
                   value={seoData.pages[seoSelectedPage]?.excerpt || ""}
+                  disabled={!isSystemAdministrator}
                   onChange={(e) =>
                     setSeoData({
                       ...seoData,
                       pages: { ...seoData.pages, [seoSelectedPage]: { ...seoData.pages[seoSelectedPage], excerpt: e.target.value } },
                     })
                   }
-                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white mt-1"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white mt-1 disabled:opacity-60 disabled:cursor-not-allowed"
                 />
               </div>
               <div>
                 <label className="text-[10px] font-bold uppercase text-slate-500">Tipe Schema</label>
                 <select
                   value={seoData.pages[seoSelectedPage]?.schemaType || "none"}
+                  disabled={!isSystemAdministrator}
                   onChange={(e) =>
                     setSeoData({
                       ...seoData,
                       pages: { ...seoData.pages, [seoSelectedPage]: { ...seoData.pages[seoSelectedPage], schemaType: e.target.value } },
                     })
                   }
-                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white mt-1"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white mt-1 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <option value="none">None</option>
                   <option value="article">Article</option>
@@ -2329,6 +2505,7 @@ function ContentManagementInner() {
                 <label className="text-[10px] font-bold uppercase text-slate-500">Custom Slug</label>
                 <input
                   value={seoData.pages[seoSelectedPage]?.slug || ""}
+                  disabled={!isSystemAdministrator}
                   onChange={(e) =>
                     setSeoData({
                       ...seoData,
@@ -2336,7 +2513,7 @@ function ContentManagementInner() {
                     })
                   }
                   placeholder="opsional"
-                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white mt-1"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white mt-1 disabled:opacity-60 disabled:cursor-not-allowed"
                 />
               </div>
             </div>
@@ -2362,36 +2539,41 @@ function ContentManagementInner() {
                 <label className="text-[10px] font-bold uppercase text-slate-500 block">Judul Situs</label>
                 <input
                   value={seoData.global?.title || ""}
+                  disabled={!isSystemAdministrator}
                   onChange={(e) => setSeoData({ ...seoData, global: { ...seoData.global, title: e.target.value } })}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white disabled:opacity-60 disabled:cursor-not-allowed"
                 />
                 <label className="text-[10px] font-bold uppercase text-slate-500 block mt-2">Keywords</label>
                 <input
                   value={seoData.global?.keywords || ""}
+                  disabled={!isSystemAdministrator}
                   onChange={(e) => setSeoData({ ...seoData, global: { ...seoData.global, keywords: e.target.value } })}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white disabled:opacity-60 disabled:cursor-not-allowed"
                 />
                 <label className="text-[10px] font-bold uppercase text-slate-500 block mt-2">OG Image URL</label>
                 <input
                   value={seoData.global?.ogImage || ""}
+                  disabled={!isSystemAdministrator}
                   onChange={(e) => setSeoData({ ...seoData, global: { ...seoData.global, ogImage: e.target.value } })}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white disabled:opacity-60 disabled:cursor-not-allowed"
                 />
               </div>
             </div>
           </div>
 
-          <div className="flex justify-end">
-            <button
-              type="button"
-              disabled={submitting}
-              onClick={handleSaveSeo}
-              className="px-6 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-400 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg shadow-brand-500/20"
-            >
-              {submitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-              <span>Simpan Pengaturan SEO</span>
-            </button>
-          </div>
+          {isSystemAdministrator && (
+            <div className="flex justify-end">
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={handleSaveSeo}
+                className="px-6 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-400 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg shadow-brand-500/20"
+              >
+                {submitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                <span>Simpan Pengaturan SEO</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
 
