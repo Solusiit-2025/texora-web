@@ -294,7 +294,25 @@ function RegisterForm() {
                       className="mt-0.5 w-4 h-4 rounded border-slate-700 bg-slate-900 text-brand-500 focus:ring-brand-500"
                     />
                     <span className="text-[11px] text-slate-400 leading-normal">
-                      Saya menyetujui Ketentuan Layanan Sublimasi Industri dan Kebijakan Privasi XoraMateria, termasuk prosedur toleransi susut kain standar pabrik (±2-3%).
+                      Saya menyetujui{" "}
+                      <a
+                        href="/terms"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-brand-300 hover:text-brand-200 underline underline-offset-2"
+                      >
+                        Ketentuan Layanan Sublimasi Industri
+                      </a>{" "}
+                      dan{" "}
+                      <a
+                        href="/privacy"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-brand-300 hover:text-brand-200 underline underline-offset-2"
+                      >
+                        Kebijakan Privasi
+                      </a>{" "}
+                      XoraMateria, termasuk prosedur toleransi susut kain standar pabrik (±2-3%).
                     </span>
                   </label>
                 </div>

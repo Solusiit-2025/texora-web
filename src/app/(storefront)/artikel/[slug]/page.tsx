@@ -22,6 +22,7 @@ import {
   getStorefrontProducts,
 } from "@/lib/storefront-data";
 import { getRequestLocale } from "@/lib/server-locale";
+import { getAuthorProfile } from "@/config/authors";
 import { ARTICLE_COPY } from "@/lib/i18n/article-dictionary";
 import { translate, type Locale } from "@/lib/i18n/dictionary";
 import {
@@ -81,6 +82,8 @@ export default async function ArticleDetailPage({ params }: PageProps) {
     article.relatedProducts.includes(p.slug)
   );
 
+  const authorProfile = getAuthorProfile(article.author);
+
   const breadcrumbItems = [
     { name: copy.eyebrow, path: "/artikel" },
     { name: article.title, path: `/artikel/${article.slug}` },
@@ -109,8 +112,11 @@ export default async function ArticleDetailPage({ params }: PageProps) {
       keywords: article.tags.join(", "),
       author: {
         "@type": "Organization",
-        name: article.author,
-        jobTitle: article.authorRole || undefined,
+        name: authorProfile.name,
+        url: `${SITE_URL}/penulis`,
+        jobTitle: authorProfile.role,
+        description: authorProfile.bio,
+        knowsAbout: authorProfile.expertise,
         worksFor: { "@id": `${SITE_URL}/#organization` },
       },
       publisher: { "@id": `${SITE_URL}/#organization` },
@@ -266,6 +272,45 @@ export default async function ArticleDetailPage({ params }: PageProps) {
               </div>
             </div>
           </div>
+
+          {/* Profil penulis — sinyal E-E-A-T */}
+          <section
+            aria-labelledby="penulis-artikel"
+            className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5"
+          >
+            <h2 id="penulis-artikel" className="sr-only">
+              Tentang penulis
+            </h2>
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-brand-500/30 bg-brand-500/15 text-[11px] font-bold text-brand-200">
+                {authorProfile.name
+                  .split(" ")
+                  .map((part) => part[0])
+                  .join("")
+                  .slice(0, 3)
+                  .toUpperCase()}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                  Ditulis oleh
+                </p>
+                <p className="mt-0.5 text-sm font-bold text-white">
+                  {authorProfile.name}
+                </p>
+                <p className="text-[11px] text-brand-300">{authorProfile.role}</p>
+                <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
+                  {authorProfile.bio}
+                </p>
+                <Link
+                  href={lp("/penulis")}
+                  className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-semibold text-brand-300 hover:text-brand-200"
+                >
+                  Profil tim &amp; cara kami menulis
+                  <ArrowRight className="h-3 w-3" />
+                </Link>
+              </div>
+            </div>
+          </section>
 
           {/* Kain yang dibahas */}
           {relatedProducts.length > 0 && (

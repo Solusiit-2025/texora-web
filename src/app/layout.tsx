@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
+import { Plus_Jakarta_Sans, Urbanist } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { FloatingSocial } from "@/components/common/FloatingSocial";
@@ -25,6 +26,30 @@ export const viewport: Viewport = {
   maximumScale: 5,
   themeColor: "#0f172a",
 };
+
+/**
+ * Font di-self-host oleh next/font:
+ *  - tidak ada request render-blocking ke fonts.googleapis.com,
+ *  - file font otomatis di-preload & di-cache immutable,
+ *  - `display: swap` mencegah teks tak terlihat (FOIT).
+ */
+const fontSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-plus-jakarta",
+  weight: ["300", "400", "500", "600", "700", "800"],
+  style: ["normal", "italic"],
+  fallback: ["Inter", "system-ui", "-apple-system", "sans-serif"],
+});
+
+const fontDisplay = Urbanist({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-urbanist",
+  weight: ["400", "500", "600", "700", "800", "900"],
+  style: ["normal", "italic"],
+  fallback: ["system-ui", "-apple-system", "sans-serif"],
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -118,14 +143,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   }
 
   return (
-    <html lang={htmlLang} dir={htmlDir} className="dark">
+    <html
+      lang={htmlLang}
+      dir={htmlDir}
+      className={`dark ${fontSans.variable} ${fontDisplay.variable}`}
+    >
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Urbanist:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap"
-          rel="stylesheet"
-        />
         {/* Apply stored accent theme before first paint (avoids flash). */}
         <Script id="texora-theme" strategy="beforeInteractive">
           {`(function(){try{var t=localStorage.getItem('texora-theme');if(t==='emerald'||t==='sapphire'||t==='crimson'){document.documentElement.dataset.theme=t;}}catch(e){}})()`}

@@ -162,6 +162,82 @@ const LOCALE_ALLOWED_SEGMENTS = [
   "artikel",
 ];
 
+/* ==========================================================================
+   CDN CACHE HEADERS (halaman storefront publik)
+   --------------------------------------------------------------------------
+   Tujuan: TTFB turun drastis & beban DB berkurang tanpa mengubah routing.
+
+   Prinsip keamanan:
+   1. Hanya GET halaman publik (bukan /portal, /api, /cart, /checkout, dll).
+   2. Hanya HTML (bukan request RSC/klien-navigasi, bukan aset statis).
+   3. URL non-prefix + cookie preferensi bahasa (`texora-locale`) TIDAK di-cache
+      — mencegah pengunjung Indonesia menerima HTML bahasa lain untuk URL "/".
+   4. Halaman yang mengirim Set-Cookie tidak di-cache.
+   5. Request preview (`?preview=1`) / `?fresh=1` selalu bypass.
+   ========================================================================== */
+
+const CDN_CACHE_EXCLUDE_PREFIXES = [
+  "/api",
+  "/portal",
+  "/customer",
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/unauthorized",
+  "/checkout",
+  "/cart",
+  "/track-order",
+];
+
+const CDN_CACHE_EXCLUDE_FILE =
+  /\.(?:ico|png|jpe?g|webp|avif|gif|svg|txt|xml|json|pdf|webmanifest|js|css|map|woff2?)$/i;
+
+function applyPublicCdnCache(
+  res: NextResponse,
+  req: NextRequest,
+  pathname: string,
+  localePrefixed = false
+): NextResponse {
+  if (req.method !== "GET") return res;
+
+  // Request RSC (navigasi client-side Next.js) membawa payload berbeda untuk
+  // URL yang sama — jangan pernah di-cache bersama HTML.
+  const isRscRequest =
+    req.headers.get("rsc") === "1" ||
+    req.headers.has("next-router-state-tree") ||
+    (req.headers.get("accept") || "").includes("text/x-component");
+  if (isRscRequest) return res;
+
+  // Request fetch/XHR (termasuk navigasi RSC Next.js di browser) membawa
+  // `Sec-Fetch-Dest: empty`. Hanya dokumen HTML yang boleh di-cache CDN.
+  const fetchDest = req.headers.get("sec-fetch-dest");
+  if (fetchDest && fetchDest !== "document") return res;
+
+  if (req.nextUrl.searchParams.has("preview") || req.nextUrl.searchParams.has("fresh")) {
+    return res;
+  }
+
+  const excluded = CDN_CACHE_EXCLUDE_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+  );
+  if (excluded || CDN_CACHE_EXCLUDE_FILE.test(pathname)) return res;
+
+  // Jangan menimpa cache yang sudah diatur endpoint (mis. API JSON).
+  if (res.headers.has("cache-control")) return res;
+  if (res.headers.get("set-cookie")) return res;
+
+  // Non-prefix + cookie bahasa → kontennya bisa berbeda dari default (ID).
+  if (!localePrefixed && req.cookies.has("texora-locale")) return res;
+
+  const cacheControl = "public, s-maxage=300, stale-while-revalidate=600";
+  res.headers.set("Cache-Control", cacheControl);
+  // Vercel memakai header khusus CDN agar browser tidak menyimpan HTML 5 menit.
+  res.headers.set("CDN-Cache-Control", cacheControl);
+  res.headers.set("Vercel-CDN-Cache-Control", cacheControl);
+
+  return res;
+}
+
 async function getRedirectRules(origin: string): Promise<EdgeRedirectRule[]> {  const now = Date.now();
   if (redirectCache && now - redirectCache.fetchedAt < REDIRECT_CACHE_TTL_MS) {
     return redirectCache.rules;
@@ -273,9 +349,14 @@ export async function middleware(req: NextRequest) {
         // Path tanpa prefix bahasa -> dipakai server component untuk
         // mengecek apakah halaman ini dinonaktifkan di CMS.
         requestHeaders.set("x-pathname", clean);
-        return NextResponse.rewrite(url, {
-          request: { headers: requestHeaders },
-        });
+        return applyPublicCdnCache(
+          NextResponse.rewrite(url, {
+            request: { headers: requestHeaders },
+          }),
+          req,
+          pathname,
+          true
+        );
       }
 
       // Prefix bahasa untuk area privat (mis. /en/login) -> 404 alami.
@@ -474,7 +555,11 @@ export async function middleware(req: NextRequest) {
 
     const requestHeaders = new Headers(req.headers);
     requestHeaders.set("x-pathname", pathname);
-    return NextResponse.next({ request: { headers: requestHeaders } });
+    return applyPublicCdnCache(
+      NextResponse.next({ request: { headers: requestHeaders } }),
+      req,
+      pathname
+    );
   }
 }
 

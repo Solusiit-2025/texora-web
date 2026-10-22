@@ -31,6 +31,38 @@ function resolveDistDir() {
 }
 
 /** @type {import('next').NextConfig} */
+const isProduction = process.env.NODE_ENV === "production";
+
+/**
+ * Content-Security-Policy.
+ *
+ * Catatan:
+ *  - `'unsafe-inline'` pada script diperlukan karena Next.js menyisipkan
+ *    inline bootstrap/hydration script. Untuk hardening penuh, gunakan
+ *    nonce via middleware (perubahan lebih besar).
+ *  - `'unsafe-eval'` hanya di development (React Refresh).
+ *  - Domain Google Tag Manager/Analytics diizinkan bila env diisi.
+ *  - `upgrade-insecure-requests` hanya di produksi agar dev http tetap jalan.
+ */
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "frame-ancestors 'self'",
+  "form-action 'self'",
+  `script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com${isProduction ? "" : " 'unsafe-eval'"}`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self' data:",
+  `connect-src 'self' https:${isProduction ? "" : " ws: wss:"}`,
+  "frame-src 'self' https://www.googletagmanager.com https://maps.google.com https://www.google.com",
+  "media-src 'self' https:",
+  "worker-src 'self' blob:",
+  isProduction ? "upgrade-insecure-requests" : "",
+]
+  .filter(Boolean)
+  .join("; ");
+
 const nextConfig = {
   reactStrictMode: true,
   distDir: resolveDistDir(),
@@ -86,6 +118,14 @@ const nextConfig = {
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
+          {
+            key: "Content-Security-Policy",
+            value: contentSecurityPolicy,
+          },
           {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=()",

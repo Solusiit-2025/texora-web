@@ -30,11 +30,23 @@ export const SEO_PAGES: Record<string, SeoPageMetaEntry> = {
     description: "Profil XoraMateria: pabrik sublimasi dan manufaktur kain poliester di Tugu Utara, Jakarta Utara. Satu atap dari bahan mentah, proofing digital, hingga gulungan siap kargo untuk brand sportswear, hijab, dan merchandise.",
   },
   "/contact": {
-    title: "Hubungi Kami \u2014 Konsultasi Kain Sublimasi B2B | XoraMateria",
+    title: "Kontak Kami \u2014 Konsultasi Kain Sublimasi B2B | XoraMateria",
     description: "Konsultasi pengadaan kain sublimasi B2B, permintaan sampel swatch gratis, dan penawaran harga grosir dari XoraMateria, Jakarta Utara. Tim sales membalas via WhatsApp dalam 1-2 jam kerja.",
   },
   "/custom-sublimation": {
     title: "Studio Kustom Sublimasi \u2014 Visualizer Motif | XoraMateria",
     description: "Unggah file desain, lihat simulasi cetak sublimasi 3D, dan hitung harga jasa desain custom. Mendukung resolusi 150\u2013300 DPI dengan proofing digital dan sampel cetak 1 yard. Pabrik sublimasi di Jakarta Utara.",
+  },
+  "/privacy": {
+    title: "Kebijakan Privasi \u2014 Perlindungan Data Pelanggan | XoraMateria",
+    description: "Kebijakan Privasi XoraMateria: data yang dikumpulkan, tujuan pemrosesan, dasar hukum, masa penyimpanan, dan hak pelanggan B2B maupun pengunjung website.",
+  },
+  "/terms": {
+    title: "Syarat & Ketentuan Layanan \u2014 Pemesanan Kain | XoraMateria",
+    description: "Ketentuan pemesanan kain sublimasi dan jasa cetak roll: penawaran, pembayaran, proofing, toleransi produksi, pengiriman, klaim, dan hak kekayaan intelektual artwork.",
+  },
+  "/penulis": {
+    title: "Tim Editorial & Keahlian Tekstil \u2014 XoraMateria",
+    description: "Kenali tim di balik panduan XoraMateria: divisi teknis produksi, desain & warna, dan sales B2B. Konten disusun dari data produksi harian, proofing, dan pengalaman lapangan.",
   },
 };

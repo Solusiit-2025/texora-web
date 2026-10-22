@@ -21,7 +21,6 @@ export default function robots(): MetadataRoute.Robots {
     "/forgot-password",
     "/unauthorized",
     "/track-order",
-    "/custom-sublimation",
   ];
 
   // AI crawler modern yang menilai konten untuk menjawab & meringkas

@@ -89,7 +89,14 @@ export async function GET() {
     { path: "/contact", changefreq: "monthly", priority: 0.7 },
     { path: "/request-quote", changefreq: "weekly", priority: 0.85 },
     { path: "/artikel", changefreq: "weekly", priority: 0.8 },
+    // Halaman trust (E-E-A-T) — hanya Bahasa Indonesia, tanpa hreflang.
+    { path: "/privacy", changefreq: "yearly", priority: 0.3 },
+    { path: "/terms", changefreq: "yearly", priority: 0.3 },
+    { path: "/penulis", changefreq: "monthly", priority: 0.5 },
   ];
+
+  // Halaman yang tidak punya varian terjemahan.
+  const NO_TRANSLATION = new Set(["/privacy", "/terms", "/penulis"]);
 
   for (const s of staticEntries) {
     if (!isEnabled(s.path)) continue;
@@ -98,7 +105,7 @@ export async function GET() {
       lastmod: toIsoDate(siteUpdatedAt),
       changefreq: s.changefreq,
       priority: s.priority,
-      alternates: alternates(s.path),
+      alternates: NO_TRANSLATION.has(s.path) ? undefined : alternates(s.path),
     });
   }
 

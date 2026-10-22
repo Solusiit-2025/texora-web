@@ -198,6 +198,9 @@ export async function Footer() {
               <li><Link prefetch={false} href={lp("/contact")} className="hover:text-brand-300"><T k="footer.links.sample" fallback="Permintaan Sampel Kain" /></Link></li>
               <li><Link prefetch={false} href={lp("/contact")} className="hover:text-brand-300"><T k="footer.links.b2b" fallback="Kontrak Suplai Pabrik B2B" /></Link></li>
               <li><Link prefetch={false} href="/register" className="hover:text-brand-300"><T k="footer.links.partner" fallback="Daftar Kemitraan B2B" /></Link></li>
+              <li><Link prefetch={false} href="/privacy" className="hover:text-brand-300">Kebijakan Privasi</Link></li>
+              <li><Link prefetch={false} href="/terms" className="hover:text-brand-300">Syarat &amp; Ketentuan</Link></li>
+              <li><Link prefetch={false} href="/penulis" className="hover:text-brand-300">Tim &amp; Keahlian</Link></li>
             </ul>
           </nav>
 
