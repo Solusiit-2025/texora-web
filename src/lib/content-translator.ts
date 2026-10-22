@@ -40,7 +40,11 @@ const LOCALE_INSTRUCTION: Record<TranslationLocale, string> = {
 };
 
 export function isAiTranslationEnabled(): boolean {
-  return Boolean(process.env.NINEROUTER_API_KEY || process.env.GEMINI_API_KEY);
+  return Boolean(
+    process.env.OPENCODE_API_KEY ||
+      process.env.NINEROUTER_API_KEY ||
+      process.env.GEMINI_API_KEY
+  );
 }
 
 /**
@@ -55,24 +59,53 @@ export function isAiTranslationEnabled(): boolean {
  */
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
 
+/** Provider AI yang didukung (urutan chain diatur `AI_PROVIDER_ORDER`). */
+type AiProviderId = "opencode" | "google" | "9router";
+
+/** Base URL OpenCode Zen (OpenAI-compatible). Tanpa `/chat/completions`. */
+function openCodeBaseUrl(): string {
+  return (process.env.OPENCODE_BASE_URL || "https://opencode.ai/zen/v1").replace(/\/+$/, "");
+}
+
+/** Model OpenCode Zen. Default: model cepat & murah yang cocok untuk terjemahan. */
+function openCodeModel(): string {
+  return process.env.OPENCODE_MODEL || "deepseek-v4.1-flash";
+}
+
+function hasOpenCodeKey(): boolean {
+  return Boolean(process.env.OPENCODE_API_KEY);
+}
+
+function parseProviderOrder(): AiProviderId[] {
+  return (process.env.AI_PROVIDER_ORDER || "")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter((s): s is AiProviderId => s === "opencode" || s === "google" || s === "9router");
+}
+
 export function getAiProviderInfo(): { enabled: boolean; provider: string; model: string } {
   const gKey = process.env.GEMINI_API_KEY;
+  const hasZen = hasOpenCodeKey();
   const hasNineRouter = !!process.env.NINEROUTER_API_KEY;
   const hasGoogle = !!gKey && isGoogleApiKey(gKey);
 
-  const envOrder = (process.env.AI_PROVIDER_ORDER || "")
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean) as ("google" | "9router")[];
+  const available: Record<AiProviderId, boolean> = {
+    opencode: hasZen,
+    google: hasGoogle,
+    "9router": hasNineRouter,
+  };
 
-  let order: ("google" | "9router")[];
+  const envOrder = parseProviderOrder();
+
+  let order: AiProviderId[];
   if (envOrder.length) order = envOrder;
+  else if (hasZen) order = ["opencode", "google", "9router"];
   else if (hasNineRouter && !hasGoogle) order = ["9router", "google"];
   else if (hasNineRouter && hasGoogle) order = ["google", "9router"];
   else if (hasGoogle) order = ["google"];
   else order = ["9router"];
 
-  if (!hasNineRouter && !hasGoogle && gKey) {
+  if (!hasZen && !hasNineRouter && !hasGoogle && gKey) {
     // key ada tapi format bukan Google -> diarahkan ke 9Router
     return {
       enabled: true,
@@ -81,24 +114,25 @@ export function getAiProviderInfo(): { enabled: boolean; provider: string; model
     };
   }
 
-  const parts = order
-    .filter((p) => (p === "google" ? hasGoogle : hasNineRouter))
-    .map((p) =>
-      p === "google"
-        ? `Google Gemini SDK (${GEMINI_MODEL})`
-        : `9Router Gateway (${process.env.NINEROUTER_MODEL || "myCombos1"})`
-    );
+  const labels: Record<AiProviderId, string> = {
+    opencode: `OpenCode Zen (${openCodeModel()})`,
+    google: `Google Gemini SDK (${GEMINI_MODEL})`,
+    "9router": `9Router Gateway (${process.env.NINEROUTER_MODEL || "myCombos1"})`,
+  };
+
+  const parts = order.filter((p) => available[p]).map((p) => labels[p]);
 
   if (parts.length === 0) return { enabled: false, provider: "None", model: "-" };
 
-  return {
-    enabled: true,
-    provider: parts.join(" → "),
-    model:
-      order[0] === "google"
+  const primary = order.find((p) => available[p])!;
+  const model =
+    primary === "opencode"
+      ? openCodeModel()
+      : primary === "google"
         ? GEMINI_MODEL
-        : process.env.NINEROUTER_MODEL || "myCombos1",
-  };
+        : process.env.NINEROUTER_MODEL || "myCombos1";
+
+  return { enabled: true, provider: parts.join(" → "), model };
 }
 
 /**
@@ -178,6 +212,74 @@ async function callNineRouter(
       const wait = backoff[Math.min(attempt - 1, backoff.length - 1)];
       console.warn(
         `[i18n] 9Router rate-limited, retry ${attempt}/${maxRetries} dalam ${Math.round(wait / 1000)}s`
+      );
+      await new Promise((r) => setTimeout(r, wait));
+    }
+  }
+}
+
+/**
+ * Panggil OpenCode Zen (https://opencode.ai/zen/v1 — OpenAI-compatible).
+ *
+ * Kenapa dipakai: satu API key OpenCode bisa mengakses banyak model
+ * (DeepSeek, GLM, Kimi, MiniMax, dll) tanpa perlu Gemini/9Router.
+ * Auth: `Authorization: Bearer <OPENCODE_API_KEY>` dari https://opencode.ai/auth.
+ *
+ * Catatan: `response_format: json_object` sengaja TIDAK dikirim karena tidak
+ * semua model Zen mendukungnya — prompt sudah memaksa output JSON dan parser
+ * `parseAiJson()` tetap tahan terhadap markdown fence.
+ */
+async function callOpenCode(
+  contents: string,
+  isJson = false,
+  maxRetries = 0
+): Promise<string> {
+  const apiKey = process.env.OPENCODE_API_KEY || "";
+  if (!apiKey) throw new Error("OPENCODE_API_KEY belum diatur.");
+
+  const url = `${openCodeBaseUrl()}/chat/completions`;
+  const model = openCodeModel();
+
+  let attempt = 0;
+  const backoff = [5000, 15000, 30000, 60000];
+
+  for (;;) {
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: "user", content: contents }],
+          temperature: isJson ? 0.2 : 0.3,
+          // Cukup untuk 40 teks per batch; model reasoning butuh ruang ekstra.
+          max_tokens: 8000,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text().catch(() => "");
+        const err: any = new Error(
+          `OpenCode error (${res.status}): ${errorText.slice(0, 300)}`
+        );
+        err.status = res.status;
+        throw err;
+      }
+
+      const json = await res.json();
+      const text = json?.choices?.[0]?.message?.content ?? "";
+      if (!text) throw new Error("OpenCode mengembalikan respons kosong.");
+      return text;
+    } catch (err: any) {
+      attempt += 1;
+      const limited = err?.status === 429 || err?.status === 503 || isRateLimited(err);
+      if (attempt > maxRetries || !limited) throw err;
+      const wait = backoff[Math.min(attempt - 1, backoff.length - 1)];
+      console.warn(
+        `[i18n] OpenCode rate-limited, retry ${attempt}/${maxRetries} dalam ${Math.round(wait / 1000)}s`
       );
       await new Promise((r) => setTimeout(r, wait));
     }

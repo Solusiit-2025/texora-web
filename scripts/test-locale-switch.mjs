@@ -40,7 +40,11 @@ async function switchLang(label) {
   const before = await h1();
   await page.locator('button[aria-label*="Pilih bahasa"]').first().click();
   await page.waitForTimeout(300);
-  await page.getByRole("button", { name: label, exact: true }).first().click();
+  // Label Indonesia bisa "Bahasa Indonesia" atau "Indonesia".
+  const target = label === "Bahasa Indonesia"
+    ? page.getByRole("button", { name: /^(Bahasa )?Indonesia$/ })
+    : page.getByRole("button", { name: label, exact: true });
+  await target.first().click();
   await page.waitForTimeout(2500);
   const after = await h1();
   check(

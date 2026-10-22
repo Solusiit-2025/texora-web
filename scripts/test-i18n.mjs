@@ -77,7 +77,11 @@ check("html lang = ar", langAr === "ar", `lang=${langAr}`);
 // 5. Kembali Indonesia -> LTR pulih
 await page.locator('button[aria-label*="Choose language"], button[aria-label*="Pilih bahasa"]').first().click();
 await page.waitForTimeout(400);
-await page.getByRole("button", { name: "Bahasa Indonesia" }).first().click();
+// Label bisa "Bahasa Indonesia" atau "Indonesia" (native name bisa diubah).
+await page
+  .getByRole("button", { name: /^(Bahasa )?Indonesia$/ })
+  .first()
+  .click();
 await page.waitForTimeout(900);
 const dirBack = await page.evaluate(() => document.documentElement.dir);
 check("Kembali ke id -> dir=ltr", dirBack === "ltr", `dir=${dirBack}`);
