@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "Email ini sudah terdaftar sebagai mitra PT. Texora. Silakan masuk melalui halaman login.",
+          error: "Email ini sudah terdaftar sebagai mitra XoraMateria. Silakan masuk melalui halaman login.",
         },
         { status: 409 }
       );
@@ -140,7 +140,7 @@ export async function POST(req: NextRequest) {
     const response = NextResponse.json(
       {
         success: true,
-        message: "Akun bisnis berhasil didaftarkan. Selamat datang di PT. Texora Visi Prima!",
+        message: "Akun bisnis berhasil didaftarkan. Selamat datang di XoraMateria!",
         user: {
           id: newUser.id,
           name: newUser.name,

@@ -103,15 +103,15 @@ export async function Footer() {
             <div className="flex items-center space-x-3.5">
               <div className="w-10 h-10 xl:w-11 xl:h-11 3xl:w-12 3xl:h-12 rounded-2xl bg-gradient-to-b from-slate-50 via-slate-100 to-slate-200 p-1.5 border border-brand-400/60 flex items-center justify-center shadow-lg shadow-black/40">
                 <img
-                  src="/icons/texora-logo.png"
-                  alt="PT. Texora Visi Prima"
+                  src="/icons/xoramateria-mark.png"
+                  alt="XoraMateria"
                   width={48}
                   height={48}
                   className="w-full h-full object-contain filter drop-shadow-[0_1.5px_2px_rgba(15,23,42,0.45)]"
                 />
               </div>
               <span className="text-lg font-bold text-white tracking-tight font-display">
-                PT. TEXORA VISI PRIMA
+                XORAMATERIA
               </span>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed pr-6">
@@ -235,7 +235,7 @@ export async function Footer() {
 
         {/* Bottom copyright */}
         <div className="border-t border-slate-800/60 pt-8 flex flex-col md:flex-row items-center justify-between text-xs text-slate-500">
-          <p>© {new Date().getFullYear()} PT. Texora Visi Prima. All Rights Reserved. Platform E-Commerce &amp; CRM Suite.</p>
+          <p>© {new Date().getFullYear()} XoraMateria. All Rights Reserved. Platform E-Commerce &amp; CRM Suite.</p>
           <div className="flex space-x-6 mt-4 md:mt-0">
             <span className="text-slate-500">Next.js App Router</span>
             <span className="text-slate-500">•</span>

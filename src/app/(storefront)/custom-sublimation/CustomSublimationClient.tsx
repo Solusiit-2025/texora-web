@@ -111,12 +111,12 @@ function CustomSublimationContent() {
   const [pricingConfig, setPricingConfig] = useState({
     designServiceFee: 150000,
     sublimationPrintFee: 18000,
-    designServiceTitle: "Jasa Desain Grafis & Pattern Repeat Texora",
+    designServiceTitle: "Jasa Desain Grafis & Pattern Repeat XoraMateria",
     designServiceDescription: "Pola seamless repeat vector, penyesuaian skala motif, dan 2x revisi minor",
     revisionPolicy: "Termasuk 2x revisi minor & digital 3D proofing mockup sebelum naik mesin cetak.",
   });
 
-  // Opsi Sumber Desain (Desain Sendiri vs Jasa Desain Texora)
+  // Opsi Sumber Desain (Desain Sendiri vs Jasa Desain XoraMateria)
   const [designOption, setDesignOption] = useState<"CUSTOMER_FILE" | "TEXORA_DESIGN_SERVICE">("CUSTOMER_FILE");
   const [designNotes, setDesignNotes] = useState<string>("");
 
@@ -193,7 +193,7 @@ function CustomSublimationContent() {
       unitPrice: activeTier.unitPrice,
       sublimationPrintFeePerMeter: pricingConfig.sublimationPrintFee,
       customDesignTitle: designOption === "TEXORA_DESIGN_SERVICE" 
-        ? (artworkFile?.name ? `Sampel: ${artworkFile.name}` : "Brief Desain Tim Texora") 
+        ? (artworkFile?.name ? `Sampel: ${artworkFile.name}` : "Brief Desain Tim XoraMateria") 
         : artworkFile?.name,
       customDesignDpi: designOption === "TEXORA_DESIGN_SERVICE" ? 300 : artworkFile?.dpi,
       designServiceType: designOption,
@@ -245,7 +245,7 @@ function CustomSublimationContent() {
       {/* Ringkasan layanan (konten SEO) */}
       <section aria-labelledby="layanan-sublimasi-heading" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <h2 id="layanan-sublimasi-heading" className="sr-only">
-          Layanan Kustom Sublimasi PT. Texora Visi Prima
+          Layanan Kustom Sublimasi XoraMateria
         </h2>
         {[
           {
@@ -261,7 +261,7 @@ function CustomSublimationContent() {
           {
             icon: Sparkles,
             title: "Jasa Desain & Proofing",
-            body: "Tim desain Texora membuat pola repeat vektor Anda, termasuk 2x revisi minor dan digital 3D proofing.",
+            body: "Tim desain XoraMateria membuat pola repeat vektor Anda, termasuk 2x revisi minor dan digital 3D proofing.",
           },
         ].map((f) => (
           <div
@@ -492,7 +492,7 @@ function StudioArea(props: any) {
                   <span>Kategori Kebutuhan Desain / Artwork</span>
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Tentukan apakah Anda sudah memiliki file siap cetak atau memerlukan pembuatan desain motif dari Tim Desainer Texora.
+                  Tentukan apakah Anda sudah memiliki file siap cetak atau memerlukan pembuatan desain motif dari Tim Desainer XoraMateria.
                 </p>
               </div>
               <span className="text-[11px] text-brand-400/90 font-mono bg-brand-500/10 px-2.5 py-1 rounded-lg border border-brand-500/20">
@@ -530,7 +530,7 @@ function StudioArea(props: any) {
                 </div>
               </div>
 
-              {/* Opsi 2: Jasa Desain Texora */}
+              {/* Opsi 2: Jasa Desain XoraMateria */}
               <div
                 onClick={() => setDesignOption("TEXORA_DESIGN_SERVICE")}
                 className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex flex-col justify-between relative overflow-hidden ${
@@ -548,7 +548,7 @@ function StudioArea(props: any) {
                       + {formatRupiah(pricingConfig.designServiceFee)} (All-in)
                     </span>
                   </div>
-                  <h4 className="text-sm font-bold text-white">2. Jasa Desain Tim Texora</h4>
+                  <h4 className="text-sm font-bold text-white">2. Jasa Desain Tim XoraMateria</h4>
                   <p className="text-xs text-slate-400 leading-relaxed">
                     {pricingConfig.designServiceDescription || "Kirim sampel foto kain atau sketsa. Desainer kami akan mendesain vektor seamless repeat berkualitas tinggi."}
                   </p>
@@ -565,7 +565,7 @@ function StudioArea(props: any) {
               <div className="p-4 rounded-xl bg-slate-950/70 border border-brand-500/30 space-y-2.5">
                 <div className="flex items-center gap-2 text-xs font-bold text-white">
                   <Sparkles className="w-4 h-4 text-brand-400" />
-                  <span>Instruksi &amp; Catatan Desain untuk Tim Desainer Texora</span>
+                  <span>Instruksi &amp; Catatan Desain untuk Tim Desainer XoraMateria</span>
                 </div>
                 <textarea
                   rows={3}
@@ -738,7 +738,7 @@ function StudioArea(props: any) {
                 <div className="flex justify-between text-brand-300 font-medium bg-brand-500/10 p-2 rounded-lg border border-brand-500/20">
                   <span className="flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-brand-400" />
-                    <span>Jasa Desain Grafis Texora:</span>
+                    <span>Jasa Desain Grafis XoraMateria:</span>
                   </span>
                   <span className="font-mono font-bold">{formatRupiah(pricingConfig.designServiceFee)}</span>
                 </div>

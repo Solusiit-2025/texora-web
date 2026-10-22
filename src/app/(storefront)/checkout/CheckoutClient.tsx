@@ -284,7 +284,7 @@ export default function CheckoutClient() {
                     },
                     {
                       id: "texora_fleet",
-                      title: "Armada Truk Texora Express (Khusus Bandung & Jabodetabek)",
+                      title: "Armada Truk XoraMateria Express (Khusus Bandung & Jabodetabek)",
                       desc: "Pengiriman langsung dari pabrik hari yang sama setelah produksi rampung.",
                       cost: 450000,
                     },
@@ -495,7 +495,7 @@ export default function CheckoutClient() {
               Pesanan Dikonfirmasi!
             </h2>
             <p className="text-xs text-slate-400 mt-1">
-              Nomor Referensi Transaksi PT. Texora Visi Prima:
+              Nomor Referensi Transaksi XoraMateria:
             </p>
             <div className="mt-2 text-2xl font-black text-accent-cyan font-mono tracking-wider">
               {orderCreatedNumber}

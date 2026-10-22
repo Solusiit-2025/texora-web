@@ -43,13 +43,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const article = await getStorefrontArticleBySlug(params.slug, locale);
 
   if (!article) {
-    return { title: "Artikel Tidak Ditemukan | Texora", robots: { index: false } };
+    return { title: "Artikel Tidak Ditemukan | XoraMateria", robots: { index: false } };
   }
 
   return buildPageMetadata({
     locale,
     path: `/artikel/${article.slug}`,
-    // Judul artikel sudah memuat nama brand ("... | Texora"), jadi tidak
+    // Judul artikel sudah memuat nama brand ("... | XoraMateria"), jadi tidak
     // perlu suffix lagi - meta title tidak kepotong di tengah kalimat.
     title: article.seoTitle || article.title,
     description: article.seoDescription || article.excerpt,

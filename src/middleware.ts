@@ -234,7 +234,7 @@ export async function middleware(req: NextRequest) {
         const response = NextResponse.redirect(target, status);
         // Hapus canonical dari URL tujuan agar Google tidak mengindeks
         // URL lama (yang sudah dipindahkan).
-        response.headers.set("X-Redirect-By", "texora-seo-redirect");
+        response.headers.set("X-Redirect-By", "xoramateria-seo-redirect");
         return response;
       }
     }

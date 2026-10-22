@@ -162,7 +162,7 @@ export function TwoFactorPanel() {
   const downloadBackupCodes = () => {
     if (!backupCodes) return;
     const content = [
-      "KODE CADANGAN 2FA - PT. TEXORA VISI PRIMA",
+      "KODE CADANGAN 2FA - XORAMATERIA",
       "===========================================",
       "Simpan kode ini di tempat aman. Setiap kode hanya dapat dipakai SATU KALI.",
       "Kode ini hanya ditampilkan sekali. Jangan bagikan kepada siapa pun.",

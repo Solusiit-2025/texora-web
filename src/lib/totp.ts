@@ -2,7 +2,7 @@
  * Implementasi TOTP (RFC 6238) tanpa dependensi eksternal.
  *
  * Algoritma: HOTP (RFC 4226) dengan HMAC-SHA1, timestep 30 detik, 6 digit.
- * Dipakai untuk Autentikasi Dua Faktor (2FA) pada portal Texora.
+ * Dipakai untuk Autentikasi Dua Faktor (2FA) pada portal XoraMateria.
  *
  * Referensi: RFC 4226 (HOTP) & RFC 6238 (TOTP).
  */
@@ -123,7 +123,7 @@ export function verifyTotpCode(
 export function buildOtpAuthUri(
   secret: string,
   accountEmail: string,
-  issuer = "PT. Texora Visi Prima"
+  issuer = "XoraMateria"
 ): string {
   const label = encodeURIComponent(`${issuer}:${accountEmail}`);
   const params = new URLSearchParams({

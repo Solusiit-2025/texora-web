@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
  * Halaman transaksional - tidak boleh di-index (robots.txt juga memblokirnya).
  */
 export const metadata: Metadata = buildNoIndexMetadata(
-  "Keranjang Belanja — PT. Texora Visi Prima",
+  "Keranjang Belanja — XoraMateria",
   "Kelola keranjang pesanan kain sublimasi Anda."
 );
 

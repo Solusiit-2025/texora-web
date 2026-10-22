@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 const DEFAULT_PRICING = {
   designServiceFee: 150000,
   sublimationPrintFee: 18000,
-  designServiceTitle: "Jasa Desain Grafis & Pattern Repeat Texora",
+  designServiceTitle: "Jasa Desain Grafis & Pattern Repeat XoraMateria",
   designServiceDescription: "Pola seamless repeat vector, penyesuaian skala motif, dan 2x revisi minor",
   revisionPolicy: "Termasuk 2x revisi minor & digital 3D proofing mockup sebelum naik mesin cetak.",
 };

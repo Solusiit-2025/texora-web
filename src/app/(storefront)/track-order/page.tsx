@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
  * tampil langsung tanpa flash skeleton.
  */
 export const metadata: Metadata = buildNoIndexMetadata(
-  "Lacak Pesanan — Portal Mitra PT. Texora Visi Prima",
+  "Lacak Pesanan — Portal Mitra XoraMateria",
   "Lacak status produksi dan nomor resi pengiriman pesanan kain sublimasi Anda. Memerlukan akun B2B terverifikasi."
 );
 

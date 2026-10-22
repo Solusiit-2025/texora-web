@@ -25,7 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return buildPageMetadata({
     locale,
     path: "/artikel",
-    title: `${copy.title} | Texora`,
+    title: `${copy.title} | XoraMateria`,
     description: copy.lead,
     keywords: [
       "panduan sublimasi",

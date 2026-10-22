@@ -144,14 +144,14 @@ function LoginForm() {
         <Link href="/" className="flex items-center gap-3.5 group">
           <div className="w-11 h-11 rounded-2xl bg-gradient-to-b from-slate-50 via-slate-100 to-slate-200 p-1.5 border border-brand-400/60 flex items-center justify-center shadow-lg shadow-black/40 group-hover:border-brand-400 transition-all">
             <img
-              src="/icons/texora-logo.png"
-              alt="PT. Texora Visi Prima"
+              src="/icons/xoramateria-mark.png"
+              alt="XoraMateria"
               className="w-full h-full object-contain filter drop-shadow-[0_1.5px_2px_rgba(15,23,42,0.45)]"
             />
           </div>
           <div>
-            <span className="font-display font-bold text-lg text-white tracking-wider block">TEXORA</span>
-            <span className="text-[10px] text-brand-400 uppercase tracking-widest block font-medium">Visi Prima • B2B Sublimation</span>
+            <span className="font-display font-bold text-lg text-white tracking-wider block">XORAMATERIA</span>
+            <span className="text-[10px] text-brand-400 uppercase tracking-widest block font-medium">Fabric • Print • Fashion • Sport</span>
           </div>
         </Link>
         <Link 
@@ -178,10 +178,10 @@ function LoginForm() {
                 <Lock className="w-6 h-6" />
               </div>
               <h1 className="text-2xl font-display font-bold text-white tracking-tight">
-                Masuk ke Portal Texora
+                Masuk ke Portal XoraMateria
               </h1>
               <h2 className="sr-only">
-                Formulir autentikasi untuk akun mitra B2B PT. Texora Visi Prima
+                Formulir autentikasi untuk akun mitra B2B XoraMateria
               </h2>
               <p className="text-xs text-slate-400 mt-1.5">
                 Katalog digital, persetujuan proofing sublimasi, dan portal manajemen terpadu.
@@ -403,7 +403,7 @@ function LoginForm() {
 
       {/* Footer copyright */}
       <div className="max-w-7xl mx-auto w-full text-center text-[11px] text-slate-500">
-        © {new Date().getFullYear()} PT. Texora Visi Prima. All Rights Reserved. Terdaftar di Kemenperin RI.
+        © {new Date().getFullYear()} XoraMateria. All Rights Reserved. Terdaftar di Kemenperin RI.
       </div>
     </div>
   );

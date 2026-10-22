@@ -119,6 +119,22 @@ AI_PROVIDER_ORDER="google,9router"
 ```
 Kualitas terbaik untuk terjemahan (Gemini 3.5), kuota free tier ±15 request/menit.
 
+**Opsi D — OpenCode Zen langsung (PALING SEDERHANA — butuh kredit Zen)**
+```env
+OPENCODE_API_KEY="<API key dari https://opencode.ai/auth>"
+OPENCODE_BASE_URL="https://opencode.ai/zen/v1"
+OPENCODE_MODEL="deepseek-v4.1-flash"
+AI_PROVIDER_ORDER="opencode,google,9router"
+```
+- Endpoint OpenAI-compatible: `POST https://opencode.ai/zen/v1/chat/completions`
+- Auth: `Authorization: Bearer <OPENCODE_API_KEY>`
+- Model murah/cepat yang cocok untuk terjemahan: `deepseek-v4.1-flash`,
+  `deepseek-v4-flash`, `glm-5.3-flash`, `kimi-k3`, `minimax-m2.5`, `big-pickle`.
+- **Penting:** langganan OpenCode (CLI/TUI) ≠ kredit Zen. Zen bersifat
+  pay-per-request, jadi pastikan saldo/kredit di dashboard OpenCode sudah diisi.
+- Tidak perlu Gemini/9Router. Kalau `OPENCODE_API_KEY` kosong, provider ini
+  otomatis dilewati dan chain lanjut ke Google/9Router.
+
 ---
 
 ## 3.5 Fallback chain antar provider
@@ -126,6 +142,8 @@ Kualitas terbaik untuk terjemahan (Gemini 3.5), kuota free tier ±15 request/men
 Sistem sekarang mencoba **berurutan** sesuai `AI_PROVIDER_ORDER`:
 
 ```
+opencode (OPENCODE_API_KEY + OPENCODE_MODEL)  ← utama bila key tersedia
+   ↓ gagal (401/402/429/503)
 google  (GEMINI_API_KEY + GEMINI_MODEL)
    ↓ gagal (503 high demand / 404 model / 401)
 9router (NINEROUTER_*)

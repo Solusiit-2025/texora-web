@@ -228,7 +228,7 @@ export default function PortalDashboard() {
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span className="text-[10px] sm:text-xs font-bold text-emerald-400 uppercase tracking-wider">
-              PT. Texora Visi Prima • Live Overview
+              XoraMateria • Live Overview
             </span>
           </div>
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-white font-display leading-tight mt-1">

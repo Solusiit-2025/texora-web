@@ -185,7 +185,7 @@ export default function CustomerDashboardPage() {
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white font-display tracking-tight">
-              Selamat Datang, {currentUser?.name || "Mitra Texora"}!
+              Selamat Datang, {currentUser?.name || "Mitra XoraMateria"}!
             </h1>
 
             <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
@@ -226,7 +226,7 @@ export default function CustomerDashboardPage() {
               </div>
               <div>
                 <h2 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
-                  <span>Panduan Mudah Memulai Order di Texora</span>
+                  <span>Panduan Mudah Memulai Order di XoraMateria</span>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-brand-500/20 text-brand-300 font-bold">
                     Untuk Pengguna Baru
                   </span>
@@ -260,7 +260,7 @@ export default function CustomerDashboardPage() {
               </div>
               <h4 className="text-sm font-bold text-white">Pilih Kain & Rancang Motif</h4>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Pilih jenis kain (Dryfit, Voal, Scuba) dan unggah artwork Anda, atau gunakan opsi <strong>Jasa Desain Texora</strong> di Studio Kustom Sublimasi.
+                Pilih jenis kain (Dryfit, Voal, Scuba) dan unggah artwork Anda, atau gunakan opsi <strong>Jasa Desain XoraMateria</strong> di Studio Kustom Sublimasi.
               </p>
               <div className="pt-1">
                 <Link
@@ -649,7 +649,7 @@ export default function CustomerDashboardPage() {
               <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto leading-relaxed">
                 {searchQuery
                   ? "Tidak ada pesanan yang sesuai dengan kata kunci pencarian Anda."
-                  : "Mulai buat pesanan cetak sublimasi pertama Anda di Studio Kustom Sublimasi Texora."}
+                  : "Mulai buat pesanan cetak sublimasi pertama Anda di Studio Kustom Sublimasi XoraMateria."}
               </p>
             </div>
             <div className="flex items-center justify-center gap-3 pt-2">
@@ -787,7 +787,7 @@ export default function CustomerDashboardPage() {
             <div className="text-[11px] font-bold text-accent-cyan uppercase tracking-wider">
               Assigned Technical Account Executive
             </div>
-            <h4 className="text-base font-bold text-white">Budi Santoso — PIC Senior Texora</h4>
+            <h4 className="text-base font-bold text-white">Budi Santoso — PIC Senior XoraMateria</h4>
             <p className="text-xs text-slate-400">
               Siap melayani konsultasi profil warna ICC, permintaan sample swatch kain, dan pemesanan partai besar (&gt; 1.000 meter).
             </p>
@@ -796,7 +796,7 @@ export default function CustomerDashboardPage() {
 
         <div className="flex items-center gap-3 shrink-0">
           <a
-            href="https://wa.me/6281234567890?text=Halo%20Budi%20Texora,%20saya%20Mitra%20PT.%20INTECH%20MITRA%20ABADI%20ingin%20konsultasi%20pesanan%20sublimasi"
+            href="https://wa.me/6281234567890?text=Halo%20Budi%20XoraMateria,%20saya%20Mitra%20PT.%20INTECH%20MITRA%20ABADI%20ingin%20konsultasi%20pesanan%20sublimasi"
             target="_blank"
             rel="noopener noreferrer"
             className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-lg transition-all flex items-center gap-2"
@@ -858,7 +858,7 @@ export default function CustomerDashboardPage() {
 
             {/* Quality Checklist */}
             <div className="space-y-2 text-xs bg-slate-950/60 p-4 rounded-xl border border-slate-800">
-              <div className="font-bold text-slate-300 mb-1">Checklist Kalibrasi Texora:</div>
+              <div className="font-bold text-slate-300 mb-1">Checklist Kalibrasi XoraMateria:</div>
               <div className="flex items-center gap-2 text-emerald-400">
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>Resolusi artwork memenuhi standar industri (&gt; 300 DPI)</span>
@@ -935,7 +935,7 @@ export default function CustomerDashboardPage() {
               </div>
               <div className="flex justify-between border-b border-slate-800/80 pb-2">
                 <span className="text-slate-400">PKP Penjual:</span>
-                <span className="text-slate-200 text-right">PT. TEXORA VISI PRIMA<br /><span className="text-[10px] text-slate-400 font-mono">NPWP: 01.345.678.9-012.000</span></span>
+                <span className="text-slate-200 text-right">XORAMATERIA<br /><span className="text-[10px] text-slate-400 font-mono">NPWP: 01.345.678.9-012.000</span></span>
               </div>
               <div className="flex justify-between border-b border-slate-800/80 pb-2">
                 <span className="text-slate-400">Pembeli BKP:</span>

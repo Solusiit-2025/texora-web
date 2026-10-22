@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
  * Halaman transaksional privat - tidak boleh di-index.
  */
 export const metadata: Metadata = buildNoIndexMetadata(
-  "Checkout — PT. Texora Visi Prima",
+  "Checkout — XoraMateria",
   "Selesaikan pesanan kain sublimasi Anda."
 );
 

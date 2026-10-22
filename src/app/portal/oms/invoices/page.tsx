@@ -119,8 +119,8 @@ export default function InvoicesCoreTaxPage() {
               id: `inv-${o.id}`,
               invoiceNumber: `INV/TX/2026/10/${num.slice(-4).padStart(4, "0")}`,
               orderNumber: o.orderNumber,
-              customerName: o.customerName || "Customer Texora",
-              companyName: o.customerCompany || "PT Mitra Texora",
+              customerName: o.customerName || "Customer XoraMateria",
+              companyName: o.customerCompany || "PT Mitra XoraMateria",
               taxId: "01.234.567.8-012.000",
               issueDate: o.createdAt?.slice(0, 10) || "2026-10-01",
               dueDate: "2026-11-01",
@@ -320,7 +320,7 @@ export default function InvoicesCoreTaxPage() {
             <div className="flex items-start justify-between border-b border-slate-800 pb-4">
               <div>
                 <span className="text-[10px] font-bold text-brand-400 uppercase tracking-widest">
-                  PT. Texora Visi Prima — Faktur Penjualan Sah
+                  XoraMateria — Faktur Penjualan Sah
                 </span>
                 <h3 className="text-xl font-display font-bold text-white mt-1">
                   {activeInvoice.invoiceNumber}

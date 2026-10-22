@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const category = getCategorySeo(params.slug);
 
   if (!category) {
-    return { title: "Kategori Tidak Ditemukan | Texora", robots: { index: false } };
+    return { title: "Kategori Tidak Ditemukan | XoraMateria", robots: { index: false } };
   }
 
   const locale = await getRequestLocale();
@@ -167,7 +167,7 @@ export default async function CategoryPage({ params }: PageProps) {
             id="keunggulan-kategori-heading"
             className="text-lg font-display font-bold text-white mb-4"
           >
-            Mengapa {category.name} Texora
+            Mengapa {category.name} XoraMateria
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {category.benefits.map((b) => (

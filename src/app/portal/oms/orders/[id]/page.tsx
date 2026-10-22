@@ -133,7 +133,7 @@ export default function OrderDetailPage() {
       done: order.status === "SHIPPED" 
     },
     { 
-      title: "Pengiriman Ekspedisi (JNE Cargo / Truk Texora)", 
+      title: "Pengiriman Ekspedisi (JNE Cargo / Truk XoraMateria)", 
       date: order.trackingNumber || "Nomor Resi Pending", 
       done: order.status === "SHIPPED" 
     },
@@ -374,7 +374,7 @@ export default function OrderDetailPage() {
                 <div className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Ekspedisi Logistik</div>
                 <div className="font-semibold text-white flex items-center gap-2">
                   <Truck className="w-3.5 h-3.5 text-brand-400" />
-                  <span>{order.trackingNumber ? `Resi: ${order.trackingNumber}` : "Armada Texora Bandung"}</span>
+                  <span>{order.trackingNumber ? `Resi: ${order.trackingNumber}` : "Armada XoraMateria Bandung"}</span>
                 </div>
               </div>
             </div>

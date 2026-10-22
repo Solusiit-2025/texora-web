@@ -26,11 +26,11 @@ export async function generateMetadata(): Promise<Metadata> {
     title: SEO_PAGES["/about"].title,
     description: SEO_PAGES["/about"].description,
     keywords: [
-      "profil perusahaan texora",
+      "profil perusahaan xoramateria",
       "pabrik tekstil jakarta utara",
       "manufaktur kain polyester indonesia",
       "pabrik sublimasi tanjung priok",
-      "tentang pt texora visi prima",
+      "tentang xoramateria",
     ],
     schemaType: "organization",
   });
@@ -52,9 +52,9 @@ export default async function AboutPage() {
   const breadcrumbSchema = buildBreadcrumbSchema([{ name: "Tentang Kami", path: "/about" }]);
   const webPageSchema = buildWebPageSchema({
     path: "/about",
-    name: "Tentang Kami — PT. Texora Visi Prima",
+    name: "Tentang Kami — XoraMateria",
     description:
-      "Profil perusahaan, kapasitas produksi, dan proses sublimasi skala industri PT. Texora Visi Prima.",
+      "Profil perusahaan, kapasitas produksi, dan proses sublimasi skala industri XoraMateria.",
     breadcrumb: [{ name: "Tentang Kami", path: "/about" }],
   });
   const businessSchema = buildLocalBusinessSchema();

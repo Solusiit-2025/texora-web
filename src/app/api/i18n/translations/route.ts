@@ -14,6 +14,7 @@ import {
   type TranslationLocale,
 } from "@/lib/content-translator";
 import { invalidateCache } from "@/lib/cache";
+import { canManageContent } from "@/lib/rbac/authorize";
 
 export const dynamic = "force-dynamic";
 
@@ -25,9 +26,9 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   try {
     const user = await getAuthenticatedUser(req);
-    if (!user || user.role !== "ADMINISTRATOR") {
+    if (!user || !(await canManageContent(user.role))) {
       return NextResponse.json(
-        { success: false, error: "Hanya Administrator yang dapat mengelola terjemahan." },
+        { success: false, error: "Hanya Administrator atau Admin Konten yang dapat mengelola terjemahan." },
         { status: 403 }
       );
     }
@@ -86,9 +87,9 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const user = await getAuthenticatedUser(req);
-    if (!user || user.role !== "ADMINISTRATOR") {
+    if (!user || !(await canManageContent(user.role))) {
       return NextResponse.json(
-        { success: false, error: "Hanya Administrator yang dapat mengubah terjemahan." },
+        { success: false, error: "Hanya Administrator atau Admin Konten yang dapat mengubah terjemahan." },
         { status: 403 }
       );
     }
@@ -150,9 +151,9 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const user = await getAuthenticatedUser(req);
-    if (!user || user.role !== "ADMINISTRATOR") {
+    if (!user || !(await canManageContent(user.role))) {
       return NextResponse.json(
-        { success: false, error: "Hanya Administrator yang dapat menghapus terjemahan." },
+        { success: false, error: "Hanya Administrator atau Admin Konten yang dapat menghapus terjemahan." },
         { status: 403 }
       );
     }
@@ -187,9 +188,9 @@ export async function DELETE(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const user = await getAuthenticatedUser(req);
-    if (!user || user.role !== "ADMINISTRATOR") {
+    if (!user || !(await canManageContent(user.role))) {
       return NextResponse.json(
-        { success: false, error: "Hanya Administrator yang dapat memicu terjemahan." },
+        { success: false, error: "Hanya Administrator atau Admin Konten yang dapat memicu terjemahan." },
         { status: 403 }
       );
     }
@@ -199,7 +200,7 @@ export async function POST(req: NextRequest) {
         {
           success: false,
           error:
-            "Terjemahan AI nonaktif — isi NINEROUTER_API_KEY atau GEMINI_API_KEY di environment lalu restart server.",
+            "Terjemahan AI nonaktif — isi OPENCODE_API_KEY (OpenCode Zen) atau GEMINI_API_KEY / NINEROUTER_API_KEY di environment lalu restart server.",
         },
         { status: 400 }
       );

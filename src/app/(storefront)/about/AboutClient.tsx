@@ -245,7 +245,7 @@ export default function AboutPage({ pageContent: initialContent }: AboutClientPr
             className="lg:col-span-7"
           >
             <p className="text-[10px] xl:text-[11px] uppercase tracking-[0.28em] text-brand-400 font-semibold">
-              {t("about.eyebrow", "Tentang Kami · PT. Texora Visi Prima")}
+              {t("about.eyebrow", "Tentang Kami · XoraMateria")}
             </p>
             <h1 id="about-heading" className="mt-3 font-display text-fluid-hero font-bold text-alabaster tracking-tight">
               {t("about.heroTitle1", "Pabrik sublimasi yang menyerahkan")}
@@ -304,10 +304,10 @@ export default function AboutPage({ pageContent: initialContent }: AboutClientPr
           >
             <div className="flex items-center gap-3 mb-5">
               <div className="w-11 h-11 rounded-2xl bg-gradient-to-b from-slate-50 to-slate-200 p-1 border border-brand-400/60 flex items-center justify-center">
-                <img src="/icons/texora-logo.png" alt="PT. Texora Visi Prima" className="w-full h-full object-contain" />
+                <img src="/icons/xoramateria-mark.png" alt="XoraMateria" className="w-full h-full object-contain" />
               </div>
               <div>
-                <div className="font-display font-bold text-alabaster">PT. TEXORA VISI PRIMA</div>
+                <div className="font-display font-bold text-alabaster">XORAMATERIA</div>
                 <div className="text-[10px] uppercase tracking-wider text-slate-500">
                   {t("about.company.sub", "Industrial Textile & Sublimation")}
                 </div>

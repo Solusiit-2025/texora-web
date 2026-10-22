@@ -6,6 +6,7 @@ import {
 } from "@/config/portal-menu";
 import { getRoleDefinitions } from "@/lib/rbac/role-store";
 import { MENU_ACCESS_SETTING_KEY } from "@/lib/rbac/keys";
+import { invalidateCache } from "@/lib/cache";
 
 export { MENU_ACCESS_SETTING_KEY };
 
@@ -67,6 +68,9 @@ export async function saveMenuAccessMap(
     console.error("[rbac] Gagal menyimpan peta hak akses menu:", error);
     throw error;
   }
+
+  // Buang cache otorisasi supaya perubahan hak akses langsung berlaku.
+  invalidateCache("rbac:");
 
   return sanitized;
 }

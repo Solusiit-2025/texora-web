@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!product) {
     return {
-      title: "Produk Tidak Found — PT. Texora Visi Prima",
+      title: "Produk Tidak Found — XoraMateria",
       robots: { index: false, follow: true },
     };
   }
@@ -53,7 +53,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     locale,
     path: `/catalog/${product.slug}`,
     // Nama produk dipotong agar total title tetap <= 62 karakter (batas ideal Google).
-    title: `${product.name.slice(0, 40).trim()} — Kain Sublimasi | Texora`,
+    title: `${product.name.slice(0, 40).trim()} — Kain Sublimasi | XoraMateria`,
     description:
       plain ||
       `${product.name} — ${product.composition}, lebar ${product.widthInch} inci. Kain siap sublimasi untuk sportwear, hijab, dan merchandise. Harga grosir bertingkat.`,

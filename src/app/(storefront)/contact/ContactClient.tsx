@@ -45,7 +45,7 @@ export default function ContactPage() {
           Konsultasi Pengadaan Pabrik & Permintaan Sampel
         </h1>
         <p className="text-xs sm:text-sm text-slate-400">
-          Tim spesialis tekstil PT. Texora siap membantu pemilihan karakter kain, kalibrasi profil ICC printer, dan kontrak suplai jangka panjang.
+          Tim spesialis tekstil XoraMateria siap membantu pemilihan karakter kain, kalibrasi profil ICC printer, dan kontrak suplai jangka panjang.
         </p>
       </div>
 
@@ -141,7 +141,7 @@ export default function ContactPage() {
                 </div>
                 <h3 className="text-xl font-bold text-white">Inquiry Berhasil Terkirim!</h3>
                 <p className="text-xs text-slate-300 max-w-md mx-auto">
-                  Terima kasih, data kebutuhan kain Anda telah otomatis masuk ke Pipeline CRM Sales Texora. Tim kami akan menghubungi Anda melalui WhatsApp dalam 1-2 jam kerja.
+                  Terima kasih, data kebutuhan kain Anda telah otomatis masuk ke Pipeline CRM Sales XoraMateria. Tim kami akan menghubungi Anda melalui WhatsApp dalam 1-2 jam kerja.
                 </p>
                 <button
                   onClick={() => setSubmitted(false)}

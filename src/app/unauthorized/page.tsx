@@ -35,7 +35,7 @@ function UnauthorizedContent() {
         <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-left text-xs space-y-2">
           <div className="flex items-center gap-2 text-slate-300 font-semibold">
             <Lock className="w-4 h-4 text-brand-400" />
-            <span>Kebijakan Keamanan Texora:</span>
+            <span>Kebijakan Keamanan XoraMateria:</span>
           </div>
           <p className="text-slate-400 text-[11px]">
             Halaman ini dilindungi enkripsi JWT dengan kebijakan Role-Based Access Control (RBAC). Jika Anda memerlukan akses modul ini, silakan hubungi Administrator Sistem.

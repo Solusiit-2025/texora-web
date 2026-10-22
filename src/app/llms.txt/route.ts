@@ -5,7 +5,7 @@
  *
  * Dipakai oleh AI assistant (ChatGPT, Claude, Perplexity, Gemini) untuk
  * memahami struktur & konten utama situs secara terstruktur, sehingga
- * jawaban AI tentang PT. Texora Visi Prima lebih akurat dan mengutip
+ * jawaban AI tentang XoraMateria lebih akurat dan mengutip
  * sumber yang benar.
  *
  * Dijalankan sebagai Route Handler (Node runtime) agar datanya selalu
@@ -38,14 +38,14 @@ export async function GET() {
 
   const lines: string[] = [];
 
-  lines.push("# PT. Texora Visi Prima");
+  lines.push("# XoraMateria");
   lines.push("");
   lines.push(
     "> Pabrik manufaktur kain poliester dan cetak sublimasi skala industri di Jakarta Utara, Indonesia. Melayani brand sportswear, busana muslim, dan merchandise dengan harga grosir bertingkat, proofing digital, dan portal B2B terintegrasi."
   );
   lines.push("");
   lines.push(
-    "PT. Texora Visi Prima adalah perusahaan manufaktur tekstil yang menggabungkan penyediaan kain poliester siap sublimasi dengan jasa cetak roll-ke-roll (rotary heat press 210°C). Proses sublimasi mengubah pigmen tinta dispersi menjadi gas sehingga menyatu ke dalam serat benang — hasil cetak tidak luntur, tidak retak, dan tetap tajam setelah dicuci berkali-kali."
+    "XoraMateria adalah perusahaan manufaktur tekstil yang menggabungkan penyediaan kain poliester siap sublimasi dengan jasa cetak roll-ke-roll (rotary heat press 210°C). Proses sublimasi mengubah pigmen tinta dispersi menjadi gas sehingga menyatu ke dalam serat benang — hasil cetak tidak luntur, tidak retak, dan tetap tajam setelah dicuci berkali-kali."
   );
   lines.push("");
 
@@ -139,7 +139,7 @@ export async function GET() {
       lines.push("## Articles & Technical Guides");
       lines.push("");
       lines.push(
-        `- [Pusat Panduan Tekstil](${SITE_URL}/artikel): kumpulan panduan teknis dari tim produksi Texora (memilih kain, setting mesin sublimasi, perawatan, harga bertingkat, dan studi kasus).`
+        `- [Pusat Panduan Tekstil](${SITE_URL}/artikel): kumpulan panduan teknis dari tim produksi XoraMateria (memilih kain, setting mesin sublimasi, perawatan, harga bertingkat, dan studi kasus).`
       );
       for (const a of articles.slice(0, 30)) {
         lines.push(`- [${a.title}](${SITE_URL}/artikel/${a.slug}): ${a.excerpt}`);

@@ -269,7 +269,7 @@ export default function FinanceAccountingPage() {
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-              <span>PT. TEXORA VISI PRIMA</span>
+              <span>XORAMATERIA</span>
               <span>•</span>
               <span>ACCOUNTING & FINANCE EXECUTIVE</span>
             </span>
@@ -301,7 +301,7 @@ export default function FinanceAccountingPage() {
 
           {/* Tombol Export Excel */}
           <button
-            onClick={() => alert("📥 Mockup Export: Data Laporan Keuangan PT. TEXORA VISI PRIMA (YTD 2026) siap diunduh dalam format .xlsx")}
+            onClick={() => alert("📥 Mockup Export: Data Laporan Keuangan XORAMATERIA (YTD 2026) siap diunduh dalam format .xlsx")}
             className="px-3.5 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm"
           >
             <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
@@ -484,7 +484,7 @@ export default function FinanceAccountingPage() {
                 </span>
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
-                PT. TEXORA VISI PRIMA • Satuan Nilai dalam Rupiah Penuh (IDR)
+                XORAMATERIA • Satuan Nilai dalam Rupiah Penuh (IDR)
               </p>
             </div>
             <div className="text-right font-mono text-xs text-slate-400">
@@ -758,7 +758,7 @@ export default function FinanceAccountingPage() {
                 </h4>
                 <div className="space-y-1.5 pl-2 text-slate-300">
                   <div className="flex justify-between py-0.5">
-                    <span>Modal Disetor Saham Pendiri PT. Texora Visi Prima</span>
+                    <span>Modal Disetor Saham Pendiri XoraMateria</span>
                     <span>{formatRupiah(1200000000)}</span>
                   </div>
                   <div className="flex justify-between py-0.5">
@@ -801,7 +801,7 @@ export default function FinanceAccountingPage() {
               Laporan Arus Kas (Metode Langsung)
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              PT. TEXORA VISI PRIMA • Periode Berjalan 2026
+              XORAMATERIA • Periode Berjalan 2026
             </p>
           </div>
 

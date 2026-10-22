@@ -37,7 +37,7 @@ const id: ArticleCopy = {
   eyebrow: "Pusat Panduan Tekstil",
   title: "Artikel & Panduan Tekstil Sublimasi",
   lead:
-    "Panduan praktis dari tim produksi Texora: memilih kain, mengatur mesin sublimasi, menjaga kualitas cetak, hingga memahami harga & termin untuk brand garmen. Ditulis oleh teknisi cetak, bukan sekadar copywriter.",
+    "Panduan praktis dari tim produksi XoraMateria: memilih kain, mengatur mesin sublimasi, menjaga kualitas cetak, hingga memahami harga & termin untuk brand garmen. Ditulis oleh teknisi cetak, bukan sekadar copywriter.",
   searchPlaceholder: "Cari artikel, topik, atau kata kunci...",
   filterAll: "Semua",
   resultCount: "artikel",
@@ -79,7 +79,7 @@ const en: ArticleCopy = {
   eyebrow: "Technical Knowledge Hub",
   title: "Articles & Sublimation Textile Guides",
   lead:
-    "Practical notes from the Texora production team: choosing fabric, tuning the sublimation press, protecting print quality, and understanding pricing and payment terms for garment brands. Written by print engineers, not copywriters.",
+    "Practical notes from the XoraMateria production team: choosing fabric, tuning the sublimation press, protecting print quality, and understanding pricing and payment terms for garment brands. Written by print engineers, not copywriters.",
   searchPlaceholder: "Search articles, topics, or keywords...",
   filterAll: "All",
   resultCount: "articles",
@@ -121,7 +121,7 @@ const zh: ArticleCopy = {
   eyebrow: "纺织知识中心",
   title: "文章与升华印花技术指南",
   lead:
-    "来自 Texora 生产团队的实用笔记：选布、调机、保证印花品质，以及品牌服装的价格与付款条款。由印花工程师撰写，而非营销文案。",
+    "来自 XoraMateria 生产团队的实用笔记：选布、调机、保证印花品质，以及品牌服装的价格与付款条款。由印花工程师撰写，而非营销文案。",
   searchPlaceholder: "搜索文章、主题或关键词……",
   filterAll: "全部",
   resultCount: "篇文章",
@@ -163,7 +163,7 @@ const ja: ArticleCopy = {
   eyebrow: "テキスタイル知識ハブ",
   title: "Sublimation テキスタイルの記事とガイド",
   lead:
-    "Texora 生産チームの実務メモ：生地の選び方、sublimation press の調整、プリント品質の維持、ブランド向けの価格と支払条件。コピーライターではなくプリントエンジニアが執筆しています。",
+    "XoraMateria 生産チームの実務メモ：生地の選び方、sublimation press の調整、プリント品質の維持、ブランド向けの価格と支払条件。コピーライターではなくプリントエンジニアが執筆しています。",
   searchPlaceholder: "記事・トピック・キーワードを検索…",
   filterAll: "すべて",
   resultCount: "件の記事",
@@ -205,7 +205,7 @@ const de: ArticleCopy = {
   eyebrow: "Technischer Wissenshub",
   title: "Artikel & Leitfäden für Sublimationstextilien",
   lead:
-    "Praktische Notizen aus dem Texora-Produktionsteam: Stoffauswahl, Einstellung der Sublimationspresse, dauerhafte Druckqualität sowie Preise und Zahlungsziele für Modebrands. Geschrieben von Drucktechnikern, nicht von Copywritern.",
+    "Praktische Notizen aus dem XoraMateria-Produktionsteam: Stoffauswahl, Einstellung der Sublimationspresse, dauerhafte Druckqualität sowie Preise und Zahlungsziele für Modebrands. Geschrieben von Drucktechnikern, nicht von Copywritern.",
   searchPlaceholder: "Artikel, Themen oder Stichwörter suchen...",
   filterAll: "Alle",
   resultCount: "Artikel",
@@ -247,7 +247,7 @@ const ar: ArticleCopy = {
   eyebrow: "مركز معرفة النسيج",
   title: "مقالات وأدلة أقمشة التسامي",
   lead:
-    "ملاحظات عملية من فريق الإنتاج في Texora: اختيار القماش، ضبط آلة الطباعة، الحفاظ على جودة الطباعة، وفهم الأسعار وشروط الدفع لعلامات الأزياء. كتبها مهندسو طباعة وليس كتاب تسويق.",
+    "ملاحظات عملية من فريق الإنتاج في XoraMateria: اختيار القماش، ضبط آلة الطباعة، الحفاظ على جودة الطباعة، وفهم الأسعار وشروط الدفع لعلامات الأزياء. كتبها مهندسو طباعة وليس كتاب تسويق.",
   searchPlaceholder: "ابحث في المقالات والمواضيع والكلمات المفتاحية…",
   filterAll: "الكل",
   resultCount: "مقالات",

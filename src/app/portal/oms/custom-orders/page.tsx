@@ -130,8 +130,8 @@ export default function CustomOrdersProofingPage() {
                 liveProofs.push({
                   id: `proof-${o.id}-${idx}`,
                   orderNumber: o.orderNumber,
-                  customerName: o.customerName || "Customer Texora",
-                  companyName: o.customerCompany || "PT Mitra Texora",
+                  customerName: o.customerName || "Customer XoraMateria",
+                  companyName: o.customerCompany || "PT Mitra XoraMateria",
                   designTitle: it.customDesignTitle,
                   fileFormat: "Adobe Illustrator (.AI) / Vector",
                   fileSizeBytes: "62.4 MB",

@@ -397,7 +397,7 @@ export default function QuoteRequestsPage() {
       <p className="text-[10px] text-slate-600">
         <Building2 className="w-3 h-3 inline" /> Halaman ini hanya untuk
         Administrator &amp; Sales Rep. Data pelanggan disimpan sesuai
-        ketentuan privasi website Texora.
+        ketentuan privasi website XoraMateria.
       </p>
     </div>
   );

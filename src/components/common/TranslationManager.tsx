@@ -334,7 +334,7 @@ export function TranslationManager() {
           <span className="text-[11px] opacity-90 leading-relaxed block mt-1">
             {aiEnabled
               ? `Total ${total} terjemahan tersimpan di database. AI hanya dipanggil saat Anda klik tombol terjemahan di CMS (AI Massal / AI per-baris). Pengunjung website 100% membaca dari database cache (bebas kuota & ultra cepat). Anda juga bisa mengedit atau menambah terjemahan secara manual.`
-              : "Isi NINEROUTER_API_KEY atau GEMINI_API_KEY di .env untuk mengaktifkan AI di CMS, atau kelola terjemahan secara manual di bawah."}
+              : "Isi OPENCODE_API_KEY (OpenCode Zen) atau GEMINI_API_KEY / NINEROUTER_API_KEY di .env untuk mengaktifkan AI di CMS, atau kelola terjemahan secara manual di bawah."}
           </span>
         </div>
       </div>

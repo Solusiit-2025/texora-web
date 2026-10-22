@@ -46,7 +46,7 @@ export const metadata: Metadata = {
     "tekstil industri",
     "voal ultrafine",
     "cetak sublimasi grosir",
-    "texora",
+    "xoramateria",
   ],
   category: "Tekstil & Manufaktur",
   alternates: {
@@ -65,7 +65,7 @@ export const metadata: Metadata = {
         url: DEFAULT_OG_IMAGE,
         width: 1200,
         height: 630,
-        alt: "PT. Texora Visi Prima — Pabrik Kain Sublimasi",
+        alt: "XoraMateria — Pabrik Kain Sublimasi",
         type: "image/jpeg",
       },
     ],
@@ -76,13 +76,13 @@ export const metadata: Metadata = {
     description:
       "Manufaktur kain poliester dan cetak sublimasi skala industri di Jakarta Utara.",
     images: [DEFAULT_OG_IMAGE],
-    creator: "@texoravisiprima",
-    site: "@texoravisiprima",
+    creator: "@xoramateriavisiprima",
+    site: "@xoramateriavisiprima",
   },
   icons: {
-    icon: "/icons/logo-texora.ico",
-    shortcut: "/icons/logo-texora.ico",
-    apple: "/icons/texora-logo.png",
+    icon: "/icons/xoramateria-mark.png",
+    shortcut: "/icons/xoramateria-mark.png",
+    apple: "/icons/xoramateria-mark.png",
   },
   manifest: "/manifest.webmanifest",
   formatDetection: {

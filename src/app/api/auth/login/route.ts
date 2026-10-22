@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
       passwordMatches = await comparePassword(password, user.passwordHash);
     } else {
       // Default fallback password for initial seeded demo accounts
-      const isDefaultMatch = password === "Texora2026!" || password === "Admin@Texora2026!" || password === "Sales@Texora2026!" || password === "Gudang@Texora2026!" || password === "Customer@Texora2026!";
+      const isDefaultMatch = password === "XoraMateria2026!" || password === "Admin@XoraMateria2026!" || password === "Sales@XoraMateria2026!" || password === "Gudang@XoraMateria2026!" || password === "Customer@XoraMateria2026!";
       if (isDefaultMatch) {
         passwordMatches = true;
         // Auto-hash and save to DB

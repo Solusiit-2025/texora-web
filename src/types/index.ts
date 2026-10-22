@@ -1,4 +1,4 @@
-// Type Definitions for PT. Texora Visi Prima
+// Type Definitions for XoraMateria
 
 export type UserRole = "CUSTOMER" | "SALES_REP" | "WAREHOUSE_STAFF" | "ADMINISTRATOR";
 

@@ -33,7 +33,7 @@ export async function GET() {
 
   const lines: string[] = [];
 
-  lines.push("# PT. Texora Visi Prima — Full Documentation");
+  lines.push("# XoraMateria — Full Documentation");
   lines.push("");
   lines.push(
     `Generated: ${new Date().toISOString()} | Source: ${SITE_URL}`
@@ -46,7 +46,7 @@ export async function GET() {
   lines.push("## 1. Profil Perusahaan");
   lines.push("");
   lines.push(
-    "PT. Texora Visi Prima adalah perusahaan manufaktur tekstil yang beroperasi di Tugu Utara, Tanjung Priok, Jakarta Utara, DKI Jakarta. Perusahaan ini menggabungkan dua lini bisnis dalam satu atap:"
+    "XoraMateria adalah perusahaan manufaktur tekstil yang beroperasi di Tugu Utara, Tanjung Priok, Jakarta Utara, DKI Jakarta. Perusahaan ini menggabungkan dua lini bisnis dalam satu atap:"
   );
   lines.push("");
   lines.push(
@@ -203,7 +203,7 @@ export async function GET() {
     "- Data pada dokumen ini bersifat informatif dan dapat berubah. Rujuk halaman katalog resmi untuk data terkini."
   );
   lines.push(
-    `- Dokumen dibuat otomatis oleh sistem Texora pada ${new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })} WIB.`
+    `- Dokumen dibuat otomatis oleh sistem XoraMateria pada ${new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })} WIB.`
   );
   lines.push("");
 

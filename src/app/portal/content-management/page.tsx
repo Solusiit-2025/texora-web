@@ -109,8 +109,8 @@ const DEFAULT_SOCIAL_FORM: SocialLinkItem[] = [
   { id: "instagram", label: "Instagram Xora Hijab", href: "https://www.instagram.com/xora_hijab", handle: "@xora_hijab", isActive: true, order: 2 },
   { id: "facebook", label: "Facebook Xora Materia", href: "https://www.facebook.com/profile.php?id=61595062856326", handle: "Xora Materia", isActive: true, order: 3 },
   { id: "linkedin", label: "LinkedIn Xora Materia", href: "https://www.linkedin.com/in/xora-materia-9b7517440", handle: "xora-materia", isActive: true, order: 4 },
-  { id: "youtube", label: "YouTube Texora", href: "https://www.youtube.com/@texoravisiprima", handle: "Texora Official", isActive: true, order: 5 },
-  { id: "whatsapp", label: "WhatsApp Sales", href: "https://wa.me/6287889856066?text=Halo%20Texora%2C%20saya%20ingin%20bertanya%20tentang%20kain%20sublimasi.", handle: "+62 878-8985-6066", isActive: true, order: 6 },
+  { id: "youtube", label: "YouTube XoraMateria", href: "https://www.youtube.com/@xoramateriavisiprima", handle: "XoraMateria Official", isActive: true, order: 5 },
+  { id: "whatsapp", label: "WhatsApp Sales", href: "https://wa.me/6287889856066?text=Halo%20XoraMateria%2C%20saya%20ingin%20bertanya%20tentang%20kain%20sublimasi.", handle: "+62 878-8985-6066", isActive: true, order: 6 },
 ];
 
 /**
@@ -178,16 +178,28 @@ function ContentManagementInner() {
   const [seoData, setSeoData] = useState<any>(DEFAULT_SEO);
   const [seoSelectedPage, setSeoSelectedPage] = useState<string>("/");
   const [currentRole, setCurrentRole] = useState<string>("");
+  const [currentMenuIds, setCurrentMenuIds] = useState<string[]>([]);
   const [togglingPath, setTogglingPath] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/auth/me")
       .then((r) => r.json())
       .then((d) => {
-        if (d?.authenticated && d.user) setCurrentRole(d.user.role);
+        if (d?.authenticated && d.user) {
+          setCurrentRole(d.user.role);
+          setCurrentMenuIds(Array.isArray(d.menuIds) ? d.menuIds : []);
+        }
       })
       .catch(() => {});
   }, []);
+
+  // Administrator bawaan ATAU role custom (mis. "ADMIN") yang diberi akses
+  // menu CMS (`content`) di Role & Menu Management.
+  const canManageModules =
+    !currentRole ||
+    currentRole === "ADMINISTRATOR" ||
+    currentMenuIds.includes("content");
+
   const [editingItem, setEditingItem] = useState<any>(null);
 
   // Forms
@@ -239,7 +251,7 @@ function ContentManagementInner() {
     contactAddress: "Tugu Utara, Tanjung Priok, Jakarta Utara",
     contactEmail: "sales@texora.co.id",
     contactPhone: "+62 878-8985-6066",
-    footerCopyright: "© 2026 PT. Texora Visi Prima. All rights reserved.",
+    footerCopyright: "© 2026 XoraMateria. All rights reserved.",
   });
 
   // Copy hero homepage (judul, eyebrow, lead, 3 poin, 2 CTA).
@@ -249,7 +261,7 @@ function ContentManagementInner() {
   const [pricingForm, setPricingForm] = useState({
     designServiceFee: 150000,
     sublimationPrintFee: 18000,
-    designServiceTitle: "Jasa Desain Grafis & Pattern Repeat Texora",
+    designServiceTitle: "Jasa Desain Grafis & Pattern Repeat XoraMateria",
     designServiceDescription: "Pola seamless repeat vector, penyesuaian skala motif, dan 2x revisi minor",
     revisionPolicy: "Termasuk 2x revisi minor & digital 3D proofing mockup sebelum naik mesin cetak.",
   });
@@ -1039,7 +1051,7 @@ function ContentManagementInner() {
     artikel: [
       "Satu artikel = satu kata kunci utama. Jangan menggabungkan topik dalam satu artikel.",
       "Gunakan Heading 2/3 yang mengandung kata kunci turunan, misalnya 'Setting Heat Press 210 Derajat'.",
-      "Isi meta description dengan ringkasan yang menyebut sumber produk Texora.",
+      "Isi meta description dengan ringkasan yang menyebut sumber produk XoraMateria.",
       "Tambahkan tautan ke produk katalog agar artikel memperkuat topical authority.",
       "Artikel yang menyebut angka teknis (suhu, GSM, MOQ) lebih banyak dikutip AI assistant.",
     ],
@@ -1762,7 +1774,7 @@ function ContentManagementInner() {
                     <Sparkles className="w-5 h-5" />
                   </span>
                   <div>
-                    <h3 className="text-sm font-bold text-white">Tarif Jasa Desain Tim Texora</h3>
+                    <h3 className="text-sm font-bold text-white">Tarif Jasa Desain Tim XoraMateria</h3>
                     <span className="text-[11px] text-slate-400">Biaya per motif / SPK</span>
                   </div>
                 </div>
@@ -1787,7 +1799,7 @@ function ContentManagementInner() {
                   />
                 </div>
                 <p className="text-[11px] text-slate-500 mt-1">
-                  Biaya ini otomatis dikenakan jika pelanggan memilih &quot;Jasa Desain Tim Texora&quot; di simulator sublimasi.
+                  Biaya ini otomatis dikenakan jika pelanggan memilih &quot;Jasa Desain Tim XoraMateria&quot; di simulator sublimasi.
                 </p>
               </div>
 
@@ -1913,7 +1925,7 @@ function ContentManagementInner() {
             <div className="space-y-2">
               {MODULE_TOGGLES.map((mod) => {
                 const enabled = seoData?.pages?.[mod.path]?.enabled !== false;
-                const canToggle = !currentRole || currentRole === "ADMINISTRATOR";
+                const canToggle = canManageModules;
                 const isTogglingThis = togglingPath === mod.path;
                 return (
                   <div
@@ -1972,7 +1984,7 @@ function ContentManagementInner() {
               })}
             </div>
 
-            {currentRole && currentRole !== "ADMINISTRATOR" && (
+            {currentRole && !canManageModules && (
               <p className="text-[10px] text-amber-400/80 flex items-center gap-1.5">
                 <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                 <span>
@@ -2210,7 +2222,7 @@ function ContentManagementInner() {
                       >
                         {path}
                       </button>
-                      {currentRole === "ADMINISTRATOR" ? (
+                      {canManageModules ? (
                         <button
                           type="button"
                           onClick={() =>

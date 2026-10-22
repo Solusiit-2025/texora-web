@@ -18,7 +18,7 @@ export default function NotFound() {
             Halaman Tidak Ditemukan
           </h1>
           <p className="text-xs text-slate-400 leading-relaxed">
-            Halaman yang Anda tuju mungkin telah dipindahkan, diganti tautannya, atau belum terdaftar di sistem Texora.
+            Halaman yang Anda tuju mungkin telah dipindahkan, diganti tautannya, atau belum terdaftar di sistem XoraMateria.
           </p>
         </div>
 
@@ -41,7 +41,7 @@ export default function NotFound() {
         </div>
 
         <div className="pt-4 border-t border-slate-800/80 text-[10px] text-slate-500 font-mono">
-          PT. Texora Visi Prima • Industrial Textile & Sublimation
+          XoraMateria • Industrial Textile & Sublimation
         </div>
 
       </div>

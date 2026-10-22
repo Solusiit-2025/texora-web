@@ -73,7 +73,7 @@ const id: QuoteCopy = {
     "Data Anda hanya digunakan untuk penyusunan penawaran. Kami tidak membagikan data ke pihak ketiga.",
   successTitle: "Permintaan Penawaran Terkirim!",
   successBody:
-    "Terima kasih! Tim sales Texora sudah menerima permintaan Anda dan akan menghubungi via email/WhatsApp dalam 1-2 jam kerja. selama menunggu, Anda dapat mengunduh katalog PDF kami untuk melihat spesifikasi lengkap.",
+    "Terima kasih! Tim sales XoraMateria sudah menerima permintaan Anda dan akan menghubungi via email/WhatsApp dalam 1-2 jam kerja. selama menunggu, Anda dapat mengunduh katalog PDF kami untuk melihat spesifikasi lengkap.",
   backToCatalog: "Lihat Katalog Kain",
   backToHome: "Kembali ke Beranda",
   validation: "Mohon lengkapi nama dan email yang valid.",
@@ -81,7 +81,7 @@ const id: QuoteCopy = {
     "Terjadi masalah saat mengirim. Silakan coba lagi atau hubungi kami via WhatsApp.",
   fileTooBig: "Ukuran file maksimal 2MB.",
   fileType: "Tipe file harus JPG, PNG, WebP, atau PDF.",
-  benefitsTitle: "Kenapa Menawar lewat Texora?",
+  benefitsTitle: "Kenapa Menawar lewat XoraMateria?",
   benefits: [
     "Harga bertingkat otomatis — semakin panjang pesanan, semakin ringan harga per meternya.",
     "Sample swatch gratis untuk memverifikasi warna & tekstur sebelum order.",
@@ -125,7 +125,7 @@ const en: QuoteCopy = {
     "Your details are used only to prepare your quotation. We never share data with third parties.",
   successTitle: "Quote Request Sent!",
   successBody:
-    "Thank you! Texora's sales team has received your request and will contact you by email/WhatsApp within 1-2 working hours. Meanwhile you can download our PDF catalogue for full specifications.",
+    "Thank you! XoraMateria's sales team has received your request and will contact you by email/WhatsApp within 1-2 working hours. Meanwhile you can download our PDF catalogue for full specifications.",
   backToCatalog: "Browse Fabric Catalogue",
   backToHome: "Back to Home",
   validation: "Please fill in your name and a valid email.",
@@ -133,7 +133,7 @@ const en: QuoteCopy = {
     "Something went wrong while sending. Please try again or contact us on WhatsApp.",
   fileTooBig: "Maximum file size is 2MB.",
   fileType: "File type must be JPG, PNG, WebP, or PDF.",
-  benefitsTitle: "Why request a quote with Texora?",
+  benefitsTitle: "Why request a quote with XoraMateria?",
   benefits: [
     "Automatic tiered pricing — the longer your order, the lighter the price per meter.",
     "Free swatch samples to verify colour and texture before you commit.",
@@ -175,14 +175,14 @@ const zh: QuoteCopy = {
   privacy: "您的信息仅用于准备报价，我们不会与第三方共享。",
   successTitle: "询价申请已发送！",
   successBody:
-    "感谢您的咨询！Texora 销售团队已收到您的需求，将在 1-2 个工作小时内通过邮件/WhatsApp 与您联系。您也可以先下载我们的 PDF 目录查看完整规格。",
+    "感谢您的咨询！XoraMateria 销售团队已收到您的需求，将在 1-2 个工作小时内通过邮件/WhatsApp 与您联系。您也可以先下载我们的 PDF 目录查看完整规格。",
   backToCatalog: "浏览布料目录",
   backToHome: "返回首页",
   validation: "请填写姓名与有效邮箱。",
   genericError: "发送时出现问题，请重试或通过 WhatsApp 联系我们。",
   fileTooBig: "文件最大 2MB。",
   fileType: "文件类型须为 JPG、PNG、WebP 或 PDF。",
-  benefitsTitle: "为什么向 Texora 询价？",
+  benefitsTitle: "为什么向 XoraMateria 询价？",
   benefits: [
     "阶梯价格自动计算——订单越长，每米单价越低。",
     "免费布样，下单前先确认颜色与手感。",
@@ -225,7 +225,7 @@ const ja: QuoteCopy = {
   privacy: "お客様の情報は見積準備のみに使用し、第三者に提供することはありません。",
   successTitle: "見積依頼を送信しました！",
   successBody:
-    "ありがとうございます。Texora 営業チームが依頼を受け付け、1〜2 営業日以内にメールまたは WhatsApp でご連絡します。その間、PDF カタログで仕様をご確認いただけます。",
+    "ありがとうございます。XoraMateria 営業チームが依頼を受け付け、1〜2 営業日以内にメールまたは WhatsApp でご連絡します。その間、PDF カタログで仕様をご確認いただけます。",
   backToCatalog: "生地カタログを見る",
   backToHome: "ホームへ戻る",
   validation: "お名前と有効なメールアドレスをご入力ください。",
@@ -233,7 +233,7 @@ const ja: QuoteCopy = {
     "送信中に問題が発生しました。再度お試しいただくか、WhatsApp でお問い合わせください。",
   fileTooBig: "ファイルサイズは最大 2MB です。",
   fileType: "ファイル形式は JPG / PNG / WebP / PDF にしてください。",
-  benefitsTitle: "Texora に見積りを依頼する理由",
+  benefitsTitle: "XoraMateria に見積りを依頼する理由",
   benefits: [
     "段階価格は注文量に応じて自動計算。多いほど 1 メートルあたりの単価が下がります。",
     "無償の生地サンプルで、発注前に色と質感を確認できます。",
@@ -285,7 +285,7 @@ const de: QuoteCopy = {
     "Beim Senden ist ein Problem aufgetreten. Bitte erneut versuchen oder uns per WhatsApp kontaktieren.",
   fileTooBig: "Maximale Dateigröße: 2 MB.",
   fileType: "Dateityp muss JPG, PNG, WebP oder PDF sein.",
-  benefitsTitle: "Warum Preise bei Texora anfragen?",
+  benefitsTitle: "Warum Preise bei XoraMateria anfragen?",
   benefits: [
     "Automatische Staffelpreise — je länger die Bestellung, desto günstiger der Meterpreis.",
     "Kostenlose Stoffmuster zur Farb- und Griffprüfung vor der Bestellung.",
@@ -328,7 +328,7 @@ const ar: QuoteCopy = {
   privacy: "تُستخدم بياناتك فقط لإعداد عرض السعر، ولا نشاركها مع أي طرف ثالث.",
   successTitle: "تم إرسال طلب عرض السعر!",
   successBody:
-    "شكرًا لك! استلم فريق مبيعات Texora طلبك وسيتواصل معك عبر البريد الإلكتروني أو واتساب خلال 1-2 ساعة عمل. يمكنك في هذه الأثناء تحميل كتالوج PDF لمعرفة المواصفات الكاملة.",
+    "شكرًا لك! استلم فريق مبيعات XoraMateria طلبك وسيتواصل معك عبر البريد الإلكتروني أو واتساب خلال 1-2 ساعة عمل. يمكنك في هذه الأثناء تحميل كتالوج PDF لمعرفة المواصفات الكاملة.",
   backToCatalog: "تصفح كتالوج الأقمشة",
   backToHome: "العودة للرئيسية",
   validation: "يرجى إدخال الاسم وبريد إلكتروني صحيح.",
@@ -336,7 +336,7 @@ const ar: QuoteCopy = {
     "حدثت مشكلة أثناء الإرسال. يرجى المحاولة مرة أخرى أو التواصل معنا عبر واتساب.",
   fileTooBig: "الحد الأقصى لحجم الملف 2 ميجابايت.",
   fileType: "يجب أن يكون نوع الملف JPG أو PNG أو WebP أو PDF.",
-  benefitsTitle: "لماذا تطلب عرض السعر من Texora؟",
+  benefitsTitle: "لماذا تطلب عرض السعر من XoraMateria؟",
   benefits: [
     "تسعير متدرج تلقائي — كلما زاد الطلب، انخفض سعر المتر.",
     "عينات قماش مجانية للتحقق من اللون والملمس قبل الالتزام بالطلب.",

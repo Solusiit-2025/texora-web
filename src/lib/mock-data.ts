@@ -15,7 +15,7 @@ export const MOCK_USERS: User[] = [
     name: "Rian Pratama",
     email: "rian.sales@texora.co.id",
     role: "SALES_REP",
-    companyName: "PT. Texora Visi Prima",
+    companyName: "XoraMateria",
     phoneNumber: "081298765432",
   },
   {
@@ -23,7 +23,7 @@ export const MOCK_USERS: User[] = [
     name: "Bambang Santoso",
     email: "bambang.wh@texora.co.id",
     role: "WAREHOUSE_STAFF",
-    companyName: "PT. Texora Visi Prima",
+    companyName: "XoraMateria",
     phoneNumber: "081377889900",
   },
   {
@@ -31,7 +31,7 @@ export const MOCK_USERS: User[] = [
     name: "Pricilia Kishin Hassanannd",
     email: "admin@texora.co.id",
     role: "ADMINISTRATOR",
-    companyName: "PT. Texora Visi Prima",
+    companyName: "XoraMateria",
     phoneNumber: "081122334455",
   },
 ];
@@ -720,7 +720,7 @@ export const MOCK_LEADS: Lead[] = [
         leadId: "lead-3",
         authorName: "Rian Pratama",
         type: "EMAIL",
-        description: "Mengirimkan company profile Texora, sertifikasi ramah lingkungan Oeko-Tex tinta sublim, dan portofolio cetak.",
+        description: "Mengirimkan company profile XoraMateria, sertifikasi ramah lingkungan Oeko-Tex tinta sublim, dan portofolio cetak.",
         createdAt: "2026-09-30 09:30",
       },
     ],

@@ -31,7 +31,7 @@ export async function generateMetadata({
   return buildPageMetadata({
     locale,
     path: "/request-quote",
-    title: `${copy.title} | Texora`,
+    title: `${copy.title} | XoraMateria`,
     description: copy.lead,
     keywords: [
       "minta penawaran kain",

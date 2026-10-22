@@ -11,7 +11,7 @@ export const runtime = "nodejs";
 /**
  * GET /api/catalog/pdf
  *
- * Generates the Texora product catalog as a downloadable PDF (A4):
+ * Generates the XoraMateria product catalog as a downloadable PDF (A4):
  *  - Cover page: company identity + key value propositions
  *  - One block per fabric: photo, technical specifications, GSM variants,
  *    stock, and tiered pricing
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
     });
 
     const pdf = await buildCatalogPdf(products);
-    const filename = `Texora-Katalog-Produk-${new Date().toISOString().slice(0, 10)}.pdf`;
+    const filename = `XoraMateria-Katalog-Produk-${new Date().toISOString().slice(0, 10)}.pdf`;
 
     return new NextResponse(pdf as unknown as BodyInit, {
       headers: {
@@ -161,8 +161,8 @@ async function buildCatalogPdf(products: any[]): Promise<Buffer> {
     size: "A4",
     margin: 45,
     info: {
-      Title: "Katalog Produk Texora Visi Prima",
-      Author: "PT. Texora Visi Prima",
+      Title: "Katalog Produk XoraMateria",
+      Author: "XoraMateria",
       Subject: "Katalog kain polyester siap sublimasi & jasa cetak sublimasi",
       Keywords: "kain sublimasi, dryfit milano, voal ultrafine, teksil jakarta",
     },
@@ -197,7 +197,7 @@ async function buildCatalogPdf(products: any[]): Promise<Buffer> {
       .fontSize(7.5)
       .fillColor(MUTED)
       .text(
-        "PT. Texora Visi Prima  •  Jl. Walang Baru VI Blok B1/2, Tugu Utara, Tanjung Priok, Jakarta Utara 14140  •  +62 878-8985-6066  •  sales@texoraprima.com",
+        "XoraMateria  •  Jl. Walang Baru VI Blok B1/2, Tugu Utara, Tanjung Priok, Jakarta Utara 14140  •  +62 878-8985-6066  •  sales@texoraprima.com",
         M,
         y,
         { width: contentW, align: "left", lineBreak: false }
@@ -220,7 +220,7 @@ async function buildCatalogPdf(products: any[]): Promise<Buffer> {
     .font("Helvetica-Bold")
     .fontSize(11)
     .fillColor(ACCENT)
-    .text("PT. TEXORA VISI PRIMA", M + 14, 120);
+    .text("XORAMATERIA", M + 14, 120);
 
   doc
     .font("Helvetica-Bold")
@@ -456,7 +456,7 @@ async function buildCatalogPdf(products: any[]): Promise<Buffer> {
     .fontSize(8)
     .fillColor(MUTED)
     .text(
-      "Katalog ini disusun otomatis dari sistem katalog Texora. Spesifikasi & harga dapat berubah - mohon konfirmasi ke tim sales sebelum memesan.",
+      "Katalog ini disusun otomatis dari sistem katalog XoraMateria. Spesifikasi & harga dapat berubah - mohon konfirmasi ke tim sales sebelum memesan.",
       M,
       pageH - 90,
       { width: contentW }

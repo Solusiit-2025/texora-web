@@ -1,5 +1,5 @@
 /**
- * Kamus UI Multi-Bahasa (i18n) — Texora Visi Prima.
+ * Kamus UI Multi-Bahasa (i18n) — XoraMateria.
  *
  * Bahasa: Indonesia (default), English, 简体中文, 日本語, Deutsch, العربية.
  *
@@ -43,7 +43,7 @@ const id: Record<string, string> = {
   "nav.trackRtDesc": "Pantau proses cetak & heatpress",
   "nav.cart": "Keranjang Belanja",
   "nav.cartDesc": "Draf pesanan aktif",
-  "nav.services": "Layanan Texora",
+  "nav.services": "Layanan XoraMateria",
   "nav.studio": "Studio Kustom Sublimasi 3D",
   "nav.katalogSub": "Katalog Kain Sublimasi",
   "nav.consultSub": "Konsultasi PIC & Bantuan B2B",
@@ -57,7 +57,7 @@ const id: Record<string, string> = {
   "hero.t1b": "dengan serat,",
   "hero.t1c": "bukan sekadar menempel.",
   "hero.lead":
-    "PT. Texora Visi Prima memproduksi kain poliester siap sublimasi dan jasa cetak skala roll untuk brand sportswear, busana muslim, dan merchandise — dengan harga bertingkat dan proofing sebelum mesin berjalan.",
+    "XoraMateria memproduksi kain poliester siap sublimasi dan jasa cetak skala roll untuk brand sportswear, busana muslim, dan merchandise — dengan harga bertingkat dan proofing sebelum mesin berjalan.",
   "hero.b1": "Proofing digital gratis",
   "hero.b2": "Min. order fleksibel",
   "hero.b3": "Termin 30/60 hari",
@@ -65,7 +65,7 @@ const id: Record<string, string> = {
   "hero.ctaCatalog": "Lihat katalog kain",
 
   // ---- Section homepage ----
-  "home.valueHeading": "Mengapa Memilih Texora Visi Prima",
+  "home.valueHeading": "Mengapa Memilih XoraMateria",
   "home.val1.title": "Harga Bertingkat Transparan",
   "home.val1.body": "Harga per meter otomatis turun sesuai volume. Tidak ada biaya tersembunyi.",
   "home.val2.title": "Proofing Sebelum Produksi",
@@ -122,7 +122,7 @@ const id: Record<string, string> = {
   "catalog.searchQ": "Cari:",
   "catalog.gsm": "Gramatur:",
   "catalog.sort": "Urutkan:",
-  "catalog.sortRec": "Rekomendasi Texora",
+  "catalog.sortRec": "Rekomendasi XoraMateria",
   "catalog.sortAsc": "Harga Terendah",
   "catalog.sortDesc": "Harga Tertinggi",
   "catalog.sortStock": "Stok Terbanyak",
@@ -220,11 +220,11 @@ const id: Record<string, string> = {
   "cart.ppn": "PPN 11% (Faktur Pajak):",
   "cart.shipping": "Estimasi Kargo Roll:",
   "cart.total": "Total Tagihan:",
-  "cart.guarantee": "Jaminan Transaksi Resmi PT. Texora",
+  "cart.guarantee": "Jaminan Transaksi Resmi XoraMateria",
   "cart.guaranteeDesc": "Mendukung invoice resmi perusahaan B2B, faktur pajak elektronik, dan garansi kalibrasi warna pantone.",
 
   // ---- About Page ----
-  "about.eyebrow": "Tentang Kami · PT. Texora Visi Prima",
+  "about.eyebrow": "Tentang Kami · XoraMateria",
   "about.heroTitle1": "Pabrik sublimasi yang menyerahkan",
   "about.heroTitle2": "warna, bukan sekadar tinta.",
   "about.heroLead": "Kami memproduksi kain poliester siap sublimasi dan jasa cetak skala roll untuk brand sportswear, busana muslim, dan merchandise. Dari pemeriksaan artwork hingga penggulungan berlabel barcode, seluruh proses berjalan di satu lantai produksi di Jakarta Utara.",
@@ -313,7 +313,7 @@ const en: Record<string, string> = {
   "nav.trackRtDesc": "Monitor printing & heat-press process",
   "nav.cart": "Shopping Cart",
   "nav.cartDesc": "Active order drafts",
-  "nav.services": "Texora Services",
+  "nav.services": "XoraMateria Services",
   "nav.studio": "3D Custom Sublimation Studio",
   "nav.katalogSub": "Sublimation Fabric Catalog",
   "nav.consultSub": "B2B Support & Account Manager",
@@ -326,14 +326,14 @@ const en: Record<string, string> = {
   "hero.t1b": "into the fiber,",
   "hero.t1c": "never just on the surface.",
   "hero.lead":
-    "PT. Texora Visi Prima produces sublimation-ready polyester fabrics and roll-to-roll printing services for sportswear, modest fashion, and merchandise brands — with tiered pricing and proofing before the press starts.",
+    "XoraMateria produces sublimation-ready polyester fabrics and roll-to-roll printing services for sportswear, modest fashion, and merchandise brands — with tiered pricing and proofing before the press starts.",
   "hero.b1": "Free digital proofing",
   "hero.b2": "Flexible minimum order",
   "hero.b3": "30/60-day payment terms",
   "hero.ctaPrint": "Start custom printing",
   "hero.ctaCatalog": "Browse fabric catalog",
 
-  "home.valueHeading": "Why Choose Texora Visi Prima",
+  "home.valueHeading": "Why Choose XoraMateria",
   "home.val1.title": "Transparent Tiered Pricing",
   "home.val1.body": "Price per meter drops automatically with volume. No hidden fees.",
   "home.val2.title": "Pre-Production Proofing",
@@ -387,7 +387,7 @@ const en: Record<string, string> = {
   "catalog.searchQ": "Search:",
   "catalog.gsm": "Weight:",
   "catalog.sort": "Sort:",
-  "catalog.sortRec": "Texora Picks",
+  "catalog.sortRec": "XoraMateria Picks",
   "catalog.sortAsc": "Lowest Price",
   "catalog.sortDesc": "Highest Price",
   "catalog.sortStock": "Most Stock",
@@ -483,11 +483,11 @@ const en: Record<string, string> = {
   "cart.ppn": "VAT 11% (Tax Invoice):",
   "cart.shipping": "Estimated Roll Cargo:",
   "cart.total": "Grand Total:",
-  "cart.guarantee": "Official PT. Texora Business Guarantee",
+  "cart.guarantee": "Official XoraMateria Business Guarantee",
   "cart.guaranteeDesc": "Supports official corporate B2B invoices, e-tax billing, and Pantone color calibration assurance.",
 
   // ---- About Page ----
-  "about.eyebrow": "About Us · PT. Texora Visi Prima",
+  "about.eyebrow": "About Us · XoraMateria",
   "about.heroTitle1": "A sublimation mill delivering",
   "about.heroTitle2": "true color, never just ink.",
   "about.heroLead": "We manufacture sublimation-ready polyester fabrics and roll-to-roll printing services for sportswear, modest fashion, and merchandise brands. From prepress artwork inspection to barcoded roll winding, the entire process runs under one production floor in North Jakarta.",
@@ -576,7 +576,7 @@ const zh: Record<string, string> = {
   "nav.trackRtDesc": "监控印花与热压工艺",
   "nav.cart": "购物车",
   "nav.cartDesc": "活动订单草稿",
-  "nav.services": "Texora 服务",
+  "nav.services": "XoraMateria 服务",
   "nav.studio": "3D 定制热升华工作室",
   "nav.katalogSub": "热升华面料目录",
   "nav.consultSub": "B2B 支持与专员咨询",
@@ -589,14 +589,14 @@ const zh: Record<string, string> = {
   "hero.t1b": "纤维深处，",
   "hero.t1c": "从不浮于表面。",
   "hero.lead":
-    "PT. Texora Visi Prima 生产可用热升华聚酯面料并提供卷对卷印花服务，服务运动服、穆斯林时装与周边品牌 —— 阶梯价格，开机前先打样。",
+    "XoraMateria 生产可用热升华聚酯面料并提供卷对卷印花服务，服务运动服、穆斯林时装与周边品牌 —— 阶梯价格，开机前先打样。",
   "hero.b1": "免费数字打样",
   "hero.b2": "起订量灵活",
   "hero.b3": "30/60 天账期",
   "hero.ctaPrint": "开始定制印花",
   "hero.ctaCatalog": "查看面料目录",
 
-  "home.valueHeading": "为什么选择 Texora Visi Prima",
+  "home.valueHeading": "为什么选择 XoraMateria",
   "home.val1.title": "透明阶梯价格",
   "home.val1.body": "每米单价随订购量自动递减，绝无任何隐藏费用。",
   "home.val2.title": "生产前打样确认",
@@ -648,7 +648,7 @@ const zh: Record<string, string> = {
   "catalog.searchQ": "搜索：",
   "catalog.gsm": "克重：",
   "catalog.sort": "排序：",
-  "catalog.sortRec": "Texora 推荐",
+  "catalog.sortRec": "XoraMateria 推荐",
   "catalog.sortAsc": "价格从低到高",
   "catalog.sortDesc": "价格从高到低",
   "catalog.sortStock": "库存最多",
@@ -744,11 +744,11 @@ const zh: Record<string, string> = {
   "cart.ppn": "11% 增值税（官方税票）：",
   "cart.shipping": "卷装物流运费预估：",
   "cart.total": "应付总金额：",
-  "cart.guarantee": "PT. Texora 官方企业履约保证",
+  "cart.guarantee": "XoraMateria 官方企业履约保证",
   "cart.guaranteeDesc": "支持正规 B2B 企业发票、电子税务凭证与潘通色彩校准保证。",
 
   // ---- About Page ----
-  "about.eyebrow": "关于我们 · PT. Texora Visi Prima",
+  "about.eyebrow": "关于我们 · XoraMateria",
   "about.heroTitle1": "呈现纯正色彩的",
   "about.heroTitle2": "深层纤维色彩，而非浮墨。",
   "about.heroLead": "我们专注于工业级即印聚酯面料生产与卷对卷数码热升华转印服务，服务运动服、穆斯林服饰与文创周边品牌。从印前画稿质检到批次条码打卷，整套工序均在北雅加达一体化生产车间严谨完成。",
@@ -837,7 +837,7 @@ const ja: Record<string, string> = {
   "nav.trackRtDesc": "印刷と熱転写工程を確認",
   "nav.cart": "カート",
   "nav.cartDesc": "注文ドラフト",
-  "nav.services": "Texora サービス",
+  "nav.services": "XoraMateria サービス",
   "nav.studio": "3D カスタム昇華スタジオ",
   "nav.katalogSub": "昇華ファブリックカタログ",
   "nav.consultSub": "B2Bサポート＆担当相談",
@@ -850,14 +850,14 @@ const ja: Record<string, string> = {
   "hero.t1b": "溶け込み、",
   "hero.t1c": "表面に留まりません。",
   "hero.lead":
-    "PT. Texora Visi Prima は昇華対応ポリエステルの製造とロールtoロール印刷を手がける工場です。スポーツウェア、モダンファッション、グッズブランド向けに阶梯価格と印刷前のプルーフを提供します。",
+    "XoraMateria は昇華対応ポリエステルの製造とロールtoロール印刷を手がける工場です。スポーツウェア、モダンファッション、グッズブランド向けに阶梯価格と印刷前のプルーフを提供します。",
   "hero.b1": "デジタルプルーフ無料",
   "hero.b2": "最小注文柔軟対応",
   "hero.b3": "30/60日決算条件",
   "hero.ctaPrint": "カスタム印刷を開始",
   "hero.ctaCatalog": "カタログを見る",
 
-  "home.valueHeading": "Texora が選ばれる理由",
+  "home.valueHeading": "XoraMateria が選ばれる理由",
   "home.val1.title": "明瞭なボリュームディスカウント",
   "home.val1.body": "発注メーター数に応じて単価が自動で割引。隠れた追加費用は一切ありません。",
   "home.val2.title": "量産前のカラー校正",
@@ -1005,11 +1005,11 @@ const ja: Record<string, string> = {
   "cart.ppn": "付加価値税 11%（公式領収書）：",
   "cart.shipping": "ロール貨物送料概算：",
   "cart.total": "合計お支払い金額：",
-  "cart.guarantee": "PT. Texora 公式取引保証",
+  "cart.guarantee": "XoraMateria 公式取引保証",
   "cart.guaranteeDesc": "法人向け公式インボイス・電子納税証明書・パントン色彩保証に対応。",
 
   // ---- About Page ----
-  "about.eyebrow": "会社概要 · PT. Texora Visi Prima",
+  "about.eyebrow": "会社概要 · XoraMateria",
   "about.heroTitle1": "単なるインクではなく",
   "about.heroTitle2": "本物の発色をお届けします。",
   "about.heroLead": "スポーツウェア、モダンファッション、グッズブランド向けに昇華対応ポリエステル生地の製造とロールtoロール昇華転写印刷を提供。入稿データ検査からロットバーコード検反まで全工程を北ジャカルタの自社工場で一貫管理しています。",
@@ -1098,7 +1098,7 @@ const de: Record<string, string> = {
   "nav.trackRtDesc": "Druck- & Transferprozess verfolgen",
   "nav.cart": "Warenkorb",
   "nav.cartDesc": "Aktive Bestellentwürfe",
-  "nav.services": "Texora-Dienste",
+  "nav.services": "XoraMateria-Dienste",
   "nav.studio": "3D-Sublimationsstudio",
   "nav.katalogSub": "Sublimations-Stoffkatalog",
   "nav.consultSub": "B2B-Support & Beratung",
@@ -1111,14 +1111,14 @@ const de: Record<string, string> = {
   "hero.t1b": "mit der Faser —",
   "hero.t1c": "nie nur auf der Oberfläche.",
   "hero.lead":
-    "PT. Texora Visi Prima produziert sublimationsfähige Polyestergewebe und Rollendruck-Dienstleistungen für Sportwear-, Modest- und Merchandise-Marken — mit Staffelpreisen und Proofing vor Produktionsstart.",
+    "XoraMateria produziert sublimationsfähige Polyestergewebe und Rollendruck-Dienstleistungen für Sportwear-, Modest- und Merchandise-Marken — mit Staffelpreisen und Proofing vor Produktionsstart.",
   "hero.b1": "Kostenloses digitales Proofing",
   "hero.b2": "Flexibler Mindestbestellwert",
   "hero.b3": "30/60-Tage-Zahlungsziel",
   "hero.ctaPrint": "Individuellen Druck starten",
   "hero.ctaCatalog": "Stoffkatalog ansehen",
 
-  "home.valueHeading": "Warum Texora Visi Prima",
+  "home.valueHeading": "Warum XoraMateria",
   "home.val1.title": "Transparente Staffelpreise",
   "home.val1.body": "Der Meterpreis sinkt automatisch mit steigendem Volumen. Keine versteckten Kosten.",
   "home.val2.title": "Freigabemuster vor der Produktion",
@@ -1172,7 +1172,7 @@ const de: Record<string, string> = {
   "catalog.searchQ": "Suche:",
   "catalog.gsm": "Flächengewicht:",
   "catalog.sort": "Sortieren:",
-  "catalog.sortRec": "Texora-Empfehlung",
+  "catalog.sortRec": "XoraMateria-Empfehlung",
   "catalog.sortAsc": "Niedrigster Preis",
   "catalog.sortDesc": "Höchster Preis",
   "catalog.sortStock": "Höchster Bestand",
@@ -1268,11 +1268,11 @@ const de: Record<string, string> = {
   "cart.ppn": "MwSt. 11% (Steuerrechnung):",
   "cart.shipping": "Geschätzte Rollenfracht:",
   "cart.total": "Gesamtsumme:",
-  "cart.guarantee": "Offizielle PT. Texora Geschäftsgarantie",
+  "cart.guarantee": "Offizielle XoraMateria Geschäftsgarantie",
   "cart.guaranteeDesc": "Unterstützt offizielle B2B-Rechnungen, E-Steuerrechnungen und Pantone-Farbgarantie.",
 
   // ---- About Page ----
-  "about.eyebrow": "Über uns · PT. Texora Visi Prima",
+  "about.eyebrow": "Über uns · XoraMateria",
   "about.heroTitle1": "Eine Sublimationsfabrik, die",
   "about.heroTitle2": "Farbe liefert, nicht nur Tinte.",
   "about.heroLead": "Wir produzieren sublimationsfertige Polyesterstoffe und bieten Rollendruckdienstleistungen für Sportbekleidungs-, Modest-Fashion- und Merchandising-Marken. Von der Druckvorstufenprüfung bis zur barcodeetikettierten Rollenwicklung erfolgt der gesamte Prozess unter einem Dach in Nord-Jakarta.",
@@ -1374,7 +1374,7 @@ const ar: Record<string, string> = {
   "hero.t1b": "مع الألياف،",
   "hero.t1c": "ولا تبقى على السطح.",
   "hero.lead":
-    "تُنتج PT. Texora Visi Prima أقمشة بوليستر جاهزة للطباعة الحرارية وخدمات الطباعة من بكرة إلى بكرة لعلامات الملابس الرياضية والأزياء المحتشمة والمنتجات التسويقية — بتسعير متدرج ومعاينة قبل بدء الإنتاج.",
+    "تُنتج XoraMateria أقمشة بوليستر جاهزة للطباعة الحرارية وخدمات الطباعة من بكرة إلى بكرة لعلامات الملابس الرياضية والأزياء المحتشمة والمنتجات التسويقية — بتسعير متدرج ومعاينة قبل بدء الإنتاج.",
   "hero.b1": "معاينة رقمية مجانية",
   "hero.b2": "حد أدنى مرن للطلب",
   "hero.b3": "شروط دفع 30/60 يومًا",
@@ -1533,7 +1533,7 @@ const ar: Record<string, string> = {
   "cart.guaranteeDesc": "ندعم الفواتير الرسمية للشركات، الفواتير الضريبية الإلكترونية، وضمان معايرة الألوان.",
 
   // ---- About Page ----
-  "about.eyebrow": "من نحن · PT. Texora Visi Prima",
+  "about.eyebrow": "من نحن · XoraMateria",
   "about.heroTitle1": "مصنع طباعة يقدم",
   "about.heroTitle2": "لوناً أصيلاً، وليس مجرد حبر.",
   "about.heroLead": "نقوم بإنتاج أقمشة البوليستر الجاهزة للطباعة الحرارية وخدمات الطباعة بالرول لعلامات الملابس الرياضية، الأزياء المحتشمة، والمنتجات الترويجية. من فحص التصاميم إلى لف الرولات بباركود التتبع، تجري كافة العمليات في منشأة تصنيع متكاملة شمال جاكرتا.",

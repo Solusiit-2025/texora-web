@@ -27,50 +27,50 @@ export const SEO_PAGES_KEY = "seo.pages";
 
 export const DEFAULT_SEO: SeoSettings = {
   global: {
-    title: "PT. Texora Visi Prima — Sublimasi & Kain Industri",
+    title: "XoraMateria — Sublimasi & Kain Industri",
     description:
       "Manufaktur kain poliester dan cetak sublimasi skala industri di Jakarta Utara. Katalog kain, visualizer motif, harga bertingkat, dan portal B2B terintegrasi.",
-    keywords: "sublimasi kain, dryfit milano, kain jersey, tekstil industri, texora",
+    keywords: "sublimasi kain, dryfit milano, kain jersey, tekstil industri, xoramateria",
     ogImage: "/images/hero/hero-printer.jpg",
   },
   pages: {
     "/": {
-      title: "PT. Texora Visi Prima — Sublimasi & Kain Industri",
+      title: "XoraMateria — Sublimasi & Kain Industri",
       description: "Manufaktur kain poliester dan cetak sublimasi skala industri di Jakarta Utara.",
       excerpt: "Pabrik sublimasi & kain poliester siap cetak untuk brand sportswear, hijab, dan merchandise.",
       schemaType: "organization",
       enabled: true,
     },
     "/catalog": {
-      title: "Katalog Kain Sublimasi — PT. Texora Visi Prima",
+      title: "Katalog Kain Sublimasi — XoraMateria",
       description: "Jelajahi katalog kain poliester siap sublimasi: Dryfit Milano, Voal Ultrafine, dan lainnya dengan harga bertingkat.",
       excerpt: "Katalog lengkap kain poliester siap sublimasi dengan spesifikasi GSM, lebar, dan harga grosir.",
       schemaType: "product",
       enabled: true,
     },
     "/about": {
-      title: "Tentang Kami — PT. Texora Visi Prima",
-      description: "Profil pabrik sublimasi dan kain industri PT. Texora Visi Prima di Jakarta Utara.",
+      title: "Tentang Kami — XoraMateria",
+      description: "Profil pabrik sublimasi dan kain industri XoraMateria di Jakarta Utara.",
       excerpt: "Pabrik sublimasi satu atap: dari bahan mentah hingga gulungan siap kargo.",
       schemaType: "organization",
       enabled: true,
     },
     "/contact": {
-      title: "Hubungi Kami — PT. Texora Visi Prima",
-      description: "Konsultasi B2B dan penawaran kain sublimasi. Hubungi tim sales PT. Texora Visi Prima.",
+      title: "Hubungi Kami — XoraMateria",
+      description: "Konsultasi B2B dan penawaran kain sublimasi. Hubungi tim sales XoraMateria.",
       excerpt: "Hubungi tim sales untuk konsultasi kain dan penawaran B2B.",
       schemaType: "organization",
       enabled: true,
     },
     "/custom-sublimation": {
-      title: "Kustom Sublimasi 3D — PT. Texora Visi Prima",
+      title: "Kustom Sublimasi 3D — XoraMateria",
       description: "Visualizer motif dan simulasi cetak sublimasi kustom untuk kain roll.",
       excerpt: "Studio kustom sublimasi dengan visualizer 3D dan kalkulator harga.",
       schemaType: "product",
       enabled: true,
     },
     "/track-order": {
-      title: "Lacak Pesanan — PT. Texora Visi Prima",
+      title: "Lacak Pesanan — XoraMateria",
       description: "Lacak status produksi dan pengiriman pesanan kain sublimasi Anda.",
       excerpt: "Pantau status produksi dan pengiriman pesanan Anda secara real-time.",
       schemaType: "none",

@@ -60,7 +60,7 @@ export async function setSetting(key: string, value: string) {
       update: { value },
     });
   } catch (err) {
-    console.warn("[Texora Settings] Database not reachable or DATABASE_URL invalid. Setting cached in memory:", err);
+    console.warn("[XoraMateria Settings] Database not reachable or DATABASE_URL invalid. Setting cached in memory:", err);
   }
 }
 

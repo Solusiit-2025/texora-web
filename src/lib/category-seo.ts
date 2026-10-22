@@ -39,7 +39,7 @@ export const CATEGORY_SEO: CategorySeoContent[] = [
     slug: "kain-sportswear",
     name: "Sportswear",
     title: "Kain Sportswear & Jersey Sublimasi",
-    metaTitle: "Kain Sportswear & Jersey Sublimasi | Texora",
+    metaTitle: "Kain Sportswear & Jersey Sublimasi | XoraMateria",
     metaDescription:
       "Kain Dryfit Milano, Interlock, dan jersey rajut siap sublimasi untuk sportswear, seragam tim, dan activewear. Harga grosir bertingkat per meter.",
     keywords: [
@@ -106,7 +106,7 @@ export const CATEGORY_SEO: CategorySeoContent[] = [
     slug: "kain-hijab-fashion",
     name: "Fashion & Hijab",
     title: "Kain Voal Ultrafine, Satin & Ceruty untuk Hijab",
-    metaTitle: "Kain Voal, Satin & Ceruty Hijab | Texora",
+    metaTitle: "Kain Voal, Satin & Ceruty Hijab | XoraMateria",
     metaDescription:
       "Kain voal ultrafine, polyester satin, dan ceruty premium untuk produksi hijab & busana muslim. Tekstur jatuh lembut, warna tajam, harga grosir.",
     keywords: [
@@ -173,7 +173,7 @@ export const CATEGORY_SEO: CategorySeoContent[] = [
     slug: "kain-home-living",
     name: "Home Living",
     title: "Kain Home Living & Dekorasi Ready Sublimasi",
-    metaTitle: "Kain Home Living & Dekorasi Ready Sublimasi | Texora",
+    metaTitle: "Kain Home Living & Dekorasi Ready Sublimasi | XoraMateria",
     metaDescription:
       "Kain canvas, spunbond, dan polyester dekorasi siap sublimasi untuk home living: tirai, cushion cover, bed cover, dan merchandise rumah tangga.",
     keywords: [
@@ -240,7 +240,7 @@ export const CATEGORY_SEO: CategorySeoContent[] = [
     slug: "kain-merchandise",
     name: "Merchandise & Flag",
     title: "Kain Merchandise, Flag & Event Printing",
-    metaTitle: "Kain Merchandise, Flag & Event Printing | Texora",
+    metaTitle: "Kain Merchandise, Flag & Event Printing | XoraMateria",
     metaDescription:
       "Kain polyester untuk merchandise, banner & flag event: tote bag, spanduk, back banner, dan atribut SUvenir. Siap sublimasi dengan harga tier.",
     keywords: [

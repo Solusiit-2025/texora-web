@@ -145,13 +145,13 @@ export default function PortalLayout({
             <Link href="/" className="flex items-center space-x-3 group min-w-0">
               <div className="w-10 h-10 lg:w-11 lg:h-11 rounded-2xl bg-gradient-to-b from-slate-50 via-slate-100 to-slate-200 p-1 border border-brand-400/60 flex items-center justify-center shadow-lg shadow-black/40 group-hover:border-brand-400 transition-all shrink-0">
                 <img
-                  src="/icons/texora-logo.png"
-                  alt="Texora Suite"
+                  src="/icons/xoramateria-mark.png"
+                  alt="XoraMateria Suite"
                   className="w-full h-full object-contain filter drop-shadow-[0_1.5px_2px_rgba(15,23,42,0.45)]"
                 />
               </div>
               <div className="min-w-0">
-                <div className="text-sm lg:text-base font-bold text-white font-display truncate">TEXORA SUITE</div>
+                <div className="text-sm lg:text-base font-bold text-white font-display truncate">XORAMATERIA SUITE</div>
                 <div className="text-[10px] text-brand-400 font-bold tracking-wider uppercase truncate">
                   CRM & OMS Enterprise
                 </div>
@@ -189,7 +189,7 @@ export default function PortalLayout({
                 {roleShort}
               </div>
               <div className="min-w-0">
-                <div className="text-xs font-bold text-white truncate">{currentUser?.name || "User Texora"}</div>
+                <div className="text-xs font-bold text-white truncate">{currentUser?.name || "User XoraMateria"}</div>
                 <div className="text-[10px] text-emerald-400 font-mono truncate">Role: {currentUser?.role || "STAFF"}</div>
               </div>
             </div>
@@ -225,10 +225,10 @@ export default function PortalLayout({
             <div className="flex items-center justify-between p-4 border-b border-slate-800">
               <div className="flex items-center gap-2.5 min-w-0">
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-b from-slate-50 via-slate-100 to-slate-200 p-1 border border-brand-400/60 flex items-center justify-center shrink-0">
-                  <img src="/icons/texora-logo.png" alt="Texora Suite" className="w-full h-full object-contain" />
+                  <img src="/icons/xoramateria-mark.png" alt="XoraMateria Suite" className="w-full h-full object-contain" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-sm font-bold text-white font-display truncate">TEXORA SUITE</div>
+                  <div className="text-sm font-bold text-white font-display truncate">XORAMATERIA SUITE</div>
                   <div className="text-[10px] text-brand-400 font-bold tracking-wider uppercase">CRM & OMS</div>
                 </div>
               </div>
@@ -248,7 +248,7 @@ export default function PortalLayout({
                     {roleShort}
                   </div>
                   <div className="min-w-0">
-                    <div className="text-xs font-bold text-white truncate">{currentUser?.name || "User Texora"}</div>
+                    <div className="text-xs font-bold text-white truncate">{currentUser?.name || "User XoraMateria"}</div>
                     <div className="text-[10px] text-emerald-400 font-mono truncate">Role: {currentUser?.role || "STAFF"}</div>
                   </div>
                 </div>
@@ -291,7 +291,7 @@ export default function PortalLayout({
               <ArrowLeft className="w-4 h-4" /> Toko
             </Link>
             <div className="text-xs text-slate-400 hidden md:block truncate">
-              PT. Texora Visi Prima &gt; Enterprise Management System
+              XoraMateria &gt; Enterprise Management System
             </div>
             <div className="text-xs text-slate-400 md:hidden truncate font-medium">
               {pathname === "/portal/dashboard" ? "Dashboard Analitik" : "Portal Enterprise"}

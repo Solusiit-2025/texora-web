@@ -404,8 +404,8 @@ async function callGemini(
  * Jalur pemanggilan AI terpadu dengan FALLBACK BERANTAI.
  *
  * Urutan provider (bisa diatur lewat env `AI_PROVIDER_ORDER`):
- *   default  -> "google,9router"  (kalau GEMINI_API_KEY format AIza)
- *               "9router,google"  (kalau NINEROUTER_API_KEY yang jadi primary)
+ *   "opencode,google,9router" -> OpenCode Zen → Gemini → 9Router
+ *   default tanpa env: OpenCode (kalau ada key) → Google → 9Router
  *
  * Kalau provider pertama gagal (503 high demand, 401, dll), otomatis pindah
  * ke provider berikutnya. Jadi satu provider mati tidak mematikan fitur
@@ -422,18 +422,18 @@ async function callAiTranslator(
   maxRetries = 0
 ): Promise<string> {
   const gKey = process.env.GEMINI_API_KEY;
+  const hasZen = hasOpenCodeKey();
   const hasNineRouter = !!process.env.NINEROUTER_API_KEY;
   const hasGoogle = !!gKey && isGoogleApiKey(gKey);
 
   // Susun urutan chain
-  const envOrder = (process.env.AI_PROVIDER_ORDER || "")
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean) as ("google" | "9router")[];
+  const envOrder = parseProviderOrder();
 
-  let order: ("google" | "9router")[];
+  let order: AiProviderId[];
   if (envOrder.length) {
     order = envOrder;
+  } else if (hasZen) {
+    order = ["opencode", "google", "9router"];
   } else if (hasNineRouter && !hasGoogle) {
     order = ["9router", "google"];
   } else if (hasNineRouter && hasGoogle) {
@@ -459,14 +459,28 @@ async function callAiTranslator(
   const runNineRouter = async () =>
     callNineRouter(contents, isJson, maxRetries);
 
+  const runOpenCode = async () =>
+    callOpenCode(contents, isJson, maxRetries);
+
+  const runners: Record<AiProviderId, () => Promise<string>> = {
+    opencode: runOpenCode,
+    google: runGoogle,
+    "9router": runNineRouter,
+  };
+
+  const available: Record<AiProviderId, boolean> = {
+    opencode: hasZen,
+    google: hasGoogle,
+    "9router": hasNineRouter,
+  };
+
   let lastError: unknown = null;
 
   for (const provider of order) {
-    if (provider === "google" && !hasGoogle) continue;
-    if (provider === "9router" && !hasNineRouter) continue;
+    if (!available[provider]) continue;
 
     try {
-      return provider === "google" ? await runGoogle() : await runNineRouter();
+      return await runners[provider]();
     } catch (err: any) {
       lastError = err;
       // Kuota habis total -> jangan coba provider lain
@@ -480,7 +494,7 @@ async function callAiTranslator(
 
   if (lastError) throw lastError;
   throw new Error(
-    "Kunci API AI belum diatur (isi NINEROUTER_API_KEY atau GEMINI_API_KEY)."
+    "Kunci API AI belum diatur (isi OPENCODE_API_KEY, GEMINI_API_KEY, atau NINEROUTER_API_KEY)."
   );
 }
 
@@ -505,12 +519,12 @@ async function translateBatch(
   for (let start = 0; start < texts.length; start += CHUNK) {
     const slice = texts.slice(start, start + CHUNK);
     try {
-      const prompt = `You are a professional translator for "PT. Texora Visi Prima", an Indonesian industrial textile sublimation-printing manufacturer (B2B).
+      const prompt = `You are a professional translator for "XoraMateria", an Indonesian industrial textile sublimation-printing manufacturer (B2B).
 
 Translate each Indonesian text below into ${LOCALE_INSTRUCTION[locale]}.
 
 Strict rules:
-- Keep brand & industry terms untranslated where natural: "PT. Texora Visi Prima", "Texora", product names like "Dryfit Milano", "Voal Ultrafine", "OEKO-TEX", "GSM", "QRIS", "SPK".
+- Keep brand & industry terms untranslated where natural: "XoraMateria", "XoraMateria", product names like "Dryfit Milano", "Voal Ultrafine", "OEKO-TEX", "GSM", "QRIS", "SPK".
 - Preserve HTML tags, placeholders, numbers, prices and line structure EXACTLY as in the source. Do not add or remove tags.
 - Do not transliterate if unsure — mixing Latin brand terms is normal.
 - Output ONLY a JSON array (no markdown, no prose): [{"i": <index>, "t": "<translation>"}], same order and count as input.
@@ -633,14 +647,14 @@ export async function translateSingleText(
 ): Promise<string> {
   if (!text || !text.trim()) return text;
   if (!isAiTranslationEnabled()) {
-    throw new Error("Kunci API AI belum diatur (isi NINEROUTER_API_KEY atau GEMINI_API_KEY).");
+    throw new Error("Kunci API AI belum diatur (isi OPENCODE_API_KEY, GEMINI_API_KEY, atau NINEROUTER_API_KEY).");
   }
 
-  const prompt = `You are a professional translator for "PT. Texora Visi Prima", an Indonesian industrial textile sublimation-printing manufacturer (B2B).
+  const prompt = `You are a professional translator for "XoraMateria", an Indonesian industrial textile sublimation-printing manufacturer (B2B).
 
 Translate this Indonesian text into ${LOCALE_INSTRUCTION[locale]}.
 Strict rules:
-- Keep brand & industry terms untranslated where natural: "PT. Texora Visi Prima", "Texora", product names like "Dryfit Milano", "Voal Ultrafine", "OEKO-TEX", "GSM", "QRIS", "SPK".
+- Keep brand & industry terms untranslated where natural: "XoraMateria", "XoraMateria", product names like "Dryfit Milano", "Voal Ultrafine", "OEKO-TEX", "GSM", "QRIS", "SPK".
 - Preserve HTML tags, placeholders, numbers, prices and line structure EXACTLY as in the source. Do not add or remove tags.
 - Output ONLY the translated text, nothing else.
 
@@ -1252,7 +1266,7 @@ export async function translateAllContent(
   }
   metaEntries.push({
     path: "/kategori",
-    title: "Kategori Kain Sublimasi — Panduan & Katalog | Texora",
+    title: "Kategori Kain Sublimasi — Panduan & Katalog | XoraMateria",
     description:
       "Panduan lengkap memilih kain sublimasi sesuai kebutuhan industri dan fashion: sportswear & jersey, voal & satin hijab, home living & dekorasi, hingga merchandise, banner, dan flag event.",
   });

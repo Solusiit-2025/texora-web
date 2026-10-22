@@ -64,7 +64,7 @@ export const DEFAULT_HERO_TEXT: HeroText = {
   title1: "Warna yang menyatu",
   title2: "dengan serat,",
   title3: "bukan sekadar menempel.",
-  lead: "PT. Texora Visi Prima memproduksi kain poliester siap sublimasi dan jasa cetak skala roll untuk brand sportswear, busana muslim, dan merchandise — dengan harga bertingkat dan proofing sebelum mesin berjalan.",
+  lead: "XoraMateria memproduksi kain poliester siap sublimasi dan jasa cetak skala roll untuk brand sportswear, busana muslim, dan merchandise — dengan harga bertingkat dan proofing sebelum mesin berjalan.",
   badge1: "Proofing digital gratis",
   badge2: "Min. order fleksibel",
   badge3: "Termin 30/60 hari",

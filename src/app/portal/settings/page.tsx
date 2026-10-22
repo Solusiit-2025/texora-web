@@ -47,7 +47,7 @@ export default function PortalSettingsPage() {
   const [waTesting, setWaTesting] = useState(false);
   const [waTestResult, setWaTestResult] = useState<{ ok: boolean; msg: string } | null>(null);
   const [waTestTo, setWaTestTo] = useState("6287889856066");
-  const [waTestMessage, setWaTestMessage] = useState("Halo dari Texora — ini pesan uji coba WhatsApp gateway.");
+  const [waTestMessage, setWaTestMessage] = useState("Halo dari XoraMateria — ini pesan uji coba WhatsApp gateway.");
   const [copiedWebhook, setCopiedWebhook] = useState(false);
   const [waDeviceStatus, setWaDeviceStatus] = useState<{
     checking: boolean;
@@ -790,7 +790,7 @@ export default function PortalSettingsPage() {
               <span>Backup &amp; Pemulihan Database</span>
             </h3>
             <p className="text-xs text-slate-400 mt-1">
-              Ekspor seluruh data Texora (katalog, pesanan, CRM, konten CMS, audit log) ke file
+              Ekspor seluruh data XoraMateria (katalog, pesanan, CRM, konten CMS, audit log) ke file
               JSON yang aman di server. Dijalankan otomatis setiap 24 jam dan dapat dipicu
               manual kapan saja.
             </p>

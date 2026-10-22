@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth/session";
 import { getSeoSettings } from "@/lib/seo";
 import { prisma } from "@/lib/prisma";
+import { canManageContent } from "@/lib/rbac/authorize";
 
 export const dynamic = "force-dynamic";
 
@@ -24,9 +25,9 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    if (user.role !== "ADMINISTRATOR") {
+    if (!(await canManageContent(user.role))) {
       return NextResponse.json(
-        { success: false, error: "Hanya Administrator yang dapat melihat audit SEO." },
+        { success: false, error: "Hanya Administrator atau Admin Konten yang dapat melihat audit SEO." },
         { status: 403 }
       );
     }

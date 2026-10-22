@@ -56,7 +56,7 @@ const SOCIAL_META: Record<string, SocialChannelMeta> = {
   youtube: {
     id: "youtube",
     title: "YouTube",
-    handle: "Texora Official",
+    handle: "XoraMateria Official",
     description: "Tur Mesin Industri & Edukasi Tekstil",
     actionText: "Subscribe",
     gradientBg: "from-red-600 to-rose-700",
@@ -149,7 +149,7 @@ export function FloatingSocial() {
         animate={{ x: 0, opacity: 1 }}
         transition={{ delay: 0.5, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         className="hidden md:flex fixed right-3 lg:right-4 top-1/2 -translate-y-1/2 z-40 flex-col items-end pointer-events-auto select-none"
-        aria-label="Media Sosial dan Kontak Cepat PT Texora"
+        aria-label="Media Sosial dan Kontak Cepat PT XoraMateria"
       >
         <AnimatePresence mode="wait">
           {!isCollapsed ? (
@@ -197,7 +197,7 @@ export function FloatingSocial() {
                   const meta = SOCIAL_META[s.id] || {
                     id: s.id,
                     title: s.label,
-                    handle: "PT Texora",
+                    handle: "PT XoraMateria",
                     description: "Terhubung dengan kami",
                     actionText: "Buka",
                     gradientBg: "from-slate-700 to-slate-900",
@@ -402,7 +402,7 @@ export function FloatingSocial() {
               <div className="flex items-center justify-between px-2 pb-1.5 border-b border-white/10">
                 <span className="text-xs font-bold text-white flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-brand-400" />
-                  Media Sosial Texora
+                  Media Sosial XoraMateria
                 </span>
                 <button
                   onClick={() => setMobileMenuOpen(false)}

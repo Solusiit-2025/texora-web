@@ -54,7 +54,7 @@ export default function ErrorBoundary({
         </div>
 
         <div className="pt-4 border-t border-slate-800/80 text-[10px] text-slate-500 font-mono">
-          PT. Texora Visi Prima • Next.js Enterprise Error Boundary
+          XoraMateria • Next.js Enterprise Error Boundary
         </div>
 
       </div>

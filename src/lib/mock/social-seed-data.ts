@@ -31,14 +31,14 @@ const PLATFORM_WEIGHTS = [0.4, 0.35, 0.25];
 const SENTIMENT_WEIGHTS = [0.55, 0.1, 0.35];
 
 const USERNAMES = [
-  'fashionlover_bali', 'supir_trucking', 'texoraofficial', 'suka_print_warna',
+  'fashionlover_bali', 'supir_trucking', 'xoramateriaofficial', 'suka_print_warna',
   'Budi Santoso', 'Rina Wijaya', 'kreator_kain', 'dropship_murah',
   'reseller_lokal', 'mitra_textil', 'supplier_nusantara', 'grosir_cepat',
   'print_online', 'kain_premium', 'toko_kaos', 'baju_gym',
   'fashion_jakarta', 'kreatif_23', 'supplier_kain', 'reseller_bandung',
   'dropship_jakarta', 'wholesale_tex', 'kain_sublim', 'kaos_cool',
   'brand_owner', 'designer_muda', 'print_hub', 'kain_murah',
-  'grosir_kain', 'supplier_jaya', 'texora_reseller', 'fashionista89',
+  'grosir_kain', 'supplier_jaya', 'xoramateria_reseller', 'fashionista89',
   'kain_cantik', 'print_cepat', 'supplier_tetap', 'dropship_sukses',
   'reseller_top', 'mitra_baik', 'klien_loyal', 'pelanggan_setia',
   'toko_baru', 'brand_baru', 'startup_mode', 'UMKM_kita',

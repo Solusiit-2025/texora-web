@@ -7,6 +7,7 @@ import {
   normalizeSocialLinks,
 } from "@/config/social";
 import { HERO_TEXT_KEY, HERO_TEXT_FIELDS } from "@/config/hero-text";
+import { canManageContent } from "@/lib/rbac/authorize";
 import {
   normalizeLocale,
   localizeRows,
@@ -261,8 +262,8 @@ function invalidateContentCaches() {
 export async function POST(request: NextRequest) {
   try {
     const user = await getAuthenticatedUser(request);
-    if (!user || user.role !== "ADMINISTRATOR") {
-      return NextResponse.json({ success: false, error: "Hanya Administrator yang dapat mengubah konten." }, { status: 403 });
+    if (!user || !(await canManageContent(user.role))) {
+      return NextResponse.json({ success: false, error: "Hanya Administrator atau Admin Konten yang dapat mengubah konten." }, { status: 403 });
     }
     const { type, data } = await request.json();
 
@@ -353,8 +354,8 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const user = await getAuthenticatedUser(request);
-    if (!user || user.role !== "ADMINISTRATOR") {
-      return NextResponse.json({ success: false, error: "Hanya Administrator yang dapat mengubah konten." }, { status: 403 });
+    if (!user || !(await canManageContent(user.role))) {
+      return NextResponse.json({ success: false, error: "Hanya Administrator atau Admin Konten yang dapat mengubah konten." }, { status: 403 });
     }
     const { type, id, data } = await request.json();
 
@@ -486,8 +487,8 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const user = await getAuthenticatedUser(request);
-    if (!user || user.role !== "ADMINISTRATOR") {
-      return NextResponse.json({ success: false, error: "Hanya Administrator yang dapat mengubah konten." }, { status: 403 });
+    if (!user || !(await canManageContent(user.role))) {
+      return NextResponse.json({ success: false, error: "Hanya Administrator atau Admin Konten yang dapat mengubah konten." }, { status: 403 });
     }
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type");

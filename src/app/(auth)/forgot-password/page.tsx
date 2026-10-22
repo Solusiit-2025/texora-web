@@ -33,13 +33,13 @@ export default function ForgotPasswordPage() {
         <Link href="/" className="flex items-center gap-3.5 group">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-b from-slate-50 via-slate-100 to-slate-200 p-1.5 border border-brand-400/60 flex items-center justify-center shadow-lg shadow-black/40 group-hover:border-brand-400 transition-all">
             <img
-              src="/icons/texora-logo.png"
-              alt="PT. Texora Visi Prima"
+              src="/icons/xoramateria-mark.png"
+              alt="XoraMateria"
               className="w-full h-full object-contain filter drop-shadow-[0_1.5px_2px_rgba(15,23,42,0.45)]"
             />
           </div>
           <div>
-            <span className="font-display font-bold text-xl text-white tracking-wider block">TEXORA</span>
+            <span className="font-display font-bold text-xl text-white tracking-wider block">XORAMATERIA</span>
             <span className="text-[10px] text-brand-400 uppercase tracking-widest block font-medium">Pemulihan Akun</span>
           </div>
         </Link>
@@ -74,7 +74,7 @@ export default function ForgotPasswordPage() {
               </div>
               <h1 className="text-2xl font-display font-bold text-white mb-2">Lupa Kata Sandi?</h1>
               <p className="text-xs text-slate-400 mb-6 leading-relaxed">
-                Masukkan email bisnis yang terdaftar untuk menerima tautan pemulihan kata sandi akun Texora Anda.
+                Masukkan email bisnis yang terdaftar untuk menerima tautan pemulihan kata sandi akun XoraMateria Anda.
               </p>
 
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -127,7 +127,7 @@ export default function ForgotPasswordPage() {
 
       {/* Footer */}
       <div className="max-w-7xl mx-auto w-full text-center text-[11px] text-slate-500">
-        © {new Date().getFullYear()} PT. Texora Visi Prima.
+        © {new Date().getFullYear()} XoraMateria.
       </div>
     </div>
   );

@@ -14,16 +14,16 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://texora.co.id";
 export async function GET() {
   const yaml = `openapi: 3.0.3
 info:
-  title: PT. Texora Visi Prima — Katalog Kain Sublimasi API
+  title: XoraMateria — Katalog Kain Sublimasi API
   description: |
     API katalog kain poliester siap sublimasi dan informasi jasa cetak
-    sublimasi skala industri dari PT. Texora Visi Prima (Jakarta Utara).
+    sublimasi skala industri dari XoraMateria (Jakarta Utara).
 
     Semua harga dalam Rupiah (IDR) per meter lari dan sudah memperhitungkan
     harga bertingkat berdasarkan total panjang pesanan.
   version: "1.0.0"
   contact:
-    name: Tim Sales PT. Texora Visi Prima
+    name: Tim Sales XoraMateria
     email: admin@texoraprima.com
     url: ${SITE_URL}/contact
 

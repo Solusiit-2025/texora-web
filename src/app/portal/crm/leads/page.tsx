@@ -72,7 +72,7 @@ export default function CrmLeadsPage() {
     includeTax: true,
     paymentTerm: "Tempo 30 Hari (TOP 30)",
     productionLeadTime: "3 - 5 Hari Kerja setelah PO & ACC Lab Dip",
-    deliveryPoint: "FOB Gudang Texora Cikarang / Dikirim ke Lokasi Buyer",
+    deliveryPoint: "FOB Gudang XoraMateria Cikarang / Dikirim ke Lokasi Buyer",
     notes: "Harga sudah termasuk packing double plastic polybag per roll (50-60m). Bebas cacat weaving & dyeing standar ISO 105.",
   });
 
@@ -94,7 +94,7 @@ export default function CrmLeadsPage() {
     totalMeters: 1500,
     pricePerMeter: 32000,
     totalValue: 48000000,
-    deliverySchedule: "Bertahap 3x Pengiriman (500 meter per tahap) dari Pabrik Texora",
+    deliverySchedule: "Bertahap 3x Pengiriman (500 meter per tahap) dari Pabrik XoraMateria",
     paymentTerms: "DP 30% saat kontrak ditandatangani, Pelunasan termin TOP 30 hari via Transfer BCA",
     bankAccount: "BCA No. Rek. 128-300-8899 a.n PT TEXORA VISI PRIMA (KCP Cikarang)",
     penaltyClause: "0.1% per hari keterlambatan pengiriman / pembayaran maksimal 5%",
@@ -284,7 +284,7 @@ export default function CrmLeadsPage() {
       includeTax: true,
       paymentTerm: "Tempo 30 Hari (TOP 30)",
       productionLeadTime: "3 - 5 Hari Kerja setelah PO & ACC Lab Dip",
-      deliveryPoint: "FOB Gudang Texora Cikarang / Dikirim ke Buyer",
+      deliveryPoint: "FOB Gudang XoraMateria Cikarang / Dikirim ke Buyer",
       notes: "Harga sudah termasuk packing double wrap polybag. Bebas cacat weaving & dyeing standar ISO 105.",
     });
     setQuotationTab("form");
@@ -314,7 +314,7 @@ export default function CrmLeadsPage() {
       totalMeters: lead.estimatedMeters || 1000,
       pricePerMeter: unitPrice,
       totalValue: totalVal,
-      deliverySchedule: "Bertahap sesuai jadwal produksi buyer dari Gudang Texora Cikarang",
+      deliverySchedule: "Bertahap sesuai jadwal produksi buyer dari Gudang XoraMateria Cikarang",
       paymentTerms: "DP 30% saat kontrak ditandatangani, Pelunasan termin TOP 30 hari via Transfer BCA",
       bankAccount: "BCA No. Rek. 128-300-8899 a.n PT TEXORA VISI PRIMA (KCP Cikarang)",
       penaltyClause: "0.1% per hari keterlambatan pengiriman / pembayaran maksimal 5%",
@@ -914,23 +914,23 @@ export default function CrmLeadsPage() {
               ) : (
                 /* PREVIEW DOKUMEN RESMI A4 SIAP CETAK */
                 <div id="quotation-print-area" className="p-8 bg-white text-slate-900 rounded-xl shadow-lg font-sans text-xs space-y-6">
-                  {/* Kop Surat Texora */}
+                  {/* Kop Surat XoraMateria */}
                   <div className="flex items-start justify-between border-b-2 border-slate-900 pb-4">
                     <div>
                       <div className="flex items-center gap-3">
                         <img 
-                          src="/icons/texora-logo.png" 
-                          alt="PT. Texora Visi Prima" 
+                          src="/icons/xoramateria-mark.png" 
+                          alt="XoraMateria" 
                           className="h-11 w-auto object-contain" 
                         />
                         <div>
-                          <h2 className="text-lg font-black tracking-tight text-slate-900 uppercase">PT. TEXORA VISI PRIMA</h2>
+                          <h2 className="text-lg font-black tracking-tight text-slate-900 uppercase">XORAMATERIA</h2>
                           <p className="text-[10px] text-slate-600 font-medium">Textile Manufacturer, Dyeing, Finishing & Sublimation Specialist</p>
                         </div>
                       </div>
                       <p className="text-[9px] text-slate-500 mt-1">
                         Jl. Walang Baru VI Blok B1/2, RT 04 / RW 07, Tugu Utara, Tanjung Priok, Jakarta Utara<br/>
-                        Telp: +62 21-8983-TEXORA | Email: sales@texora.co.id | Website: www.texora.co.id
+                        Telp: +62 21-8983-XORAMATERIA | Email: sales@texora.co.id | Website: www.texora.co.id
                       </p>
                     </div>
                     <div className="text-right">
@@ -967,7 +967,7 @@ export default function CrmLeadsPage() {
                   {/* Kata Pengantar */}
                   <p className="text-[11px] text-slate-700 leading-relaxed">
                     Dengan hormat,<br/>
-                    Menindaklanjuti permintaan kebutuhan kain sublimasi dan garmen, perkenankan kami dari <strong>PT. Texora Visi Prima</strong> mengajukan surat penawaran harga terbaik dengan rincian spesifikasi sebagai berikut:
+                    Menindaklanjuti permintaan kebutuhan kain sublimasi dan garmen, perkenankan kami dari <strong>XoraMateria</strong> mengajukan surat penawaran harga terbaik dengan rincian spesifikasi sebagai berikut:
                   </p>
 
                   {/* Tabel Barang */}
@@ -1039,10 +1039,10 @@ export default function CrmLeadsPage() {
 
                     <div className="text-right flex flex-col items-end">
                       <p className="text-slate-600">Hormat Kami,</p>
-                      <strong className="block text-slate-900 mt-0.5">PT. TEXORA VISI PRIMA</strong>
+                      <strong className="block text-slate-900 mt-0.5">XORAMATERIA</strong>
                       <div className="h-16 flex items-center justify-end pr-8">
                         <div className="px-3 py-1 rounded border-2 border-emerald-600 text-emerald-700 font-black text-[10px] uppercase tracking-wider transform -rotate-6">
-                          TEXORA COMMERCIAL
+                          XORAMATERIA COMMERCIAL
                         </div>
                       </div>
                       <p className="mt-1 text-slate-800 font-bold">Hendra Wijaya, S.T.</p>
@@ -1323,13 +1323,13 @@ export default function CrmLeadsPage() {
                   <div className="flex items-center justify-between border-b-2 border-slate-900 pb-4">
                     <div className="flex items-center gap-3">
                       <img 
-                        src="/icons/texora-logo.png" 
-                        alt="PT. Texora Visi Prima" 
+                        src="/icons/xoramateria-mark.png" 
+                        alt="XoraMateria" 
                         className="h-10 w-auto object-contain" 
                       />
                       <div>
                         <span className="text-[10px] font-black uppercase tracking-wider text-slate-700 block font-sans">
-                          PT. TEXORA VISI PRIMA
+                          XORAMATERIA
                         </span>
                         <span className="text-[9px] text-slate-500 font-sans block">
                           Departemen Komersial & Legal Industri B2B
@@ -1436,7 +1436,7 @@ export default function CrmLeadsPage() {
                       
                       <div className="h-20 flex items-center justify-end pr-6">
                         <div className="px-3 py-1 rounded border-2 border-emerald-700 text-emerald-800 font-black text-[10px] uppercase tracking-wider transform -rotate-3">
-                          TEXORA LEGAL SEAL
+                          XORAMATERIA LEGAL SEAL
                         </div>
                       </div>
 

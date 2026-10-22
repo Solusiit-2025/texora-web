@@ -1,5 +1,5 @@
 /**
- * Scheduler backup database untuk PT. Texora Visi Prima.
+ * Scheduler backup database untuk XoraMateria.
  *
  * PENTING: modul ini HANYA boleh di-import dari kode yang berjalan di
  * Node.js runtime (route handler / server action), BUKAN dari middleware
@@ -24,7 +24,7 @@ const FIRST_RUN_DELAY_MS = 60 * 1000; // jeda 60 detik setelah server start
 
 declare global {
   // eslint-disable-next-line no-var
-  var __texoraBackupTimer: NodeJS.Timeout | undefined;
+  var __xoramateriaBackupTimer: NodeJS.Timeout | undefined;
 }
 
 /**
@@ -32,7 +32,7 @@ declare global {
  * Aman dipanggil berulang kali dari route handler mana pun.
  */
 export function ensureSchedulerStarted(): void {
-  if (globalThis.__texoraBackupTimer) return;
+  if (globalThis.__xoramateriaBackupTimer) return;
 
   const enabled = process.env.BACKUP_AUTO_ENABLED !== "false";
   if (!enabled) {
@@ -58,7 +58,7 @@ export function ensureSchedulerStarted(): void {
   if (typeof firstRun.unref === "function") firstRun.unref();
   if (typeof interval.unref === "function") interval.unref();
 
-  globalThis.__texoraBackupTimer = interval;
+  globalThis.__xoramateriaBackupTimer = interval;
 
   console.log(
     "[backup] Scheduler backup otomatis aktif (interval 24 jam, retensi 14 file terbaru)."

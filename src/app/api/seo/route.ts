@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth/session";
 import { getSeoSettings, saveSeoSettings, DEFAULT_SEO } from "@/lib/seo";
+import { canManageContent } from "@/lib/rbac/authorize";
 
 export const dynamic = "force-dynamic";
 
@@ -17,8 +18,8 @@ export async function GET() {
 export async function PUT(req: NextRequest) {
   try {
     const user = await getAuthenticatedUser(req);
-    if (!user || user.role !== "ADMINISTRATOR") {
-      return NextResponse.json({ success: false, error: "Hanya Administrator yang dapat mengubah SEO." }, { status: 403 });
+    if (!user || !(await canManageContent(user.role))) {
+      return NextResponse.json({ success: false, error: "Hanya Administrator atau Admin Konten yang dapat mengubah SEO." }, { status: 403 });
     }
 
     const body = await req.json().catch(() => null);

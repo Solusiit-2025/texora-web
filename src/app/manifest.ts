@@ -5,12 +5,12 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://texora.co.id";
 /**
  * Web App Manifest.
  * Membantu Google memahami situs sebagai aplikasi web (PWA installable) dan
- * menampilkan logo sebagai Search Result untuk brand "Texora".
+ * menampilkan logo sebagai Search Result untuk brand "XoraMateria".
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "PT. Texora Visi Prima — Katalog Kain Sublimasi",
-    short_name: "Texora",
+    name: "XoraMateria — Katalog Kain Sublimasi",
+    short_name: "XoraMateria",
     description:
       "Manufaktur kain poliester dan cetak sublimasi skala industri di Jakarta Utara. Katalog kain siap sublimasi dengan harga grosir bertingkat.",
     start_url: "/",
@@ -24,15 +24,16 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ["business", "shopping", "productivity"],
     icons: [
       {
-        src: "/icons/texora-logo.png",
+        src: "/icons/xoramateria-mark.png",
         sizes: "512x512",
         type: "image/png",
         purpose: "any",
       },
       {
-        src: "/icons/logo-texora.ico",
-        sizes: "48x48",
-        type: "image/x-icon",
+        src: "/icons/xoramateria-mark.png",
+        sizes: "192x192",
+        type: "image/png",
+        purpose: "any",
       },
     ],
     shortcuts: [

@@ -29,7 +29,7 @@ export async function generateMetadata(): Promise<Metadata> {
       "minta penawaran kain sublimasi",
       "sample kain gratis jakarta",
       "supplier kain grosir jakarta",
-      "hubungi texora visi prima",
+      "hubungi xoramateria",
     ],
     schemaType: "organization",
   });
@@ -42,7 +42,7 @@ export default async function ContactPage() {
 
   const webPageSchema = buildWebPageSchema({
     path: "/contact",
-    name: "Hubungi Kami — PT. Texora Visi Prima",
+    name: "Hubungi Kami — XoraMateria",
     description:
       "Konsultasi pengadaan kain sublimasi B2B dan permintaan sampel swatch gratis.",
     breadcrumb: [{ name: "Hubungi Kami", path: "/contact" }],
@@ -56,7 +56,7 @@ export default async function ContactPage() {
     "@type": "ContactPage",
     "@id": "https://texora.co.id/contact#contactpage",
     url: "https://texora.co.id/contact",
-    name: "Hubungi Kami — PT. Texora Visi Prima",
+    name: "Hubungi Kami — XoraMateria",
     description:
       "Formulir konsultasi procurement kain sublimasi dan permintaan sampel swatch.",
     inLanguage: "id-ID",

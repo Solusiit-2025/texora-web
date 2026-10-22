@@ -20,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return buildPageMetadata({
     locale,
     path: "/kategori",
-    title: "Kategori Kain Sublimasi — Panduan & Katalog | Texora",
+    title: "Kategori Kain Sublimasi — Panduan & Katalog | XoraMateria",
     description:
       "Panduan lengkap memilih kain sublimasi sesuai kebutuhan: sportswear & jersey, voal & satin hijab, home living & dekorasi, hingga merchandise, banner, dan flag event.",
     keywords: [
@@ -56,7 +56,7 @@ export default async function CategoryIndexPage() {
     "@context": "https://schema.org",
     "@type": "ItemList",
     "@id": `${SITE_URL}/kategori#itemlist`,
-    name: "Kategori Kain Sublimasi Texora",
+    name: "Kategori Kain Sublimasi XoraMateria",
     itemListElement: CATEGORY_SEO.map((c, i) => ({
       "@type": "ListItem",
       position: i + 1,
@@ -84,7 +84,7 @@ export default async function CategoryIndexPage() {
           </h1>
           <p className="text-sm text-slate-400 mt-3 max-w-3xl leading-relaxed">
             Pilih kategori sesuai kebutuhan produk Anda. Setiap kategori dilengkapi panduan
-            teknis, spesifikasi GSM, dan tips produksi dari tim engineering Texora.
+            teknis, spesifikasi GSM, dan tips produksi dari tim engineering XoraMateria.
           </p>
         </header>
 

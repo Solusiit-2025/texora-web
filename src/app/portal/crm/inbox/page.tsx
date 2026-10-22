@@ -77,7 +77,7 @@ const AI_REPLY_SNIPPETS = [
   "Siap Pak Bambang, Surat Penawaran Resmi (SPH) dengan opsi pengiriman bertahap per 500 meter ke Cikarang sedang kami siapkan.",
   "Untuk repeat order 1.500m Dryfit Milano, harga tier B2B adalah Rp 32.000/m dengan term pembayaran TOP 30 hari disetujui.",
   "Baik, kami akan siapkan batch produksi heatpress minggu ini dan kirimkan sampel proofing warna hari ini.",
-  "Terima kasih atas konfirmasinya. PO resmi akan kami sinkronisasikan langsung ke modul ERP Produksi Texora.",
+  "Terima kasih atas konfirmasinya. PO resmi akan kami sinkronisasikan langsung ke modul ERP Produksi XoraMateria.",
 ];
 
 export default function InboxPage() {
@@ -99,7 +99,7 @@ export default function InboxPage() {
     contactName: "PT. Intech Mitra Abadi",
     companyName: "PT. Intech Mitra Abadi",
     contactNumber: "081280212068",
-    initialMessage: "Halo PT. Intech Mitra Abadi, ini tim Sales Texora.",
+    initialMessage: "Halo PT. Intech Mitra Abadi, ini tim Sales XoraMateria.",
   });
   const [startingChat, setStartingChat] = useState(false);
   const [customerPresets, setCustomerPresets] = useState<any[]>(MOCK_CUSTOMERS);
@@ -340,7 +340,7 @@ export default function InboxPage() {
       contactName: cust.name,
       companyName: cust.company,
       contactNumber: cust.phone,
-      initialMessage: `Halo ${cust.name} (${cust.company}), ini tim sales PT. Texora Visi Prima.`,
+      initialMessage: `Halo ${cust.name} (${cust.company}), ini tim sales XoraMateria.`,
     });
   };
 

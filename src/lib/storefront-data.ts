@@ -312,7 +312,7 @@ function mapArticle(a: any): StorefrontArticle {
     articleType: a.articleType || "panduan",
     tags: safeJsonArray(a.tags),
     relatedProducts: safeJsonArray(a.relatedProducts),
-    author: a.author || "Tim Tekstil Texora",
+    author: a.author || "Tim Tekstil XoraMateria",
     authorRole: a.authorRole || null,
     readMinutes: Number(a.readMinutes || 4),
     seoTitle: a.seoTitle || null,

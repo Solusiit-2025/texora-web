@@ -27,7 +27,7 @@ import { SEO_PAGES } from "@/lib/seo-pages";
 export const dynamic = "force-dynamic";
 
 /**
- * Homepage PT. Texora Visi Prima.
+ * Homepage XoraMateria.
  *
  * Server component agar:
  *  - metadata (title/description/canonical/OG) terbaca Googlebot & AI crawler,
@@ -46,7 +46,7 @@ export async function generateMetadata(): Promise<Metadata> {
       "supplier kain sublimasi",
       "cetak sublimasi grosir",
       "kain polyester industri",
-      "texora visi prima",
+      "xoramateria",
       "jasa cetak sublimasi jakarta utara",
     ],
     schemaType: "organization",
@@ -112,7 +112,7 @@ export default async function HomePage() {
   );
   const webPageSchema = buildWebPageSchema({
     path: "/",
-    name: "PT. Texora Visi Prima — Pabrik Kain Sublimasi & Tekstil Industri",
+    name: "XoraMateria — Pabrik Kain Sublimasi & Tekstil Industri",
     description:
       "Manufaktur kain poliester dan cetak sublimasi skala industri di Jakarta Utara.",
   });

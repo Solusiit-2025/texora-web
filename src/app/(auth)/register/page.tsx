@@ -9,8 +9,8 @@ import { buildNoIndexMetadata } from "@/lib/seo-metadata";
  * nilai bisnis hanya lewat konversi, bukan lewat mesin pencari.
  */
 export const metadata: Metadata = buildNoIndexMetadata(
-  "Daftar Kemitraan B2B | Texora",
-  "Daftar akun mitra B2B PT. Texora Visi Prima untuk memesan roll kain sublimasi, mengunggah desain, dan memantau SPK."
+  "Daftar Kemitraan B2B | XoraMateria",
+  "Daftar akun mitra B2B XoraMateria untuk memesan roll kain sublimasi, mengunggah desain, dan memantau SPK."
 );
 
 export default function RegisterPage() {

@@ -26,7 +26,7 @@ export const MOCK_COMMENTS: MockCommentInput[] = [
   {
     platform: SocialPlatform.INSTAGRAM,
     commentId: 'cmt_ig_001',
-    username: 'texoraofficial',
+    username: 'xoramateriaofficial',
     message: 'Barang sampai sudah lama tidak bisa kami tracking ya?',
     timestamp: new Date(Date.now() - 1000 * 60 * 45),
   },

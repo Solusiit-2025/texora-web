@@ -18,10 +18,10 @@ export async function GET() {
   return NextResponse.json(
     {
       schema_version: "v1",
-      name_for_human: "PT. Texora Visi Prima — Katalog Kain Sublimasi",
+      name_for_human: "XoraMateria — Katalog Kain Sublimasi",
       name_for_model: "texora_sublimasi_katalog",
       description:
-        "Katalog resmi kain poliester siap sublimasi dan jasa cetak sublimasi skala industri dari PT. Texora Visi Prima, Jakarta Utara. Mencakup spesifikasi kain (GSM, lebar, anyaman), harga grosir bertingkat per meter, FAQ teknis, dan layanan custom sublimasi.",
+        "Katalog resmi kain poliester siap sublimasi dan jasa cetak sublimasi skala industri dari XoraMateria, Jakarta Utara. Mencakup spesifikasi kain (GSM, lebar, anyaman), harga grosir bertingkat per meter, FAQ teknis, dan layanan custom sublimasi.",
       auth: {
         type: "none",
       },
@@ -30,7 +30,7 @@ export async function GET() {
         url: `${SITE_URL}/.well-known/ai-plugin-openapi.yaml`,
         is_user_authenticated: false,
       },
-      logo_url: `${SITE_URL}/icons/texora-logo.png`,
+      logo_url: `${SITE_URL}/icons/xoramateria-mark.png`,
       contact_email: "admin@texoraprima.com",
       legal_info_url: `${SITE_URL}/about`,
     },

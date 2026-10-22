@@ -73,8 +73,8 @@ const INITIAL_EMAILS: EmailMessage[] = [
     cc: ["finance@intechmitra.co.id"],
     subject: "Permohonan Surat Penawaran Resmi (SPH) — Kain Dryfit Milano 135 GSM 1.500m",
     snippet:
-      "Yth. Tim Sales PT. Texora Visi Prima, Melalui email ini kami dari tim pengadaan PT. Intech Mitra Abadi mengajukan permintaan penawaran resmi...",
-    body: `Yth. Tim Sales & Komersial PT. Texora Visi Prima,
+      "Yth. Tim Sales XoraMateria, Melalui email ini kami dari tim pengadaan PT. Intech Mitra Abadi mengajukan permintaan penawaran resmi...",
+    body: `Yth. Tim Sales & Komersial XoraMateria,
 
 Dengan hormat,
 
@@ -92,7 +92,7 @@ Mohon informasi rincian:
 - Term pembayaran TOP 30 hari via bank transfer
 - Lampiran sertifikasi Oeko-Tex / Lab Dip jika tersedia
 
-Terima kasih atas kerja samanya. Kami menantikan penawaran resmi dari pihak Texora.
+Terima kasih atas kerja samanya. Kami menantikan penawaran resmi dari pihak XoraMateria.
 
 Salam hormat,
 Bambang Sudiro
@@ -112,7 +112,7 @@ Telp: (021) 8984-2068 | WhatsApp: +62 812-8021-2068`,
     replies: [
       {
         id: "rep-1",
-        senderName: "Dian Permata (Sales Rep Texora)",
+        senderName: "Dian Permata (Sales Rep XoraMateria)",
         senderEmail: "sales@texora.co.id",
         time: "8 Okt 2026, 21:30",
         body: `Yth. Bapak Bambang Sudiro,
@@ -122,7 +122,7 @@ Kami konfirmasikan bahwa stok kain Dryfit Milano 135 GSM siap produksi pada batc
 Surat Penawaran Resmi (SPH) dengan harga tier B2B Rp 32.000/meter dan opsi pengiriman bertahap 3x 500m ke Plant Cikarang sedang kami siapkan dan kami lampirkan pada balasan ini.
 
 Salam hangat,
-Dian Permata — Account Executive PT. Texora Visi Prima`,
+Dian Permata — Account Executive XoraMateria`,
       },
     ],
   },
@@ -135,8 +135,8 @@ Dian Permata — Account Executive PT. Texora Visi Prima`,
     to: ["sales@texora.co.id"],
     subject: "Konfirmasi Approval Digital Proofing — Batch Jersey Trail 400 Pcs",
     snippet:
-      "Halo Mbak Dian & Tim Texora, Mockup digital proofing warna neon cyan dan magenta sudah kami setujui bersama tim desainer...",
-    body: `Halo Mbak Dian & Tim Texora,
+      "Halo Mbak Dian & Tim XoraMateria, Mockup digital proofing warna neon cyan dan magenta sudah kami setujui bersama tim desainer...",
+    body: `Halo Mbak Dian & Tim XoraMateria,
 
 Hasil digital proofing sublimasi untuk 400 pcs jersey trail (kain Serena Dryfit) sudah kami review bersama desainer kami.
 Warna Neon Cyan dan Vivid Magenta di preview 3D WebGL sangat sesuai dengan ekspektasi client kami.
@@ -166,8 +166,8 @@ Hendra Wijaya — Production Manager CV. Sablon Juara`,
     to: ["sales@texora.co.id", "accounting@texora.co.id"],
     subject: "Konfirmasi Faktur Pajak CoreTax PPN 11% — Invoice #INV-2026-089",
     snippet:
-      "Yth. Bagian Keuangan PT. Texora Visi Prima, Kami telah menerima dokumen e-Faktur dan bukti potong CoreTax PPN untuk transaksi pembelian kain...",
-    body: `Yth. Bagian Keuangan & Pajak PT. Texora Visi Prima,
+      "Yth. Bagian Keuangan XoraMateria, Kami telah menerima dokumen e-Faktur dan bukti potong CoreTax PPN untuk transaksi pembelian kain...",
+    body: `Yth. Bagian Keuangan & Pajak XoraMateria,
 
 Dengan ini kami konfirmasikan bahwa Faktur Pajak CoreTax PPN 11% untuk Invoice #INV-2026-089 (Transaksi 2.000 Meter Kain Parasut Taslan) telah berhasil kami validasi di sistem DJP CoreTax.
 
@@ -197,12 +197,12 @@ PT. Sri Rejeki Tekstil`,
     to: ["sales@texora.co.id"],
     subject: "Inquiry Kebutuhan Kain Fleece Cotton 280 GSM untuk Hoodies Ekspor",
     snippet:
-      "Selamat siang tim sales Texora, kami sedang mencari supplier kain fleece cotton 280 GSM tubular untuk kuota ekspor 5.000 pcs...",
-    body: `Selamat siang Tim Sales PT. Texora Visi Prima,
+      "Selamat siang tim sales XoraMateria, kami sedang mencari supplier kain fleece cotton 280 GSM tubular untuk kuota ekspor 5.000 pcs...",
+    body: `Selamat siang Tim Sales XoraMateria,
 
 Kami dari PT. Mega Garment Nusantara sedang membutuhkan supply kain Fleece Cotton 280 GSM dengan spesifikasi anti-pilling untuk project hoodie ekspor ke Korea Selatan sebanyak 5.000 pcs (estimasi 4.500 kg kain).
 
-Apakah Texora menyediakan stok roll ready atau sistem PO celup warna khusus (Navy Blue & Charcoal Grey)?
+Apakah XoraMateria menyediakan stok roll ready atau sistem PO celup warna khusus (Navy Blue & Charcoal Grey)?
 Bisa tolong dikirimkan katalog warna, handfeel sample swatch, dan pricelist tiering-nya?
 
 Salam,
@@ -217,7 +217,7 @@ Senior Merchandiser — PT. Mega Garment Nusantara`,
   },
   {
     id: "mail-5",
-    senderName: "Dian Permata (Sales Texora)",
+    senderName: "Dian Permata (Sales XoraMateria)",
     senderEmail: "sales@texora.co.id",
     to: ["procurement@intechmitra.co.id"],
     subject: "Surat Penawaran Resmi (SPH) #SPH-2026-X102 — PT. Intech Mitra Abadi",
@@ -236,7 +236,7 @@ Silakan ditinjau dan ditandatangani untuk kami proses SPK produksinya.
 
 Salam hormat,
 Dian Permata
-PT. Texora Visi Prima`,
+XoraMateria`,
     date: "8 Okt 2026",
     time: "21:40",
     unread: false,
@@ -338,7 +338,7 @@ export default function WebmailCrmPage() {
     setIsRefreshing(true);
     setTimeout(() => {
       setIsRefreshing(false);
-      showToast("Kotak surat tersinkronisasi dengan server IMAP/SMTP Texora.");
+      showToast("Kotak surat tersinkronisasi dengan server IMAP/SMTP XoraMateria.");
     }, 800);
   };
 
@@ -349,7 +349,7 @@ export default function WebmailCrmPage() {
 
     const newReply = {
       id: `rep-${Date.now()}`,
-      senderName: "Dian Permata (Sales Rep Texora)",
+      senderName: "Dian Permata (Sales Rep XoraMateria)",
       senderEmail: "sales@texora.co.id",
       time: "Baru saja",
       body: replyText.trim(),
@@ -378,13 +378,13 @@ export default function WebmailCrmPage() {
 
 Terima kasih banyak atas email Anda mengenai ${selectedEmail.subject}.
 
-Kami telah meninjau kebutuhan Bapak/Ibu dan mengonfirmasikan bahwa spesifikasi kain serta volume yang diminta siap diproses oleh lini produksi PT. Texora Visi Prima.
+Kami telah meninjau kebutuhan Bapak/Ibu dan mengonfirmasikan bahwa spesifikasi kain serta volume yang diminta siap diproses oleh lini produksi XoraMateria.
 Surat Penawaran Resmi (SPH) dengan harga tiering terbaik serta draft jadwal pengiriman telah kami siapkan.
 
 Apakah ada waktu yang nyaman besok pagi untuk diskusi teknis singkat via telepon atau WhatsApp (+62 852-8170-2489)?
 
 Salam hangat,
-Tim Sales & Komersial PT. Texora Visi Prima`;
+Tim Sales & Komersial XoraMateria`;
 
     setReplyText(aiText);
     setIsReplying(true);
@@ -398,7 +398,7 @@ Tim Sales & Komersial PT. Texora Visi Prima`;
 
     const newMail: EmailMessage = {
       id: `mail-${Date.now()}`,
-      senderName: "Dian Permata (Sales Texora)",
+      senderName: "Dian Permata (Sales XoraMateria)",
       senderEmail: "sales@texora.co.id",
       to: [composeTo.trim()],
       subject: composeSubject.trim(),
@@ -440,7 +440,7 @@ Tim Sales & Komersial PT. Texora Visi Prima`;
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-400 text-xs font-semibold mb-2">
             <Mail className="w-3.5 h-3.5" />
-            <span>Webmail Korporat CRM — Texora B2B Mailbox</span>
+            <span>Webmail Korporat CRM — XoraMateria B2B Mailbox</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-display font-bold text-white">
             Webmail & Komunikasi Email Sales
@@ -1000,18 +1000,18 @@ Tim Sales & Komersial PT. Texora Visi Prima`;
                   {[
                     {
                       label: "SPH Dryfit Milano",
-                      subj: "Surat Penawaran Resmi (SPH) Kain Dryfit Milano — PT. Texora Visi Prima",
-                      body: `Yth. Tim Procurement,\n\nTerlampir kami sampaikan Surat Penawaran Resmi (SPH) untuk kebutuhan kain Dryfit Milano 135 GSM volume 1.500m dengan harga tiering B2B Rp 32.000/meter dan term pembayaran TOP 30 hari.\n\nSalam hormat,\nTim Sales PT. Texora Visi Prima`,
+                      subj: "Surat Penawaran Resmi (SPH) Kain Dryfit Milano — XoraMateria",
+                      body: `Yth. Tim Procurement,\n\nTerlampir kami sampaikan Surat Penawaran Resmi (SPH) untuk kebutuhan kain Dryfit Milano 135 GSM volume 1.500m dengan harga tiering B2B Rp 32.000/meter dan term pembayaran TOP 30 hari.\n\nSalam hormat,\nTim Sales XoraMateria`,
                     },
                     {
                       label: "Konfirmasi Proof Sublim",
                       subj: "Konfirmasi Digital Proofing & Jadwal Cetak Sublimasi",
-                      body: `Yth. Pelanggan Texora,\n\nDigital proofing untuk pesanan custom jersey Anda telah selesai ditinjau. Mohon konfirmasi approval agar proses cetak sublimasi industri dapat segera dinaikkan ke antrean produksi.\n\nTerima kasih.`,
+                      body: `Yth. Pelanggan XoraMateria,\n\nDigital proofing untuk pesanan custom jersey Anda telah selesai ditinjau. Mohon konfirmasi approval agar proses cetak sublimasi industri dapat segera dinaikkan ke antrean produksi.\n\nTerima kasih.`,
                     },
                     {
                       label: "Faktur Pajak CoreTax",
                       subj: "Faktur Penjualan & Bukti Potong CoreTax PPN 11%",
-                      body: `Yth. Bagian Keuangan,\n\nTerlampir kami sampaikan salinan Faktur Pajak resmi yang telah tervalidasi di sistem DJP CoreTax untuk transaksi pesanan kain Anda.\n\nSalam hormat,\nDivisi Finance Texora`,
+                      body: `Yth. Bagian Keuangan,\n\nTerlampir kami sampaikan salinan Faktur Pajak resmi yang telah tervalidasi di sistem DJP CoreTax untuk transaksi pesanan kain Anda.\n\nSalam hormat,\nDivisi Finance XoraMateria`,
                     },
                   ].map((tpl, idx) => (
                     <button
@@ -1047,7 +1047,7 @@ Tim Sales & Komersial PT. Texora Visi Prima`;
                 <button
                   type="button"
                   onClick={() => {
-                    const sampleFiles = ["SPH-Resmi-Texora-2026.pdf", "Katalog-Kain-Dryfit-2026.pdf", "Invoice-DP-Texora.pdf"];
+                    const sampleFiles = ["SPH-Resmi-XoraMateria-2026.pdf", "Katalog-Kain-Dryfit-2026.pdf", "Invoice-DP-XoraMateria.pdf"];
                     const randomFile = sampleFiles[composeAttachments.length % sampleFiles.length];
                     setComposeAttachments([...composeAttachments, randomFile]);
                     showToast(`File ${randomFile} berhasil dilampirkan.`);

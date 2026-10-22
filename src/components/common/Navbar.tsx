@@ -171,18 +171,18 @@ export function Navbar({ cartCount: initialCartCount, initialDisabledPaths = [] 
           <Link href={localePath("/")} className="flex items-center space-x-3 group shrink-0">
             <div className="relative w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-gradient-to-b from-slate-50 via-slate-100 to-slate-200 p-1 border border-brand-400/60 flex items-center justify-center shadow-md shadow-black/40 group-hover:border-brand-400 transition-all duration-300">
               <img
-                src="/icons/texora-logo.png"
-                alt="PT. Texora Visi Prima"
+                src="/icons/xoramateria-mark.png"
+                alt="XoraMateria"
                 className="w-full h-full object-contain filter drop-shadow-[0_1px_2px_rgba(15,23,42,0.45)] group-hover:scale-105 transition-transform duration-300"
               />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="text-base lg:text-lg font-bold tracking-tight text-white font-display">
-                  TEXORA
+                  XORAMATERIA
                 </span>
                 <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-brand-500/20 text-brand-300 border border-brand-500/40 tracking-wider uppercase">
-                  VISI PRIMA
+                  FABRIC · PRINT
                 </span>
               </div>
               <p className="text-[9px] text-slate-400 tracking-wider uppercase font-medium">

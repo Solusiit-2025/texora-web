@@ -3,7 +3,7 @@ import Link from "next/link";
 import { EyeOff, ArrowLeft, Home, Search } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Halaman Tidak Tersedia | Texora",
+  title: "Halaman Tidak Tersedia | XoraMateria",
   description:
     "Halaman ini sedang dinonaktifkan sementara atau tidak tersedia.",
   robots: { index: false, follow: false },

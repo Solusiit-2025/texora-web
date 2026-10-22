@@ -8,6 +8,7 @@ import {
   validateRedirectRule,
   matchRedirect,
 } from "@/lib/redirects";
+import { canManageContent } from "@/lib/rbac/authorize";
 
 export const dynamic = "force-dynamic";
 
@@ -60,9 +61,9 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    if (user.role !== "ADMINISTRATOR") {
+    if (!(await canManageContent(user.role))) {
       return NextResponse.json(
-        { success: false, error: "Hanya Administrator yang dapat mengelola redirect." },
+        { success: false, error: "Hanya Administrator atau Admin Konten yang dapat mengelola redirect." },
         { status: 403 }
       );
     }
@@ -104,9 +105,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (user.role !== "ADMINISTRATOR") {
+    if (!(await canManageContent(user.role))) {
       return NextResponse.json(
-        { success: false, error: "Hanya Administrator yang dapat mengelola redirect." },
+        { success: false, error: "Hanya Administrator atau Admin Konten yang dapat mengelola redirect." },
         { status: 403 }
       );
     }
@@ -190,9 +191,9 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    if (user.role !== "ADMINISTRATOR") {
+    if (!(await canManageContent(user.role))) {
       return NextResponse.json(
-        { success: false, error: "Hanya Administrator yang dapat mengelola redirect." },
+        { success: false, error: "Hanya Administrator atau Admin Konten yang dapat mengelola redirect." },
         { status: 403 }
       );
     }
@@ -256,9 +257,9 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    if (user.role !== "ADMINISTRATOR") {
+    if (!(await canManageContent(user.role))) {
       return NextResponse.json(
-        { success: false, error: "Hanya Administrator yang dapat mengelola redirect." },
+        { success: false, error: "Hanya Administrator atau Admin Konten yang dapat mengelola redirect." },
         { status: 403 }
       );
     }

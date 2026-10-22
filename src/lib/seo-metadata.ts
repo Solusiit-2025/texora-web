@@ -20,15 +20,15 @@ import { htmlToPlainText } from "@/lib/sanitize";
 export const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://texora.co.id";
 
-export const SITE_NAME = "PT. Texora Visi Prima";
+export const SITE_NAME = "XoraMateria";
 export const SITE_LOCALE = "id_ID";
 export const DEFAULT_OG_IMAGE = "/images/hero/hero-printer.jpg";
 
 export const COMPANY = {
   name: SITE_NAME,
-  legalName: "PT. Texora Visi Prima",
+  legalName: "XoraMateria",
   url: SITE_URL,
-  logo: `${SITE_URL}/icons/texora-logo.png`,
+  logo: `${SITE_URL}/icons/xoramateria-mark.png`,
   description:
     "Manufaktur kain poliester dan cetak sublimasi skala industri di Jakarta Utara. Katalog kain, visualizer motif, harga bertingkat, dan portal B2B terintegrasi.",
   address: {
@@ -212,7 +212,7 @@ export async function buildPageMetadata(input: PageMetaInput): Promise<Metadata>
   );
 
   return {
-    // `absolute` mencegah template `%s | PT. Texora Visi Prima` dari root
+    // `absolute` mencegah template `%s | XoraMateria` dari root
     // layout ditambahkan lagi (meng Causes title jadi terlalu panjang).
     title: { absolute: finalTitle },
     description: finalDescription,
@@ -247,8 +247,8 @@ export async function buildPageMetadata(input: PageMetaInput): Promise<Metadata>
       title,
       description: finalDescription,
       images: [imageUrl],
-      creator: "@texoravisiprima",
-      site: "@texoravisiprima",
+      creator: "@xoramateriavisiprima",
+      site: "@xoramateriavisiprima",
     },
     other: {
       "geo.region": "ID-JK",
@@ -362,9 +362,9 @@ export function buildLocalBusinessSchema(): Record<string, unknown> {
     sameAs: [
       "https://www.instagram.com/xora_hijab",
       "https://www.tiktok.com/@xoramateria",
-      "https://www.youtube.com/@texoravisiprima",
+      "https://www.youtube.com/@xoramateriavisiprima",
       "https://www.facebook.com/profile.php?id=61595062856326",
-      "https://www.linkedin.com/company/texora-visi-prima",
+      "https://www.linkedin.com/company/xoramateria-visi-prima",
     ],
     knowsAbout: [
       "Kain sublimasi",

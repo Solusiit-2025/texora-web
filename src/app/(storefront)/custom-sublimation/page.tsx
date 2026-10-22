@@ -64,7 +64,7 @@ export default async function CustomSublimationPage() {
 
   const webPageSchema = buildWebPageSchema({
     path: "/custom-sublimation",
-    name: "Studio Kustom Sublimasi — PT. Texora Visi Prima",
+    name: "Studio Kustom Sublimasi — XoraMateria",
     description:
       "Visualizer motif 3D, unggah file desain sublimasi, dan kalkulator harga jasa desain custom.",
     breadcrumb: [{ name: "Kustom Sublimasi", path: "/custom-sublimation" }],

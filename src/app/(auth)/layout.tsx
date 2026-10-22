@@ -10,8 +10,8 @@ import type { Metadata } from "next";
  */
 export const metadata: Metadata = {
   title: {
-    default: "Portal Mitra — PT. Texora Visi Prima",
-    template: "%s — PT. Texora Visi Prima",
+    default: "Portal Mitra — XoraMateria",
+    template: "%s — XoraMateria",
   },
   robots: {
     index: false,

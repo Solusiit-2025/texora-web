@@ -125,7 +125,7 @@ export function normalizeArticleInput(
     articleType,
     tags: JSON.stringify(toArray(input.tags)),
     relatedProducts: JSON.stringify(toArray(input.relatedProducts)),
-    author: String(input.author || "Tim Tekstil Texora").trim(),
+    author: String(input.author || "Tim Tekstil XoraMateria").trim(),
     authorRole: input.authorRole?.trim() || null,
     readMinutes,
     seoTitle: input.seoTitle?.trim() || null,

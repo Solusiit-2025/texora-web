@@ -1,5 +1,5 @@
 /**
- * Modul Backup Database untuk PT. Texora Visi Prima.
+ * Modul Backup Database untuk XoraMateria.
  *
  * Mendukung 2 mode:
  *  1. LOGICAL  - ekspor seluruh tabel ke file JSON (portable, bisa di-restore via script).
@@ -107,7 +107,7 @@ export async function createBackup(options?: {
     .toISOString()
     .replace(/[:.]/g, "-")
     .slice(0, 19);
-  const filename = `texora-backup-${timestamp}.json`;
+  const filename = `xoramateria-backup-${timestamp}.json`;
   const filepath = path.join(dir, filename);
 
   const data: Record<string, any[]> = {};
@@ -130,7 +130,7 @@ export async function createBackup(options?: {
 
     const payload = {
       meta: {
-        app: "PT. Texora Visi Prima - E-Commerce & CRM",
+        app: "XoraMateria - E-Commerce & CRM",
         version: "1.0",
         generatedAt: new Date().toISOString(),
         trigger,

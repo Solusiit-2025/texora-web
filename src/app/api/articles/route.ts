@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser } from "@/lib/auth/session";
 import { normalizeLocale } from "@/lib/content-translator";
 import { localizeRows } from "@/lib/content-translator";
+import { canManageContent } from "@/lib/rbac/authorize";
 
 export const dynamic = "force-dynamic";
 
@@ -57,7 +58,7 @@ export async function GET(req: NextRequest) {
           { status: 401 }
         );
       }
-      if (user.role !== "ADMINISTRATOR" && user.role !== "SALES_REP") {
+      if (!(await canManageContent(user.role)) && user.role !== "SALES_REP") {
         return NextResponse.json(
           { success: false, error: "Tidak memiliki akses ke daftar artikel." },
           { status: 403 }

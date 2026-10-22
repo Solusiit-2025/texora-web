@@ -112,7 +112,7 @@ const INITIAL_POS: PO[] = [
     { name: 'Teflon Sheet Anti Lengket', spec: '1.7m x 2m', qty: 6, unit: 'lembar', price: 850000 },
   ]},
   { id: 'PO-6', number: 'PO-2026-09-0137', supplier: 'PT Kemasan Nusantara', category: 'Packaging & Roll Core', date: '24 Sep 2026', eta: '1 Okt 2026', term: 'NET 14', requester: 'Bambang S. (Gudang)', status: 'DIPESAN', progress: 80, notes: 'Ekspedisi terkendala macet Cikampek, ETA +1 hari.', items: [
-    { name: 'Kardus Double Wall 120x20x20', spec: 'Cetak logo Texora', qty: 3000, unit: 'pcs', price: 12500 },
+    { name: 'Kardus Double Wall 120x20x20', spec: 'Cetak logo XoraMateria', qty: 3000, unit: 'pcs', price: 12500 },
     { name: 'Paper Core 3" x 1.7m', spec: 'Tebal 8mm', qty: 500, unit: 'pcs', price: 18000 },
   ]},
   { id: 'PO-7', number: 'PO-2026-09-0136', supplier: 'PT Kimia Tekstilindo', category: 'Chemical Coating', date: '20 Sep 2026', eta: '28 Sep 2026', term: 'NET 30', requester: 'Rian P. (Produksi)', status: 'DRAFT', progress: 5, notes: 'Draft — masih negosiasi diskon 5% untuk volume 2 ton.', items: [
