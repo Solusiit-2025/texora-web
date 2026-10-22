@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import PDFDocument from "pdfkit";
+import QRCode from "qrcode";
 import { prisma } from "@/lib/prisma";
 import { formatRupiah, formatNumber } from "@/lib/utils";
+import { getCatalogPdfMeta } from "@/lib/catalog-pdf";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -11,21 +13,54 @@ export const runtime = "nodejs";
 /**
  * GET /api/catalog/pdf
  *
- * Generates the XoraMateria product catalog as a downloadable PDF (A4):
- *  - Cover page: company identity + key value propositions
- *  - One block per fabric: photo, technical specifications, GSM variants,
- *    stock, and tiered pricing
- *  - Closing page: contact information & call to action
+ * Urutan perilaku:
+ *  1. Jika admin sudah mengunggah katalog PDF lewat CMS -> redirect ke file itu.
+ *  2. Jika belum -> buat katalog otomatis dari data produk (A4, profesional).
  *
- * Catatan:
- *  - Teks PDF memakai font standar PDF (WinAnsi) sehingga mencakup Latin /
- *    Bahasa Indonesia (é, ñ). Glyph Mandarin/Japanese tidak didukung font
- *    standar, jadi katalog sengaja dibuat dalam Bahasa Indonesia.
- *  - Foto produk di-resize ke 280px (quality 72) sebelum di-embed supaya
- *    ukuran PDF tetap ringan (sekitar 1-2 MB, bukan ~10 MB).
+ * Desain katalog otomatis:
+ *  - Cover gelap dengan logo, ringkasan kapasitas, dan identitas brand.
+ *  - Halaman "Tentang & Keunggulan" + alur pemesanan.
+ *  - Satu kartu per produk: foto, spesifikasi, varian GSM, stok, tabel harga.
+ *  - Halaman penutup: kontak, QR katalog digital, dan disclaimer.
  */
 export async function GET(req: NextRequest) {
   try {
+    // 1) Katalog hasil unggahan manual (CMS) — selalu diprioritaskan.
+    const uploaded = await getCatalogPdfMeta();
+    if (uploaded?.url) {
+      // File lokal: stream langsung supaya tombol "Unduh" menghasilkan file
+      // dengan nama yang benar (redirect tidak selalu memicu download).
+      if (uploaded.url.startsWith("/")) {
+        try {
+          const abs = path.join(process.cwd(), "public", uploaded.url.replace(/^\//, ""));
+          if (fs.existsSync(abs)) {
+            const buf = fs.readFileSync(abs);
+            const safeName = (uploaded.filename || "Katalog-XoraMateria.pdf").replace(
+              /[^a-zA-Z0-9._-]/g,
+              "-"
+            );
+            return new NextResponse(buf as unknown as BodyInit, {
+              headers: {
+                "Content-Type": "application/pdf",
+                "Content-Disposition": `attachment; filename="${safeName}"`,
+                "Content-Length": String(buf.length),
+                "Cache-Control": "public, max-age=300",
+              },
+            });
+          }
+        } catch {
+          /* jatuh ke redirect di bawah */
+        }
+      }
+
+      // File di R2/S3 (atau lokal yang sudah hilang) -> redirect ke URL publik.
+      const target = /^https?:\/\//i.test(uploaded.url)
+        ? uploaded.url
+        : new URL(uploaded.url, req.nextUrl.origin).toString();
+      return NextResponse.redirect(target, 302);
+    }
+
+    // 2) Katalog otomatis dari database.
     const products = await prisma.fabricProduct.findMany({
       include: {
         variants: true,
@@ -35,7 +70,7 @@ export async function GET(req: NextRequest) {
     });
 
     const pdf = await buildCatalogPdf(products);
-    const filename = `XoraMateria-Katalog-Produk-${new Date().toISOString().slice(0, 10)}.pdf`;
+    const filename = `XoraMateria-Katalog-${new Date().toISOString().slice(0, 10)}.pdf`;
 
     return new NextResponse(pdf as unknown as BodyInit, {
       headers: {
@@ -54,14 +89,27 @@ export async function GET(req: NextRequest) {
   }
 }
 
-const BRAND = "#0F172A";
-const ACCENT = "#F59E0B";
-const MUTED = "#64748B";
+/* ------------------------------------------------------------------ */
+/* Palet & konstanta                                                    */
+/* ------------------------------------------------------------------ */
+
+const PAGE_W = 595.28;
+const PAGE_H = 841.89;
+const M = 46;
+const CONTENT_W = PAGE_W - M * 2;
+
+const BRAND = "#0B1B33"; // navy
+const BRAND_SOFT = "#16243D";
+const ACCENT = "#C8A96A"; // gold (logo)
+const GREEN = "#6E8F7C"; // sage (logo)
+const INK = "#0F172A";
 const TEXT = "#334155";
-const SUBTLE = "#475569";
+const MUTED = "#64748B";
+const LINE = "#E2E8F0";
+const SURFACE = "#F8FAFC";
 
 /* ------------------------------------------------------------------ */
-/* Preparedan gambar                                                    */
+/* Persiapan gambar                                                     */
 /* ------------------------------------------------------------------ */
 
 /** Cache thumbnail per proses supaya request berikutnya jauh lebih cepat. */
@@ -70,7 +118,7 @@ const thumbCache = new Map<string, Buffer | null>();
 /**
  * Negative cache untuk gambar remote yang gagal diambil (DNS/HTTP error).
  * Tanpa ini PDF bolak-balik mencoba fetch gambar yang memang tidak bisa
- * diangkau (mis. Unsplash diblokir jaringan) -> lambat di tiap generate.
+ * dijangka (mis. Unsplash diblokir jaringan) -> lambat di tiap generate.
  */
 const remoteFailCache = new Map<string, number>();
 const REMOTE_FAIL_TTL = 10 * 60 * 1000;
@@ -139,8 +187,8 @@ async function prepareThumbnail(url?: string | null): Promise<Buffer | null> {
       const sharp = (await import("sharp")).default;
       out = await sharp(raw)
         .rotate()
-        .resize(280, 280, { fit: "cover", position: "centre" })
-        .jpeg({ quality: 72 })
+        .resize(320, 320, { fit: "cover", position: "centre" })
+        .jpeg({ quality: 78 })
         .toBuffer();
     }
   } catch (err) {
@@ -152,6 +200,45 @@ async function prepareThumbnail(url?: string | null): Promise<Buffer | null> {
   return out;
 }
 
+/** Logo brand (PNG transparan) untuk cover & penutup. */
+let logoCache: Buffer | null | undefined;
+async function prepareLogo(): Promise<Buffer | null> {
+  if (logoCache !== undefined) return logoCache;
+  try {
+    const abs = path.join(process.cwd(), "public", "icons", "xoramateria-mark.png");
+    logoCache = fs.existsSync(abs) ? fs.readFileSync(abs) : null;
+  } catch {
+    logoCache = null;
+  }
+  return logoCache;
+}
+
+/* ------------------------------------------------------------------ */
+/* Helpers teks                                                         */
+/* ------------------------------------------------------------------ */
+
+function cleanText(value?: string | null): string {
+  return String(value || "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function clampText(value: string, max: number): string {
+  if (value.length <= max) return value;
+  return `${value.slice(0, max - 1).trimEnd()}…`;
+}
+
+function categoryLabel(category?: string | null): string {
+  const map: Record<string, string> = {
+    sportswear: "Sportswear",
+    "hijab-fashion": "Hijab & Fashion",
+    "home-living": "Home Living",
+    merchandise: "Merchandise & Flag",
+  };
+  return map[String(category || "").toLowerCase()] || "Kain Industri";
+}
+
 /* ------------------------------------------------------------------ */
 /* Generator PDF                                                        */
 /* ------------------------------------------------------------------ */
@@ -159,12 +246,12 @@ async function prepareThumbnail(url?: string | null): Promise<Buffer | null> {
 async function buildCatalogPdf(products: any[]): Promise<Buffer> {
   const doc = new PDFDocument({
     size: "A4",
-    margin: 45,
+    margin: M,
     info: {
       Title: "Katalog Produk XoraMateria",
       Author: "XoraMateria",
       Subject: "Katalog kain polyester siap sublimasi & jasa cetak sublimasi",
-      Keywords: "kain sublimasi, dryfit milano, voal ultrafine, teksil jakarta",
+      Keywords: "kain sublimasi, dryfit milano, voal ultrafine, tekstil jakarta",
     },
     autoFirstPage: false,
   });
@@ -176,14 +263,23 @@ async function buildCatalogPdf(products: any[]): Promise<Buffer> {
     doc.on("error", reject);
   });
 
-  // Ukuran A4 dalam point (satuan pdfkit).
-  // Catatan: doc.page belum ada saat autoFirstPage=false, jadi dimensi ditulis eksplisit.
-  const pageW = 595.28;
-  const pageH = 841.89;
-  const M = 45;
-  const contentW = pageW - M * 2;
+  /**
+   * Jalankan penulisan teks TANPA memicu auto-pagination PDFKit.
+   *
+   * PDFKit otomatis menambah halaman baru kalau `y + tinggi baris` melewati
+   * batas bawah margin. Teks footer/penutup sengaja diletakkan dekat tepi
+   * bawah, jadi margin bawah dinolkan sementara.
+   */
+  const keepOnPage = <T,>(fn: () => T): T => {
+    const prev = doc.page.margins.bottom;
+    doc.page.margins.bottom = 0;
+    try {
+      return fn();
+    } finally {
+      doc.page.margins.bottom = prev;
+    }
+  };
 
-  // ---------- Helper halaman & footer ----------
   let pageCounter = 0;
   const addPage = () => {
     doc.addPage();
@@ -191,49 +287,136 @@ async function buildCatalogPdf(products: any[]): Promise<Buffer> {
   };
 
   const drawFooter = () => {
-    const y = pageH - 34;
+    // Simpan posisi cursor: `doc.text()` di footer mengubah doc.y, yang bisa
+    // membuat loop produk mengira halaman sudah penuh.
+    const prevY = doc.y;
+    const y = PAGE_H - 36;
+
+    doc
+      .moveTo(M, y - 8)
+      .lineTo(M + CONTENT_W, y - 8)
+      .lineWidth(0.5)
+      .stroke(LINE);
+
+    keepOnPage(() => {
+      doc
+        .font("Helvetica")
+        .fontSize(7)
+        .fillColor(MUTED)
+        .text(
+          "XoraMateria  •  Kain sublimasi & jasa cetak roll  •  Jakarta Utara",
+          M,
+          y,
+          { width: CONTENT_W - 60, lineBreak: false }
+        )
+        .text(`Halaman ${pageCounter}`, M, y, {
+          width: CONTENT_W,
+          align: "right",
+          lineBreak: false,
+        });
+    });
+
+    doc.y = prevY;
+  };
+
+  const drawHeader = (section?: string) => {
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(8)
+      .fillColor(BRAND)
+      .text("XORAMATERIA", M, 30, { lineBreak: false });
+
     doc
       .font("Helvetica")
-      .fontSize(7.5)
+      .fontSize(7)
       .fillColor(MUTED)
       .text(
-        "XoraMateria  •  Jl. Walang Baru VI Blok B1/2, Tugu Utara, Tanjung Priok, Jakarta Utara 14140  •  +62 878-8985-6066  •  sales@texoraprima.com",
+        (section || "Katalog Produk").toUpperCase(),
         M,
-        y,
-        { width: contentW, align: "left", lineBreak: false }
-      )
-      .text(`Hal. ${pageCounter}`, M, y, {
-        width: contentW,
-        align: "right",
-        lineBreak: false,
-      });
+        30,
+        { width: CONTENT_W, align: "right", lineBreak: false, characterSpacing: 0.8 }
+      );
+
+    doc
+      .moveTo(M, 46)
+      .lineTo(M + CONTENT_W, 46)
+      .lineWidth(0.6)
+      .stroke(LINE);
   };
+
+  const sectionTitle = (title: string, subtitle?: string) => {
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(20)
+      .fillColor(INK)
+      .text(title, M, M);
+
+    if (subtitle) {
+      doc
+        .font("Helvetica")
+        .fontSize(9)
+        .fillColor(MUTED)
+        .text(subtitle, M, doc.y + 6, { width: CONTENT_W, lineGap: 2 });
+    }
+
+    doc
+      .moveTo(M, doc.y + 12)
+      .lineTo(M + 54, doc.y + 12)
+      .lineWidth(3)
+      .stroke(ACCENT);
+
+    doc.y += 26;
+  };
+
+  const logo = await prepareLogo();
 
   // =========================================================
   // COVER
   // =========================================================
   addPage();
-  doc.rect(0, 0, pageW, pageH).fill(BRAND);
-  doc.rect(0, 0, 8, pageH).fill(ACCENT);
+  doc.rect(0, 0, PAGE_W, PAGE_H).fill(BRAND);
+
+  // Aksen geometris (logo-inspired)
+  doc.save();
+  doc.fillOpacity(0.07).fillColor(GREEN).circle(PAGE_W - 40, 150, 190).fill();
+  doc.fillOpacity(0.05).fillColor(ACCENT).circle(PAGE_W - 120, 320, 150).fill();
+  doc.restore();
+  doc.rect(0, 0, 10, PAGE_H).fill(ACCENT);
+
+  if (logo) {
+    try {
+      doc.image(logo, M + 8, 66, { width: 62, height: 62 });
+    } catch {
+      /* lanjut tanpa logo */
+    }
+  }
 
   doc
     .font("Helvetica-Bold")
-    .fontSize(11)
-    .fillColor(ACCENT)
-    .text("XORAMATERIA", M + 14, 120);
-
-  doc
-    .font("Helvetica-Bold")
-    .fontSize(30)
+    .fontSize(15)
     .fillColor("#FFFFFF")
-    .text("Katalog Produk", M + 14, 150, { width: contentW - 30 });
+    .text("XoraMateria", M + 82, 82);
 
   doc
     .font("Helvetica")
-    .fontSize(15)
+    .fontSize(7.5)
+    .fillColor(ACCENT)
+    .text("FABRIC  •  PRINT  •  FASHION  •  SPORT", M + 82, 103, {
+      characterSpacing: 1.2,
+    });
+
+  doc
+    .font("Helvetica-Bold")
+    .fontSize(34)
+    .fillColor("#FFFFFF")
+    .text("Katalog Produk", M + 8, 190, { width: CONTENT_W - 40 });
+
+  doc
+    .font("Helvetica")
+    .fontSize(14)
     .fillColor("#CBD5E1")
-    .text("Kain Polyester Siap Sublimasi & Jasa Cetak Roll-to-Roll", M + 14, 195, {
-      width: contentW - 30,
+    .text("Kain Polyester Siap Sublimasi & Jasa Cetak Roll-to-Roll", M + 8, 236, {
+      width: CONTENT_W - 80,
     });
 
   doc
@@ -241,226 +424,472 @@ async function buildCatalogPdf(products: any[]): Promise<Buffer> {
     .fontSize(9.5)
     .fillColor("#94A3B8")
     .text(
-      "Manufaktur kain & cetak sublimasi skala industri. Satu atap dari bahan mentah, proofing digital, hingga gulungan siap kargo untuk brand sportswear, busana muslim, dan merchandise.",
-      M + 14,
-      230,
-      { width: contentW - 60, lineGap: 3 }
+      "Manufaktur kain & cetak sublimasi skala industri dalam satu atap — dari bahan mentah, proofing digital, hingga gulungan siap kargo untuk brand sportswear, busana muslim, dan merchandise.",
+      M + 8,
+      272,
+      { width: CONTENT_W - 120, lineGap: 3 }
     );
 
-  // Kotak info
-  const boxY = 300;
-  doc.roundedRect(M + 14, boxY, contentW - 30, 108, 8).fill("#1E293B");
+  // Panel ringkasan
+  const boxY = 350;
+  doc.roundedRect(M + 8, boxY, CONTENT_W - 40, 120, 10).fill(BRAND_SOFT);
   const facts: Array<[string, string]> = [
     ["Kapasitas cetak", "10.000 meter / hari"],
     ["Katalog produk", `${products.length} jenis kain siap sublimasi`],
     ["Sertifikasi", "OEKO-TEX Standard 100 Class 1"],
-    ["Minimum order", "1 meter (harga bertingkat)"],
+    ["Minimum order", "1 meter • harga bertingkat"],
   ];
   facts.forEach((f, i) => {
     const col = i % 2;
     const row = Math.floor(i / 2);
-    const x = M + 30 + col * ((contentW - 60) / 2);
-    const y = boxY + 18 + row * 44;
-    doc.font("Helvetica").fontSize(7.5).fillColor("#64748B").text(f[0].toUpperCase(), x, y);
-    doc.font("Helvetica-Bold").fontSize(11).fillColor("#FFFFFF").text(f[1], x, y + 11);
+    const x = M + 28 + col * ((CONTENT_W - 60) / 2);
+    const y = boxY + 20 + row * 50;
+    doc.font("Helvetica").fontSize(7).fillColor("#7C8CA6").text(f[0].toUpperCase(), x, y, {
+      characterSpacing: 0.6,
+    });
+    doc.font("Helvetica-Bold").fontSize(11).fillColor("#FFFFFF").text(f[1], x, y + 12, {
+      width: (CONTENT_W - 60) / 2 - 16,
+    });
   });
+
+  keepOnPage(() => {
+    doc
+      .font("Helvetica")
+      .fontSize(8)
+      .fillColor("#7C8CA6")
+      .text(
+        `Edisi ${new Date().toLocaleDateString("id-ID", { month: "long", year: "numeric" })}  •  Semua harga dalam Rupiah (IDR) per meter`,
+        M + 8,
+        PAGE_H - 64
+      );
+
+    doc
+      .font("Helvetica")
+      .fontSize(8)
+      .fillColor("#FFFFFF")
+      .text(
+        "texora.co.id   •   +62 878-8985-6066   •   admin@texoraprima.com",
+        M + 8,
+        PAGE_H - 46
+      );
+  });
+
+  // =========================================================
+  // TENTANG & KEUNGGULAN
+  // =========================================================
+  addPage();
+  drawHeader("Tentang XoraMateria");
+  doc.y = 74;
+
+  sectionTitle(
+    "Satu atap, dari benang hingga gulungan siap kargo.",
+    "XoraMateria memproduksi kain poliester siap sublimasi dan mengerjakan cetak roll-ke-roll dengan kalender rotary 210°C. Tinta dispersi berubah menjadi gas dan menyatu ke dalam serat — warna tidak menempel di permukaan, tidak luntur, dan tetap tajam setelah dicuci berulang."
+  );
+
+  const values: Array<[string, string]> = [
+    [
+      "Harga bertingkat transparan",
+      "Harga per meter turun otomatis mengikuti volume. Tanpa biaya tersembunyi, langsung terlihat di katalog.",
+    ],
+    [
+      "Proofing sebelum produksi",
+      "Proof digital dan sampel 1 yard memastikan warna, repeat motif, dan hasil cetak sesuai ekspektasi.",
+    ],
+    [
+      "Standar OEKO-TEX 100",
+      "Tinta dispersi ramah kulit, anti-luntur, dan tahan cuci berulang untuk produk yang menyentuh kulit.",
+    ],
+    [
+      "Distribusi seluruh Indonesia",
+      "Kargo khusus roll, armada Jabodetabek–Bandung, dan pengemasan aman untuk pengiriman luar kota.",
+    ],
+  ];
+
+  const cardW = (CONTENT_W - 14) / 2;
+  const cardH = 84;
+  values.forEach(([title, desc], i) => {
+    const col = i % 2;
+    const row = Math.floor(i / 2);
+    const x = M + col * (cardW + 14);
+    const y = doc.y + row * (cardH + 12);
+
+    doc.roundedRect(x, y, cardW, cardH, 8).fill(SURFACE);
+    doc.rect(x, y, 3, cardH).fill(i % 3 === 0 ? ACCENT : i % 3 === 1 ? GREEN : BRAND);
+
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(8.5)
+      .fillColor(INK)
+      .text(title, x + 14, y + 12, { width: cardW - 26 });
+
+    doc
+      .font("Helvetica")
+      .fontSize(7.5)
+      .fillColor(MUTED)
+      .text(desc, x + 14, y + 28, { width: cardW - 26, lineGap: 1.6 });
+  });
+
+  doc.y += cardH * 2 + 12 + 26;
+
+  // Alur pemesanan
+  doc
+    .font("Helvetica-Bold")
+    .fontSize(10)
+    .fillColor(INK)
+    .text("Alur Pemesanan", M, doc.y);
+  doc.y += 16;
+
+  const steps: Array<[string, string]> = [
+    ["01", "Pilih kain & varian GSM"],
+    ["02", "Kirim artwork / brief desain"],
+    ["03", "Proofing digital & approval"],
+    ["04", "Produksi, QC, lalu pengiriman"],
+  ];
+  const stepW = (CONTENT_W - 3 * 10) / 4;
+  const stepY = doc.y;
+  steps.forEach(([num, label], i) => {
+    const x = M + i * (stepW + 10);
+    doc.roundedRect(x, stepY, stepW, 58, 8).stroke(LINE);
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(13)
+      .fillColor(ACCENT)
+      .text(num, x + 10, stepY + 10);
+    doc
+      .font("Helvetica")
+      .fontSize(7.5)
+      .fillColor(TEXT)
+      .text(label, x + 10, stepY + 28, { width: stepW - 20, lineGap: 1.5 });
+  });
+  doc.y = stepY + 58;
 
   doc
     .font("Helvetica")
-    .fontSize(8)
-    .fillColor("#64748B")
+    .fontSize(7.5)
+    .fillColor(MUTED)
     .text(
-      `Dicetak: ${new Date().toLocaleDateString("id-ID", {
-        month: "long",
-        year: "numeric",
-      })}  •  harga dalam Rupiah (IDR) per meter`,
-      M + 14,
-      pageH - 60
+      "Catatan: toleransi susut kain standar pabrik ±2–3%. Warna final dapat berbeda sedikit antar-lot produksi — selalu konfirmasi melalui sampel.",
+      M,
+      doc.y + 18,
+      { width: CONTENT_W, lineGap: 1.5 }
     );
+
+  drawFooter();
 
   // =========================================================
   // DAFTAR PRODUK
   // =========================================================
   addPage();
-  doc.font("Helvetica-Bold").fontSize(18).fillColor(BRAND).text("Daftar Produk", M, M);
-  doc
-    .font("Helvetica")
-    .fontSize(8.5)
-    .fillColor(MUTED)
-    .text(
-      "Harga bersifat indikatif (bertingkat per meter). Hubungi tim sales untuk penawaran final, ketersediaan stok, dan termin pembayaran.",
-      M,
-      M + 26,
-      { width: contentW }
-    );
-  drawFooter();
+  drawHeader("Daftar Produk");
+  doc.y = 74;
+
+  sectionTitle(
+    "Daftar Produk",
+    "Harga bersifat indikatif dan bertingkat per meter. Hubungi tim sales untuk penawaran final, ketersediaan stok, dan termin pembayaran."
+  );
+
+  let currentCategory = "";
 
   for (const p of products) {
-    // Cek ruang tersisa
-    if (doc.y > pageH - 210) {
-      addPage();
-      drawFooter();
-    }
+    const category = categoryLabel(p.category);
 
-    const startY = doc.y + 12;
-
-    // Foto produk (di-resize dulu supaya PDF ringan)
-    const thumb = await prepareThumbnail(p.thumbnailUrl);
-    let textX = M;
-    let textW = contentW;
-    if (thumb) {
-      try {
-        doc.image(thumb, M, startY, { width: 90, height: 90, fit: [90, 90] });
-        doc.rect(M, startY, 90, 90).lineWidth(0.5).stroke("#E2E8F0");
-        textX = M + 102;
-        textW = contentW - 102;
-      } catch {
-        /* lanjut tanpa foto */
+    // Judul kategori saat berganti
+    if (category !== currentCategory) {
+      const needed = 64;
+      if (doc.y + needed > PAGE_H - 70) {
+        addPage();
+        drawHeader("Daftar Produk");
+        doc.y = 70;
       }
+      currentCategory = category;
+
+      doc.roundedRect(M, doc.y, 4, 16, 2).fill(ACCENT);
+      doc
+        .font("Helvetica-Bold")
+        .fontSize(11)
+        .fillColor(INK)
+        .text(category, M + 12, doc.y + 3, { width: CONTENT_W - 12 });
+      doc.y += 26;
     }
 
-    const tx = textX;
-    let ty = startY;
+    const thumb = await prepareThumbnail(p.thumbnailUrl);
+    const desc = clampText(cleanText(p.description), 260);
 
-    // Kategori + nama
-    doc
-      .font("Helvetica-Bold")
-      .fontSize(7.5)
-      .fillColor(ACCENT)
-      .text((p.category || "Kain").toUpperCase(), tx, ty);
-    ty += 12;
-
-    doc.font("Helvetica-Bold").fontSize(13).fillColor(BRAND).text(p.name, tx, ty, {
-      width: textW,
-    });
-    ty += 18;
-
-    // Spesifikasi
     const specs: Array<[string, string]> = [
-      ["Komposisi", p.composition || "-"],
-      ["Anyaman", p.weaveType || "-"],
-      ["Lebar", `${p.widthInch} inci (~${Math.round(Number(p.widthInch) * 2.54)} cm)`],
+      ["Komposisi", cleanText(p.composition) || "-"],
+      ["Anyaman", cleanText(p.weaveType) || "-"],
+      ["Lebar", `${p.widthInch} inci  (~${Math.round(Number(p.widthInch) * 2.54)} cm)`],
       ["Siap sublimasi", p.isSublimationReady ? "Ya" : "Tidak"],
     ];
     if (p.variants?.length) {
       specs.push([
         "Varian GSM",
-        p.variants.map((v: any) => `${v.gsm} GSM (${v.colorName})`).join(", "),
+        p.variants
+          .slice(0, 4)
+          .map((v: any) => `${v.gsm} GSM`)
+          .join(" • "),
       ]);
       const totalStock = p.variants.reduce(
         (s: number, v: any) => s + Number(v.stockMeters || 0),
         0
       );
-      specs.push(["Stok", `${formatNumber(totalStock)} m`]);
+      specs.push(["Stok tersedia", `${formatNumber(totalStock)} meter`]);
     }
 
-    specs.forEach(([label, value]) => {
-      doc.font("Helvetica").fontSize(8).fillColor(MUTED).text(`${label}:`, tx, ty, {
-        width: 118,
-      });
-      doc.font("Helvetica-Bold").fontSize(8.5).fillColor(BRAND).text(value, tx + 120, ty, {
-        width: textW - 120,
-      });
-      ty += 12;
-    });
+    const tiers = (p.priceTiers || []).slice(0, 4);
+    const priceTableH = tiers.length ? 18 + tiers.length * 13 : 0;
+    const descH = desc ? doc.heightOfString(desc, { width: CONTENT_W - 132 }) + 6 : 0;
+    const cardH = 16 + 96 + 12 + priceTableH + descH + 14 + 8;
 
-    // Harga bertingkat
-    if (p.priceTiers?.length) {
-      ty += 4;
+    // Pindah halaman kalau kartu tidak muat
+    if (doc.y + cardH > PAGE_H - 60) {
+      addPage();
+      drawHeader("Daftar Produk");
+      doc.y = 62;
+    }
+
+    const cardX = M;
+    const cardY = doc.y;
+    const pad = 14;
+
+    // Kartu
+    doc.roundedRect(cardX, cardY, CONTENT_W, cardH, 10).fill("#FFFFFF");
+    doc.roundedRect(cardX, cardY, CONTENT_W, cardH, 10).lineWidth(0.6).stroke(LINE);
+
+    // Gambar / placeholder
+    const imgX = cardX + pad;
+    const imgY = cardY + pad;
+    const imgSize = 96;
+    if (thumb) {
+      try {
+        doc.save();
+        doc.roundedRect(imgX, imgY, imgSize, imgSize, 6).clip();
+        doc.image(thumb, imgX, imgY, { width: imgSize, height: imgSize });
+        doc.restore();
+      } catch {
+        doc.roundedRect(imgX, imgY, imgSize, imgSize, 6).fill(SURFACE);
+      }
+    } else {
+      doc.roundedRect(imgX, imgY, imgSize, imgSize, 6).fill(SURFACE);
       doc
         .font("Helvetica-Bold")
-        .fontSize(8)
-        .fillColor(BRAND)
-        .text("Harga Bertingkat (IDR / meter):", tx, ty);
-      ty += 11;
-      const tiers = p.priceTiers
-        .map(
-          (t: any) =>
-            `${
-              t.maxMeters
-                ? `${t.minMeters}-${t.maxMeters} m`
-                : `>= ${t.minMeters} m`
-            }  ->  ${formatRupiah(Number(t.unitPrice))}`
-        )
-        .join("     ");
-      doc.font("Helvetica").fontSize(8).fillColor(TEXT).text(tiers, tx, ty, {
-        width: textW,
-      });
-      ty += 14;
+        .fontSize(24)
+        .fillColor("#CBD5E1")
+        .text((p.name || "?").trim().charAt(0).toUpperCase(), imgX, imgY + 34, {
+          width: imgSize,
+          align: "center",
+        });
     }
+    doc.roundedRect(imgX, imgY, imgSize, imgSize, 6).lineWidth(0.5).stroke(LINE);
 
-    // Deskripsi (dibersihkan dari HTML)
-    const desc = String(p.description || "")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-    if (desc) {
-      doc.font("Helvetica").fontSize(8.5).fillColor(SUBTLE).text(desc, tx, ty, {
-        width: textW,
-        lineGap: 1.5,
-      });
-    }
+    // Info kanan
+    const infoX = imgX + imgSize + 14;
+    const infoW = CONTENT_W - (infoX - cardX) - pad;
+    let infoY = cardY + pad;
 
-    // Atur cursor ke bawah blok
-    const usedHeight = thumb ? 90 : ty - startY + 20;
-    doc.y = Math.max(doc.y, startY + usedHeight + 14);
-
-    // Garis pemisah
     doc
-      .moveTo(M, doc.y)
-      .lineTo(M + contentW, doc.y)
-      .lineWidth(0.5)
-      .stroke("#E2E8F0");
-    doc.y += 12;
+      .font("Helvetica-Bold")
+      .fontSize(6.5)
+      .fillColor(ACCENT)
+      .text(category.toUpperCase(), infoX, infoY, { characterSpacing: 0.8 });
+    infoY += 10;
+
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(12)
+      .fillColor(INK)
+      .text(clampText(cleanText(p.name) || "Tanpa Nama", 70), infoX, infoY, {
+        width: infoW,
+      });
+    infoY += 16;
+
+    specs.slice(0, 5).forEach(([label, value]) => {
+      doc
+        .font("Helvetica")
+        .fontSize(7)
+        .fillColor(MUTED)
+        .text(label, infoX, infoY, { width: 62, lineBreak: false });
+      doc
+        .font("Helvetica-Bold")
+        .fontSize(7)
+        .fillColor(TEXT)
+        .text(clampText(value, 52), infoX + 64, infoY, {
+          width: infoW - 64,
+          lineBreak: false,
+        });
+      infoY += 10;
+    });
+
+    // Tabel harga
+    let tableY = cardY + pad + 96 + 12;
+    if (tiers.length) {
+      const tableX = cardX + pad;
+      const tableW = CONTENT_W - pad * 2;
+      const rowH = 13;
+
+      doc.rect(tableX, tableY, tableW, 18).fill(BRAND);
+      doc
+        .font("Helvetica-Bold")
+        .fontSize(6.5)
+        .fillColor("#FFFFFF")
+        .text("VOLUME", tableX + 8, tableY + 5.5, { width: 160, lineBreak: false });
+      doc
+        .font("Helvetica-Bold")
+        .fontSize(6.5)
+        .fillColor("#FFFFFF")
+        .text("HARGA / METER", tableX, tableY + 5.5, {
+          width: tableW - 8,
+          align: "right",
+          lineBreak: false,
+        });
+
+      tiers.forEach((t: any, i: number) => {
+        const ry = tableY + 18 + i * rowH;
+        if (i % 2 === 0) doc.rect(tableX, ry, tableW, rowH).fill("#FAFBFC");
+
+        const vol = t.maxMeters
+          ? `${t.minMeters}–${t.maxMeters} m`
+          : `≥ ${t.minMeters} m`;
+
+        doc
+          .font("Helvetica")
+          .fontSize(7)
+          .fillColor(TEXT)
+          .text(vol, tableX + 8, ry + 3.5, { width: 160, lineBreak: false });
+        doc
+          .font("Helvetica-Bold")
+          .fontSize(7)
+          .fillColor(INK)
+          .text(`${formatRupiah(Number(t.unitPrice))}`, tableX, ry + 3.5, {
+            width: tableW - 8,
+            align: "right",
+            lineBreak: false,
+          });
+      });
+
+      tableY += 18 + tiers.length * rowH + 8;
+    }
+
+    // Deskripsi
+    if (desc) {
+      doc
+        .font("Helvetica")
+        .fontSize(7.2)
+        .fillColor(MUTED)
+        .text(desc, cardX + pad, tableY, {
+          width: CONTENT_W - pad * 2,
+          lineGap: 1.6,
+        });
+    }
+
+    doc.y = cardY + cardH + 12;
+    drawFooter();
   }
 
   // =========================================================
   // HALAMAN PENUTUP
   // =========================================================
   addPage();
-  doc.rect(0, 0, pageW, 210).fill(BRAND);
+  drawHeader("Kontak & Pemesanan");
+
+  doc.rect(0, 62, PAGE_W, 176).fill(BRAND);
+  doc.rect(0, 62, 8, 176).fill(ACCENT);
+
   doc
     .font("Helvetica-Bold")
-    .fontSize(20)
+    .fontSize(22)
     .fillColor("#FFFFFF")
-    .text("Siap Minta Penawaran?", M, 70, { width: contentW });
+    .text("Siap Memesan?", M + 14, 92, { width: CONTENT_W - 40 });
+
   doc
     .font("Helvetica")
-    .fontSize(10)
+    .fontSize(9.5)
     .fillColor("#CBD5E1")
     .text(
-      "Kirim kebutuhan kain Anda (jenis kain, estimasi meter, file referensi) dan tim sales kami akan membalas dengan penawaran harga, termin, dan jadwal produksi dalam 1-2 jam kerja.",
-      M,
-      102,
-      { width: contentW - 60, lineGap: 2 }
+      "Kirim kebutuhan kain Anda — jenis kain, estimasi meter, dan file referensi. Tim sales kami akan membalas dengan penawaran harga, termin pembayaran, dan jadwal produksi dalam 1–2 jam kerja.",
+      M + 14,
+      124,
+      { width: CONTENT_W - 80, lineGap: 2.5 }
     );
+
+  doc
+    .font("Helvetica-Bold")
+    .fontSize(8)
+    .fillColor(ACCENT)
+    .text("MINIMUM ORDER 1 METER  •  PROOFING DIGITAL GRATIS", M + 14, 196, {
+      characterSpacing: 0.8,
+    });
 
   const contacts: Array<[string, string]> = [
     ["WhatsApp", "+62 878-8985-6066"],
     ["Email", "admin@texoraprima.com"],
+    ["Website", "texora.co.id"],
+    ["Jam kerja", "Senin – Sabtu, 08.00 – 17.00 WIB"],
     [
-      "Alamat",
+      "Alamat pabrik",
       "Jl. Walang Baru VI Blok B1/2, RT 04/RW 07, Tugu Utara, Tanjung Priok, Jakarta Utara 14140",
     ],
-    ["Jam kerja", "Senin - Sabtu, 08.00 - 17.00 WIB"],
   ];
-  let cy = 245;
-  contacts.forEach(([label, value]) => {
-    doc.font("Helvetica").fontSize(8).fillColor(MUTED).text(label.toUpperCase(), M, cy);
-    doc.font("Helvetica-Bold").fontSize(11).fillColor(BRAND).text(value, M, cy + 11);
-    cy += 34;
+
+  let cy = 270;
+  contacts.forEach(([label, value], i) => {
+    const y = cy + i * 42;
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(6.5)
+      .fillColor(MUTED)
+      .text(label.toUpperCase(), M, y, { characterSpacing: 0.7 });
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(10)
+      .fillColor(INK)
+      .text(value, M, y + 10, { width: CONTENT_W - 150, lineGap: 1.5 });
   });
 
-  doc
-    .font("Helvetica")
-    .fontSize(8)
-    .fillColor(MUTED)
-    .text(
-      "Katalog ini disusun otomatis dari sistem katalog XoraMateria. Spesifikasi & harga dapat berubah - mohon konfirmasi ke tim sales sebelum memesan.",
-      M,
-      pageH - 90,
-      { width: contentW }
-    );
+  // QR katalog digital
+  try {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://texora.co.id";
+    const qr = await QRCode.toBuffer(siteUrl, {
+      margin: 1,
+      width: 240,
+      color: { dark: BRAND, light: "#FFFFFF" },
+    });
+    const qrX = PAGE_W - M - 96;
+    const qrY = 290;
+    doc.roundedRect(qrX - 8, qrY - 8, 112, 128, 8).stroke(LINE);
+    doc.image(qr, qrX, qrY, { width: 96, height: 96 });
+    doc
+      .font("Helvetica")
+      .fontSize(6.5)
+      .fillColor(MUTED)
+      .text("Scan untuk katalog digital", qrX - 8, qrY + 102, {
+        width: 112,
+        align: "center",
+      });
+  } catch {
+    /* QR opsional */
+  }
+
+  keepOnPage(() => {
+    doc
+      .font("Helvetica")
+      .fontSize(7)
+      .fillColor(MUTED)
+      .text(
+        "Katalog ini disusun otomatis dari sistem katalog XoraMateria. Spesifikasi dan harga dapat berubah — mohon konfirmasi ke tim sales sebelum memesan. Toleransi susut kain standar pabrik ±2–3%.",
+        M,
+        PAGE_H - 96,
+        { width: CONTENT_W, lineGap: 1.6 }
+      );
+
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(8)
+      .fillColor(BRAND)
+      .text("XoraMateria — Fabric • Print • Fashion • Sport", M, PAGE_H - 56);
+  });
+
+  drawFooter();
 
   doc.end();
   return finished;
