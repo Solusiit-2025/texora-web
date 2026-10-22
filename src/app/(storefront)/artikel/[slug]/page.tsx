@@ -282,6 +282,7 @@ export default async function ArticleDetailPage({ params }: PageProps) {
                   <Link
                     key={p.id}
                     href={lp(`/catalog/${p.slug}`)}
+                    prefetch={false}
                     className="group flex items-center gap-3 p-4 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-brand-500/40 transition-colors"
                   >
                     <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-slate-950 shrink-0">
@@ -323,6 +324,7 @@ export default async function ArticleDetailPage({ params }: PageProps) {
                   <Link
                     key={a.id}
                     href={lp(`/artikel/${a.slug}`)}
+                    prefetch={false}
                     className="group p-4 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-brand-500/40 transition-colors space-y-2"
                   >
                     <span className="text-[10px] font-bold uppercase tracking-wider text-brand-400">

@@ -399,6 +399,8 @@ model ContentTranslation {
 
   @@unique([entity, entityId, field, locale])
   @@index([locale])
+  // Lookup per entitas + bahasa (dipakai setiap render halaman multi-bahasa)
+  @@index([entity, locale])
   @@map("content_translations")
 }
 

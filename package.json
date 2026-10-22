@@ -26,7 +26,9 @@
     "test:quote": "node scripts/test-quote.mjs",
     "test:articles": "node scripts/test-articles.mjs",
     "test:perf": "node scripts/bench-performance.mjs",
-    "test:db": "node scripts/db-latency.mjs"
+    "test:db": "node scripts/db-latency.mjs",
+    "test:rsc": "node scripts/bench-rsc.mjs",
+    "test:nav": "node scripts/bench-navigation.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1153.0",

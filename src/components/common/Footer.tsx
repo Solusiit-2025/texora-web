@@ -143,6 +143,7 @@ export async function Footer() {
                 featuredProducts.map((p) => (
                   <li key={p.id}>
                     <Link
+                      prefetch={false}
                       href={lp(`/catalog/${p.slug}`)}
                       className="hover:text-brand-300 transition-colors"
                       title={`${p.name} — ${p.composition}`}
@@ -153,13 +154,13 @@ export async function Footer() {
                 ))
               ) : (
                 <>
-                  <li><Link href={lp("/catalog")} className="hover:text-brand-300">Katalog Kain Sublimasi</Link></li>
-                  <li><Link href={lp("/catalog")} className="hover:text-brand-300">Dryfit Milano (Sportswear)</Link></li>
-                  <li><Link href={lp("/catalog")} className="hover:text-brand-300">Voal Ultrafine (Hijab)</Link></li>
+                  <li><Link prefetch={false} href={lp("/catalog")} className="hover:text-brand-300">Katalog Kain Sublimasi</Link></li>
+                  <li><Link prefetch={false} href={lp("/catalog")} className="hover:text-brand-300">Dryfit Milano (Sportswear)</Link></li>
+                  <li><Link prefetch={false} href={lp("/catalog")} className="hover:text-brand-300">Voal Ultrafine (Hijab)</Link></li>
                 </>
               )}
               <li>
-                <Link href={lp("/catalog")} className="hover:text-brand-300 font-medium inline-flex items-center gap-1">
+                <Link prefetch={false} href={lp("/catalog")} className="hover:text-brand-300 font-medium inline-flex items-center gap-1">
                   <Layers className="w-3 h-3" />
                   <T k="footer.semua" />
                 </Link>
@@ -172,6 +173,7 @@ export async function Footer() {
               {CATEGORY_SEO.map((c) => (
                 <li key={c.slug}>
                   <Link
+                    prefetch={false}
                     href={lp(`/kategori/${c.slug}`)}
                     className="hover:text-brand-300 transition-colors"
                   >
@@ -187,15 +189,15 @@ export async function Footer() {
               <T k="footer.layanan" />
             </h2>
             <ul className="space-y-2.5 text-xs text-slate-400">
-              <li><Link href={lp("/about")} className="hover:text-brand-300 font-medium"><T k="footer.links.about" fallback="Tentang Kami & Kapasitas Pabrik" /></Link></li>
-              <li><Link href={lp("/artikel")} className="hover:text-brand-300 font-medium flex items-center gap-1.5"><BookOpen className="w-3 h-3 text-brand-400" /><T k="nav.artikel" fallback="Artikel & Panduan" /></Link></li>
-              <li><Link href={lp("/request-quote")} className="hover:text-brand-300 font-medium flex items-center gap-1.5"><FileText className="w-3 h-3 text-brand-400" /><T k="footer.links.quote" fallback="Minta Penawaran Harga" /></Link></li>
+              <li><Link prefetch={false} href={lp("/about")} className="hover:text-brand-300 font-medium"><T k="footer.links.about" fallback="Tentang Kami & Kapasitas Pabrik" /></Link></li>
+              <li><Link prefetch={false} href={lp("/artikel")} className="hover:text-brand-300 font-medium flex items-center gap-1.5"><BookOpen className="w-3 h-3 text-brand-400" /><T k="nav.artikel" fallback="Artikel & Panduan" /></Link></li>
+              <li><Link prefetch={false} href={lp("/request-quote")} className="hover:text-brand-300 font-medium flex items-center gap-1.5"><FileText className="w-3 h-3 text-brand-400" /><T k="footer.links.quote" fallback="Minta Penawaran Harga" /></Link></li>
               <li><a href="/api/catalog/pdf" download className="hover:text-brand-300 font-medium flex items-center gap-1.5"><Download className="w-3 h-3 text-brand-400" /><T k="footer.links.pdf" fallback="Unduh Katalog PDF" /></a></li>
-              <li><Link href={lp("/custom-sublimation")} className="hover:text-accent-cyan font-medium"><T k="footer.links.visualizer" fallback="Unggah Desain & Visualizer" /></Link></li>
-              <li><Link href="/track-order" className="hover:text-brand-300"><T k="footer.links.track" fallback="Lacak Status Pesanan (SPK)" /></Link></li>
-              <li><Link href={lp("/contact")} className="hover:text-brand-300"><T k="footer.links.sample" fallback="Permintaan Sampel Kain" /></Link></li>
-              <li><Link href={lp("/contact")} className="hover:text-brand-300"><T k="footer.links.b2b" fallback="Kontrak Suplai Pabrik B2B" /></Link></li>
-              <li><Link href="/register" className="hover:text-brand-300"><T k="footer.links.partner" fallback="Daftar Kemitraan B2B" /></Link></li>
+              <li><Link prefetch={false} href={lp("/custom-sublimation")} className="hover:text-accent-cyan font-medium"><T k="footer.links.visualizer" fallback="Unggah Desain & Visualizer" /></Link></li>
+              <li><Link prefetch={false} href="/track-order" className="hover:text-brand-300"><T k="footer.links.track" fallback="Lacak Status Pesanan (SPK)" /></Link></li>
+              <li><Link prefetch={false} href={lp("/contact")} className="hover:text-brand-300"><T k="footer.links.sample" fallback="Permintaan Sampel Kain" /></Link></li>
+              <li><Link prefetch={false} href={lp("/contact")} className="hover:text-brand-300"><T k="footer.links.b2b" fallback="Kontrak Suplai Pabrik B2B" /></Link></li>
+              <li><Link prefetch={false} href="/register" className="hover:text-brand-300"><T k="footer.links.partner" fallback="Daftar Kemitraan B2B" /></Link></li>
             </ul>
           </nav>
 

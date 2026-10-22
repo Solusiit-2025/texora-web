@@ -149,7 +149,9 @@ export default function ArtikelClient({
 
               <div className="p-5 flex-1 flex flex-col">
                 <h2 className="text-base font-bold text-white group-hover:text-accent-cyan transition-colors leading-snug">
-                  <Link href={localePath(`/artikel/${a.slug}`)}>{a.title}</Link>
+                  <Link href={localePath(`/artikel/${a.slug}`)} prefetch={false}>
+                    {a.title}
+                  </Link>
                 </h2>
                 <p className="text-xs text-slate-400 leading-relaxed mt-2 line-clamp-3">
                   {a.excerpt}
@@ -170,6 +172,7 @@ export default function ArtikelClient({
               <div className="px-5 pb-5">
                 <Link
                   href={localePath(`/artikel/${a.slug}`)}
+                  prefetch={false}
                   className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-300 hover:text-brand-200 transition-colors"
                 >
                   {copy.minRead}

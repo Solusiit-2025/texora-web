@@ -1,5 +1,6 @@
 import { Navbar } from "@/components/common/Navbar";
 import { Footer } from "@/components/common/Footer";
+import { NavProgress } from "@/components/common/NavProgress";
 import { getSeoSettings } from "@/lib/seo";
 
 /**
@@ -26,6 +27,7 @@ export default async function StorefrontLayout({
 
   return (
     <div className="flex flex-col min-h-screen">
+      <NavProgress />
       <Navbar initialDisabledPaths={disabledPaths} />
       <main className="flex-1">{children}</main>
       <Footer />

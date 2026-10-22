@@ -368,12 +368,14 @@ export default function CatalogClient({ initialFabrics }: CatalogClientProps) {
                     href={localePath(`/request-quote?product=${fabric.slug}&source=catalog`)}
                     title={t("catalog.quoteCta")}
                     aria-label={t("catalog.quoteCta")}
+                    prefetch={false}
                     className="px-2.5 py-2 rounded-xl border border-brand-500/40 bg-brand-500/10 hover:bg-brand-500/25 hover:text-white text-brand-200 transition-all flex items-center"
                   >
                     <FileText className="w-3.5 h-3.5" />
                   </Link>
                   <Link
                     href={localePath(`/catalog/${fabric.slug}`)}
+                    prefetch={false}
                     className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold border border-slate-700 transition-colors"
                   >
                     {t("catalog.spec")}

@@ -155,3 +155,63 @@ npm run test:perf
 - `npm run test:all` → 414 pemeriksaan harus 0 fail
 - `npm run test:perf` → semua halaman < 100 ms TTFB, API < 10 ms
 - Setelah ubah konten di CMS: **cek halaman langsung** (cache di-invalidate otomatis)
+
+---
+
+## 8. Navigasi client-side (pindah halaman lewat navbar)
+
+Diukur dengan Playwright (`scripts/bench-navigation.mjs`) — alur nyata: klik link
+navbar, tunggu heading halaman baru muncul.
+
+### Hasil produksi (Vercel)
+
+| Navigasi | Sebelum | Sesudah |
+|---|---|---|
+| Katalog EN | ~1.800 ms | **114 ms** |
+| Artikel EN | ~1.800 ms | **54 ms** |
+| Homepage EN | ~1.800 ms | **55 ms** |
+| SSR ulang (page load langsung) | 2.045–4.783 ms | **330–560 ms** |
+
+### Penyebab: prefetch storm
+`<Link>` di Next.js otomatis mem-prefetch RSC payload setiap link yang masuk
+viewport. Di halaman artikel ada **11 link** (produk terkait, artikel terkait,
+CTA, footer) → **11 render server paralel** → semua rebutan koneksi DB remote.
+
+Perbaikan:
+- `prefetch={false}` pada link berat: kartu produk, kartu artikel, produk &
+  artikel terkait, dan **14 link di footer**
+- Link navbar utama tetap di-prefetch (itu yang paling sering diklik)
+
+### Progress bar navigasi (ganti `loading.tsx`)
+`loading.tsx` sempat dicoba, tapi **merusak SEO**: file itu membuat Next.js
+mulai streaming respons sebelum halaman selesai dirender, sehingga
+`notFound()` tidak bisa lagi mengubah status HTTP → artikel yang tidak ada
+mengembalikan **200** ("soft 404"). Google mengindeksnya sebagai halaman valid.
+
+Sekarang:
+- **Tidak ada `loading.tsx`** di route storefront → status 404 benar ✅
+- Feedback visual memakai `NavProgress` (bar progres tipis di atas, murni
+  client-side, tidak memengaruhi status HTTP)
+
+### Peran 5 bahasa terhadap kecepatan
+Ya, **5 bahasa menambah beban** karena tiap varian bahasa butuh lookup
+terjemahan sendiri:
+- `localizeRows()` → query tabel `content_translations` per entitas per bahasa
+- Sebelum: 4–6 query tambahan per render halaman non-Indonesia
+- Sekarang: **di-cache per (entitas, bahasa)** → 0 query setelah request pertama
+- Ditambah index DB `content_translations(entity, locale)` supaya lookup
+  per-bahasa tidak scan tabel
+
+Pengecekan cepat: buka `/en/artikel` (versi non-Inggris) — kalau masih
+lambat, berarti cache belum terisi (instance baru) → tunggu 1 menit.
+
+---
+
+## 9. Skrip benchmark
+
+```bash
+npm run test:perf    # TTFB + total tiap halaman & API
+npm run test:rsc     # RSC payload + prefetch (yang dipakai navigasi)
+npm run test:nav     # navigasi navbar sungguhan (Playwright)
+npm run test:db      # latensi & koneksi database
+```
