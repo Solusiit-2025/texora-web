@@ -51,9 +51,36 @@ CMS ringan internal (custom) telah diimplementasikan secara penuh menggunakan st
 
 ---
 
+### C. Teks Hero Homepage (Tambahan — 2026-10-22)
+Sebelumnya copy header homepage (judul, eyebrow, lead, 3 poin keunggulan, label CTA) di-hardcode di `src/lib/i18n/dictionary.ts`, sehingga setiap perubahan harus lewat developer + redeploy. Sekarang sudah bisa dikelola dari CMS:
+
+1. **Penyimpanan**: satu baris `SiteContent` dengan key `homepage.hero` (group `homepage`) berisi JSON 11 field.
+2. **Tab CMS baru**: Portal → Content Management → **Teks Hero** (`/portal/content-management?tab=hero-text`)
+   - Form 11 field + **pratinjau ringkas** langsung di panel.
+   - Tombol “Kembalikan default” per field dan “Reset semua ke default”.
+3. **Fallback berlapis** di storefront: nilai CMS → kamus i18n (`t("hero.*")`). Field yang kosong otomatis memakai teks bawaan, jadi hero tidak pernah tampil bolong.
+4. **Auto-terjemahan AI**: key terdaftar di `SITE_CONTENT_JSON_FIELDS` (`src/lib/content-translator.ts`) dan dipicu lewat `schedulePreTranslate()` (`src/app/api/cms/route.ts`) → 5 bahasa (en/zh/ja/de/ar) dibuat otomatis di background saat disimpan.
+5. **File terkait**:
+   - `src/config/hero-text.ts` (key, tipe, default, metadata form)
+   - `src/app/(storefront)/page.tsx` (SSR + lokalisasi)
+   - `src/app/(storefront)/HomeClient.tsx` (override per field)
+   - `src/app/portal/content-management/page.tsx` (UI tab)
+   - `src/config/cms-tabs.ts` + `src/components/portal/CmsTabBar.tsx` (registrasi tab)
+
+---
+
 ## 3. Checklist Kesiapan Production (Production Readiness)
 - [x] **PostgreSQL Database Sync**: `npx prisma db push` berhasil dijalankan dan semua schema tersinkronisasi.
 - [x] **Koreksi Environment**: `.env.local` dan `.env` telah diselaraskan ke database PostgreSQL aktif.
 - [x] **Database Seeding**: 18 produk kain industri + 4 hero slides + 3 testimonials + 4 FAQs + site content berhasil dipopulasi ke database produksi.
 - [x] **Zero Build Errors**: `npm run build` berhasil dikompilasi dengan status 100% lulus (semua 41 routes berhasil dioptimasi).
 - [x] **Graceful Fallback**: Semua endpoint dan storefront memiliki proteksi fallback sehingga website tetap berjalan prima meskipun koneksi database sedang lambat atau offline.
+
+---
+
+## 4. Analisis Alternatif CMS (2026-10-22)
+
+Dokumen analisis biaya & risiko pemilihan CMS (perkuat CMS custom vs headless WordPress vs Payload/Directus/Sanity) beserta roadmap implementasi tersedia di:
+[`docs/ANALISIS-CMS-OPTIONS.md`](docs/ANALISIS-CMS-OPTIONS.md)
+
+**Kesimpulan:** CMS custom yang ada sudah production-ready dan cakupan fiturnya setara/melebihi WordPress + plugin untuk use case Texora. Permintaan "CMS yang bisa dikelola dari WordPress" lebih tepat dijawab dengan **memperbaiki ergonomi editor** (± 8–10 hari kerja) daripada menambah sistem baru.

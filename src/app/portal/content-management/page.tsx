@@ -26,6 +26,7 @@ import {
   Activity,
   Shuffle,
   Languages,
+  Type,
 } from "lucide-react";
 import { formatRupiah } from "@/lib/utils";
 import { DEFAULT_SEO } from "@/lib/seo";
@@ -37,9 +38,17 @@ import { RedirectManager } from "@/components/common/RedirectManager";
 import { TranslationManager } from "@/components/common/TranslationManager";
 import ArticleManager from "./ArticleManager";
 import { CmsTabBar } from "@/components/portal/CmsTabBar";
+import {
+  HERO_TEXT_KEY,
+  HERO_TEXT_FIELD_META,
+  DEFAULT_HERO_TEXT,
+  normalizeHeroText,
+  type HeroText,
+} from "@/config/hero-text";
 
 type TabType =
   | "hero"
+  | "hero-text"
   | "testimonials"
   | "faqs"
   | "content"
@@ -147,7 +156,7 @@ function ContentManagementInner() {
 
   useEffect(() => {
     const tab = searchParams.get("tab") as TabType | null;
-    if (tab && ["hero","testimonials","faqs","content","social","pricing","pages","artikel","seo","catalog","translations"].includes(tab)) {
+    if (tab && ["hero","hero-text","testimonials","faqs","content","social","pricing","pages","artikel","seo","catalog","translations"].includes(tab)) {
       setActiveTab(tab);
     }
   }, [searchParams]);
@@ -232,6 +241,9 @@ function ContentManagementInner() {
     contactPhone: "+62 878-8985-6066",
     footerCopyright: "© 2026 PT. Texora Visi Prima. All rights reserved.",
   });
+
+  // Copy hero homepage (judul, eyebrow, lead, 3 poin, 2 CTA).
+  const [heroTextData, setHeroTextData] = useState<HeroText>(DEFAULT_HERO_TEXT);
 
   // Dynamic Pricing state for Management CMS
   const [pricingForm, setPricingForm] = useState({
@@ -339,6 +351,13 @@ function ContentManagementInner() {
         if (pagesRow?.value) {
           try {
             setPagesData((prev) => ({ ...prev, ...JSON.parse(pagesRow.value) }));
+          } catch {}
+        }
+
+        const heroTextRow = json.data.siteContent?.find((s: any) => s.key === HERO_TEXT_KEY);
+        if (heroTextRow?.value) {
+          try {
+            setHeroTextData(normalizeHeroText(JSON.parse(heroTextRow.value)));
           } catch {}
         }
       }
@@ -627,6 +646,47 @@ function ContentManagementInner() {
     }
   };
 
+  /**
+   * Simpan copy hero ke SiteContent (key `homepage.hero`).
+   * API otomatis menjadwalkan terjemahan AI ke 5 bahasa lain di background.
+   */
+  const handleSaveHeroText = async () => {
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/cms", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "siteContent",
+          data: {
+            key: HERO_TEXT_KEY,
+            group: "homepage",
+            label: "Teks Hero Homepage",
+            value: JSON.stringify(heroTextData),
+          },
+        }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!json?.success) {
+        throw new Error(json?.error || "Gagal menyimpan teks hero.");
+      }
+      showNotice(
+        "success",
+        "Teks hero disimpan. Terjemahan 5 bahasa diproses otomatis di background."
+      );
+      await loadData();
+    } catch (err: any) {
+      showNotice("error", err.message || "Gagal menyimpan teks hero.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  /** Kembalikan satu field ke teks bawaan (Bahasa Indonesia). */
+  const resetHeroTextField = (key: keyof HeroText) => {
+    setHeroTextData((prev) => ({ ...prev, [key]: DEFAULT_HERO_TEXT[key] }));
+  };
+
   const handleToggleModule = async (path: string) => {
     const base = seoData || DEFAULT_SEO;
     const currentEnabled = base.pages?.[path]?.enabled !== false;
@@ -743,6 +803,28 @@ function ContentManagementInner() {
         { label: "URL Gambar Detail", hint: "Gambar pendukung (kanan/kecil)." },
         { label: "Nomor Urutan", hint: "Urutan tampil slide (1 tampil pertama)." },
         { label: "Aktif", hint: "Nonaktifkan untuk menyembunyikan slide tanpa menghapus." },
+      ],
+    },
+    "hero-text": {
+      title: "Panduan Teks Hero",
+      desc: "Modul untuk mengubah seluruh copy header homepage (judul, eyebrow, badge, paragraf pengantar, 3 poin keunggulan, dan 2 label tombol) langsung dari CMS tanpa deploy ulang.",
+      steps: [
+        "Buka tab 'Teks Hero'.",
+        "Ubah field yang diperlukan — pratinjau di bawah form langsung diperbarui.",
+        "Judul dipecah 3 baris. Baris kedua otomatis memakai efek gradient animasi.",
+        "Klik 'Simpan Teks Hero'. Storefront langsung memakai teks baru.",
+        "Terjemahan 5 bahasa (en/zh/ja/de/ar) diproses otomatis di background bila AI aktif.",
+        "Gunakan 'Kembalikan default' per field atau 'Reset semua ke default' bila perlu.",
+      ],
+      fields: [
+        { label: "Badge kecil", hint: "Pill kecil di atas eyebrow, mis. 'Pabrik'." },
+        { label: "Eyebrow / lokasi", hint: "Baris kapital di bawah badge, mis. 'Jakarta Utara · Sublimasi Industri'." },
+        { label: "Judul — baris 1", hint: "Baris pertama headline." },
+        { label: "Judul — baris 2 (gradient)", hint: "Baris kedua; otomatis diberi efek gradient animasi." },
+        { label: "Judul — baris 3", hint: "Baris ketiga headline." },
+        { label: "Paragraf pengantar", hint: "Deskripsi singkat di bawah judul." },
+        { label: "Poin keunggulan #1–#3", hint: "Tiga poin singkat dengan ikon centang." },
+        { label: "Tombol utama / sekunder", hint: "Label tombol CTA. Tautannya tetap mengikuti halaman studio & katalog." },
       ],
     },
     testimonials: {
@@ -897,6 +979,13 @@ function ContentManagementInner() {
       "Urutkan slide paling penting di urutan pertama.",
       "Sertakan CTA yang jelas dan arahkan ke halaman yang relevan.",
     ],
+    "hero-text": [
+      "Pertahankan 1 ide utama di judul; jabarkan detail di paragraf pengantar.",
+      "Baris kedua judul diberi efek gradient — pilih kata yang paling ingin ditonjolkan.",
+      "Tiga poin keunggulan sebaiknya konkret dan terukur (gratis, fleksibel, termin 30/60 hari).",
+      "Hindari menulis ulang nama produk di hero; fokus pada manfaat bagi calon pembeli.",
+      "Setelah menyimpan, buka homepage dan uji tampilan mobile sebelum mengumumkan perubahan.",
+    ],
     testimonials: [
       "Pilih ulasan yang spesifik dan menyebut manfaat nyata (angka, hasil).",
       "Gunakan nama asli + perusahaan untuk meningkatkan kepercayaan.",
@@ -988,6 +1077,7 @@ function ContentManagementInner() {
 
   const CMS_GUIDES: Record<string, string> = {
     hero: "Kelola slide utama homepage. Tambah/edit/hapus slide, atur gambar utama & detail, tag, caption, urutan, dan status aktif. Klik 'Tambah Slide Baru' untuk membuat slide baru.",
+    "hero-text": "Kelola copy header homepage: badge, eyebrow, judul 3 baris, paragraf pengantar, 3 poin keunggulan, dan 2 label tombol. Klik 'Simpan Teks Hero' untuk menerapkan — terjemahan 5 bahasa dibuat otomatis.",
     testimonials: "Kelola ulasan mitra yang tampil di homepage. Tambah testimoni, edit kutipan/nama/organisasi, atur urutan, dan status aktif.",
     faqs: "Kelola daftar pertanyaan umum. Tambah/edit/hapus pertanyaan & jawaban, atur urutan dan status aktif.",
     content: "Atur metrik statistik pabrik (angka & label) dan banner CTA B2B (judul, deskripsi, teks tombol, link). Klik 'Simpan Perubahan Teks' untuk menerapkan.",
@@ -1156,6 +1246,133 @@ function ContentManagementInner() {
                 </p>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 1B: TEKS HERO (copy header homepage) */}
+      {!loading && activeTab === "hero-text" && (
+        <div className="space-y-6 max-w-4xl">
+          <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <Type className="w-4 h-4 text-brand-400" />
+              <span>Teks Hero Homepage</span>
+            </h3>
+            <p className="text-xs text-slate-400">
+              Seluruh copy header homepage: badge, eyebrow, judul 3 baris, paragraf pengantar,
+              3 poin keunggulan, dan 2 label tombol. Perubahan langsung tampil di storefront
+              setelah disimpan; terjemahan 5 bahasa dibuat otomatis di background.
+            </p>
+
+            <div className="space-y-4 pt-2">
+              {HERO_TEXT_FIELD_META.map((field) => (
+                <div key={field.key}>
+                  <div className="flex items-center justify-between gap-3 mb-1">
+                    <label className="text-xs font-semibold text-slate-300">{field.label}</label>
+                    {heroTextData[field.key] !== DEFAULT_HERO_TEXT[field.key] && (
+                      <button
+                        type="button"
+                        onClick={() => resetHeroTextField(field.key)}
+                        className="text-[10px] font-semibold text-brand-300 hover:text-brand-200"
+                      >
+                        Kembalikan default
+                      </button>
+                    )}
+                  </div>
+                  {field.multiline ? (
+                    <textarea
+                      rows={field.rows || 3}
+                      value={heroTextData[field.key]}
+                      onChange={(e) =>
+                        setHeroTextData({ ...heroTextData, [field.key]: e.target.value })
+                      }
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white"
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      value={heroTextData[field.key]}
+                      onChange={(e) =>
+                        setHeroTextData({ ...heroTextData, [field.key]: e.target.value })
+                      }
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white"
+                    />
+                  )}
+                  {field.hint && (
+                    <p className="text-[10px] text-slate-500 mt-1">{field.hint}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Pratinjau ringkas */}
+          <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-3">
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <Eye className="w-4 h-4 text-brand-400" />
+              <span>Pratinjau</span>
+            </h3>
+            <div className="rounded-2xl bg-slate-950 border border-slate-800 p-5">
+              <span className="inline-flex items-center gap-2 rounded-full border border-brand-500/30 bg-brand-500/10 pl-1.5 pr-3.5 py-1">
+                <span className="inline-flex items-center rounded-full bg-brand-500 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-950">
+                  {heroTextData.badge || "—"}
+                </span>
+                <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-200">
+                  {heroTextData.eyebrow}
+                </span>
+              </span>
+
+              <h1 className="mt-4 font-display text-lg sm:text-xl font-bold leading-snug text-white">
+                {heroTextData.title1}
+                <br />
+                <span className="text-brand-400">{heroTextData.title2}</span>
+                <br />
+                {heroTextData.title3}
+              </h1>
+
+              <p className="mt-3 text-xs leading-relaxed text-slate-300">{heroTextData.lead}</p>
+
+              <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-300">
+                {[heroTextData.badge1, heroTextData.badge2, heroTextData.badge3].map((point, i) => (
+                  <li key={i} className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                    {point}
+                  </li>
+                ))}
+              </ul>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                <span className="rounded-lg bg-brand-500 px-3 py-1.5 text-[11px] font-bold text-slate-950">
+                  {heroTextData.ctaPrint}
+                </span>
+                <span className="rounded-lg border border-slate-700 px-3 py-1.5 text-[11px] font-semibold text-white">
+                  {heroTextData.ctaCatalog}
+                </span>
+              </div>
+            </div>
+            <p className="text-[10px] text-slate-500">
+              Pratinjau ringkas — tampilan final mengikuti layout storefront (termasuk efek gradient
+              pada judul baris kedua).
+            </p>
+          </div>
+
+          <div className="flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => setHeroTextData(DEFAULT_HERO_TEXT)}
+              className="text-xs font-semibold text-slate-400 hover:text-white"
+            >
+              Reset semua ke default
+            </button>
+            <button
+              type="button"
+              disabled={submitting}
+              onClick={handleSaveHeroText}
+              className="px-6 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-400 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg shadow-brand-500/20"
+            >
+              {submitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+              <span>Simpan Teks Hero</span>
+            </button>
           </div>
         </div>
       )}

@@ -6,6 +6,7 @@ import {
   SOCIAL_LINKS_KEY,
   normalizeSocialLinks,
 } from "@/config/social";
+import { HERO_TEXT_KEY, HERO_TEXT_FIELDS } from "@/config/hero-text";
 import {
   normalizeLocale,
   localizeRows,
@@ -36,6 +37,11 @@ function schedulePreTranslate(type: string, data: any, record: any) {
       try {
         const obj = JSON.parse(data.value);
         preTranslateFields("siteContent", "homepage.cta_b2b", obj, ["title", "description", "actionText"]).catch(() => {});
+      } catch {}
+    } else if (type === "siteContent" && data?.key === HERO_TEXT_KEY) {
+      try {
+        const obj = JSON.parse(data.value);
+        preTranslateFields("siteContent", HERO_TEXT_KEY, obj, [...HERO_TEXT_FIELDS]).catch(() => {});
       } catch {}
     } else if (type === "article") {
       preTranslateFields(

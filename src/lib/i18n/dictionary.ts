@@ -18,7 +18,7 @@ export const LOCALE_META: Record<
   Locale,
   { native: string; short: string; dir: "ltr" | "rtl"; htmlLang: string }
 > = {
-  id: { native: "Bahasa Indonesia", short: "ID", dir: "ltr", htmlLang: "id" },
+  id: { native: "Indonesia", short: "ID", dir: "ltr", htmlLang: "id" },
   en: { native: "English", short: "EN", dir: "ltr", htmlLang: "en" },
   zh: { native: "简体中文", short: "中文", dir: "ltr", htmlLang: "zh-CN" },
   ja: { native: "日本語", short: "日本語", dir: "ltr", htmlLang: "ja" },

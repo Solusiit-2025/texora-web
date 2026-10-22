@@ -12,12 +12,14 @@ import {
   BookOpen,
   Sparkles,
   Languages,
+  Type,
   type LucideIcon,
 } from "lucide-react";
 import { CMS_TABS } from "@/config/cms-tabs";
 
 const ICONS: Record<string, LucideIcon> = {
   hero: LayoutTemplate,
+  "hero-text": Type,
   testimonials: Star,
   faqs: HelpCircle,
   content: BarChart3,

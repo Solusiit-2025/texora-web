@@ -9,6 +9,7 @@ import { FabricSpecCard } from "@/components/storefront/FabricSpecCard";
 import { RichContent } from "@/components/common/RichContent";
 import { Breadcrumb } from "@/components/common/Breadcrumb";
 import { useI18n, useLocalePath } from "@/lib/i18n/LanguageContext";
+import { HERO_TEXT_KEY, type HeroText } from "@/config/hero-text";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -211,6 +212,8 @@ interface HomeClientProps {
     testimonials?: any[];
     stats?: Array<{ v: string; k: string }>;
     b2bCta?: { title: string; description: string; actionText: string; actionLink: string };
+    /** Copy hero dari CMS (sudah diterjemahkan sesuai locale oleh server). */
+    heroText?: Partial<HeroText>;
   };
 }
 
@@ -246,6 +249,10 @@ export default function HomePage({ initialData }: HomeClientProps) {
       actionText: "Minta penawaran",
       actionLink: "/contact",
     }
+  );
+  // Copy hero dari CMS. Kalau kosong, tiap field jatuh ke kamus i18n (t()).
+  const [heroText, setHeroText] = useState<Partial<HeroText>>(
+    initialData?.heroText || {}
   );
 
   const [calcFabricId, setCalcFabricId] = useState(
@@ -292,6 +299,13 @@ export default function HomePage({ initialData }: HomeClientProps) {
               setB2bCta(JSON.parse(b2bRow.value));
             } catch {}
           }
+          const heroRow = cmsRes.data.siteContent?.find((s: any) => s.key === HERO_TEXT_KEY);
+          if (heroRow?.value) {
+            try {
+              const parsed = JSON.parse(heroRow.value);
+              if (parsed && typeof parsed === "object") setHeroText(parsed);
+            } catch {}
+          }
         }
       } catch (err) {
         console.warn("Using default CMS fallbacks:", err);
@@ -330,6 +344,26 @@ export default function HomePage({ initialData }: HomeClientProps) {
   const container = "texora-container";
   const pad2 = (n: number) => String(n).padStart(2, "0");
 
+  // Copy hero: utamakan nilai CMS, fallback ke kamus i18n per field.
+  // (Trim supaya field yang dikosongkan admin tidak meninggalkan ruang kosong.)
+  const heroCopy = (key: keyof HeroText, i18nKey: string) => {
+    const value = heroText[key];
+    return typeof value === "string" && value.trim() ? value : t(i18nKey);
+  };
+  const heroBadge = heroCopy("badge", "hero.badge");
+  const heroEyebrow = heroCopy("eyebrow", "hero.eyebrow");
+  const heroTitle1 = heroCopy("title1", "hero.t1a");
+  const heroTitle2 = heroCopy("title2", "hero.t1b");
+  const heroTitle3 = heroCopy("title3", "hero.t1c");
+  const heroLead = heroCopy("lead", "hero.lead");
+  const heroPoints = [
+    heroCopy("badge1", "hero.b1"),
+    heroCopy("badge2", "hero.b2"),
+    heroCopy("badge3", "hero.b3"),
+  ];
+  const heroCtaPrint = heroCopy("ctaPrint", "hero.ctaPrint");
+  const heroCtaCatalog = heroCopy("ctaCatalog", "hero.ctaCatalog");
+
   return (
     <div className="overflow-hidden">
       {/* Breadcrumb - membantu navigasi & menghasilkan BreadcrumbList schema */}
@@ -365,27 +399,27 @@ export default function HomePage({ initialData }: HomeClientProps) {
             >
               <span className="inline-flex items-center gap-2 rounded-full border border-brand-500/30 bg-brand-500/10 pl-1.5 pr-3.5 py-1 backdrop-blur">
                 <span className="inline-flex items-center gap-1 rounded-full bg-brand-500 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-ink">
-                  <Factory className="h-3 w-3" /> {t("hero.badge")}
+                  <Factory className="h-3 w-3" /> {heroBadge}
                 </span>
                 <span className="text-[10px] xl:text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-200">
-                  {t("hero.eyebrow")}
+                  {heroEyebrow}
                 </span>
               </span>
 
               <h1 className="mt-5 font-display text-fluid-hero font-bold text-alabaster tracking-tight">
-                {t("hero.t1a")}
+                {heroTitle1}
                 <br />
-                <em className="animated-gradient-text not-italic font-extrabold">{t("hero.t1b")}</em>
+                <em className="animated-gradient-text not-italic font-extrabold">{heroTitle2}</em>
                 <br />
-                {t("hero.t1c")}
+                {heroTitle3}
               </h1>
               <p className="mt-4 max-w-lg text-xs sm:text-sm lg:text-[0.92rem] xl:text-base text-slate-300 leading-relaxed">
-                {t("hero.lead")}
+                {heroLead}
               </p>
 
               <ul className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-xs text-slate-300">
-                {[t("hero.b1"), t("hero.b2"), t("hero.b3")].map((tb) => (
-                  <li key={tb} className="flex items-center gap-1.5">
+                {heroPoints.map((tb, i) => (
+                  <li key={i} className="flex items-center gap-1.5">
                     <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-400">
                       <Check className="h-3 w-3" />
                     </span>
@@ -400,7 +434,7 @@ export default function HomePage({ initialData }: HomeClientProps) {
                   className="group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-brand-500 to-brand-400 px-6 py-3.5 text-xs sm:text-sm font-bold text-ink shadow-lg shadow-brand-500/25 transition-all hover:shadow-brand-500/40 hover:-translate-y-0.5"
                 >
                   <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
-                  {t("hero.ctaPrint")}
+                  {heroCtaPrint}
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Link>
                 <Link
@@ -408,7 +442,7 @@ export default function HomePage({ initialData }: HomeClientProps) {
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900/60 px-6 py-3.5 text-xs sm:text-sm font-semibold text-alabaster backdrop-blur transition-all hover:border-brand-500/60 hover:bg-slate-900"
                 >
                   <Layers className="h-4 w-4 text-brand-400" />
-                  {t("hero.ctaCatalog")}
+                  {heroCtaCatalog}
                 </Link>
                 <Link
                   href={localePath("/request-quote")}

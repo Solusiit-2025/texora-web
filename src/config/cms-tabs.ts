@@ -8,6 +8,7 @@
 
 export const CMS_TABS = [
   { key: "hero", label: "Hero Slider", hint: "Banner utama homepage" },
+  { key: "hero-text", label: "Teks Hero", hint: "Judul & copy header homepage" },
   { key: "testimonials", label: "Testimoni", hint: "Ulasan mitra bisnis" },
   { key: "faqs", label: "FAQ", hint: "Pertanyaan umum" },
   { key: "content", label: "Statistik & Banner", hint: "Angka & CTA" },

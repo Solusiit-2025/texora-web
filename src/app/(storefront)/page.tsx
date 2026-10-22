@@ -11,6 +11,11 @@ import {
 import { getRequestLocale, getContentLocale } from "@/lib/server-locale";
 import { localizeRows, localizeObject, localizeStatLabels } from "@/lib/content-translator";
 import {
+  HERO_TEXT_KEY,
+  HERO_TEXT_FIELDS,
+  type HeroText,
+} from "@/config/hero-text";
+import {
   buildPageMetadata,
   buildWebSiteSchema,
   buildLocalBusinessSchema,
@@ -53,7 +58,7 @@ export default async function HomePage() {
 
   // SEMUA query homepage paralel (DB remote ~180ms/query, jadi sequential
   // akan menumpuk waktu tunggu).
-  const [products, faqs, heroSlides, testimonials, stats, b2bCta] =
+  const [products, faqs, heroSlides, testimonials, stats, b2bCta, heroText] =
     await Promise.all([
       getStorefrontProducts(),
       getStorefrontFaqs(),
@@ -74,6 +79,7 @@ export default async function HomePage() {
         actionText: "Minta penawaran",
         actionLink: "/contact",
       }),
+      getSiteContentValue<Partial<HeroText>>(HERO_TEXT_KEY, {}),
     ]);
 
   let productsOut = products;
@@ -84,14 +90,18 @@ export default async function HomePage() {
   // Tahap 2: terjemahkan konten DB utk URL berprefik bahasa (cache DB).
   let statsOut = stats;
   let b2bOut = b2bCta;
+  let heroTextOut: Partial<HeroText> = heroText || {};
   if (lang) {
-    [productsOut, faqsOut, heroSlidesOut, testimonialsOut, statsOut, b2bOut] = await Promise.all([
+    [productsOut, faqsOut, heroSlidesOut, testimonialsOut, statsOut, b2bOut, heroTextOut] = await Promise.all([
       localizeRows("product", products, (p: any) => p.slug, ["description"], lang),
       localizeRows("faq", faqs, (f: any) => f.id, ["question", "answer"], lang),
       localizeRows("hero", heroSlides, (s: any) => s.id, ["tag", "caption", "alt"], lang),
       localizeRows("testimonial", testimonials, (t: any) => t.id, ["quote"], lang),
       localizeStatLabels("homepage.stats", stats, lang),
       localizeObject("siteContent", "homepage.cta_b2b", b2bCta as any, ["title", "description", "actionText"], lang) as any,
+      Object.keys(heroText || {}).length > 0
+        ? (localizeObject("siteContent", HERO_TEXT_KEY, heroText as any, [...HERO_TEXT_FIELDS], lang) as Promise<Partial<HeroText>>)
+        : Promise.resolve<Partial<HeroText>>({}),
     ]);
   }
 
@@ -133,6 +143,7 @@ export default async function HomePage() {
           testimonials: testimonialsOut,
           stats: statsOut,
           b2bCta: b2bOut,
+          heroText: heroTextOut,
         }}
       />
     </>

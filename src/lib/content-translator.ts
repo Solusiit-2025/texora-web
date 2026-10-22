@@ -17,6 +17,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { cached, invalidateCache } from "@/lib/cache";
+import { HERO_TEXT_KEY, HERO_TEXT_FIELDS } from "@/config/hero-text";
 
 export const TRANSLATION_LOCALES = ["en", "zh", "ja", "de", "ar"] as const;
 export type TranslationLocale = (typeof TRANSLATION_LOCALES)[number];
@@ -641,6 +642,8 @@ export async function localizeObject<T extends Record<string, any>>(
 const SITE_CONTENT_JSON_FIELDS: Record<string, string[]> = {
   "site.pages": ["aboutTitle", "aboutDescription", "aboutCaption"],
   "homepage.cta_b2b": ["title", "description", "actionText"],
+  // Copy hero homepage (badge, judul 3 baris, lead, 3 poin, 2 CTA).
+  [HERO_TEXT_KEY]: [...HERO_TEXT_FIELDS],
 };
 
 /**
