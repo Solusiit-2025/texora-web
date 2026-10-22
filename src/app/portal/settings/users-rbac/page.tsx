@@ -14,6 +14,7 @@ import {
   RotateCcw,
   Save,
   ShieldCheck,
+  Sparkles,
   Trash2,
   Users,
 } from "lucide-react";
@@ -187,6 +188,75 @@ export default function RoleMenuManagementPage() {
         : Array.from(new Set([...current, ...groupIds]));
       return { ...prev, [role]: next };
     });
+  };
+
+  /**
+   * Preset modul per role.
+   *
+   * "Web Publish + CMS" = website publik (katalog, artikel, RFQ) + CMS,
+   * tanpa modul produksi/keuangan/warehouse/social yang tidak dipakai.
+   *
+   * CATATAN: menu yang dimatikan di sini juga MENUTUP akses route-nya
+   * (lihat isMenuDenied di src/lib/auth/rbac.ts), jadi modul benar-benar
+   * tidak bisa dibuka - bukan cuma disembunyikan dari sidebar.
+   */
+  const MENU_PRESETS: Array<{
+    key: string;
+    label: string;
+    desc: string;
+    keep: string[];
+  }> = [
+    {
+      key: "publish-cms",
+      label: "Web Publish + CMS",
+      desc: "Dashboard, katalog, CMS, audit, RBAC + RFQ & pipeline lead",
+      keep: [
+        "dashboard",
+        "catalog",
+        "content",
+        "audit",
+        "settings",
+        "users-rbac",
+        "crm.leads",
+        "crm.quotes",
+      ],
+    },
+    {
+      key: "publish-cms-sales",
+      label: "Publish + CMS + Sales",
+      desc: "Tambah database pelanggan & rekap penjualan",
+      keep: [
+        "dashboard",
+        "catalog",
+        "content",
+        "audit",
+        "settings",
+        "users-rbac",
+        "crm.leads",
+        "crm.quotes",
+        "crm.customers",
+        "crm.sales-report",
+      ],
+    },
+    {
+      key: "full",
+      label: "Semua Modul",
+      desc: "Aktifkan kembali seluruh modul portal",
+      keep: ALL_MENU_ITEM_IDS,
+    },
+  ];
+
+  const applyPreset = (presetKey: string) => {
+    if (activeRole?.locked) return;
+    const preset = MENU_PRESETS.find((p) => p.key === presetKey);
+    if (!preset) return;
+
+    setMap((prev) => ({
+      ...prev,
+      [selectedRole]: preset.keep.filter((id) =>
+        ALL_MENU_ITEM_IDS.includes(id)
+      ),
+    }));
   };
 
   const handleSave = async () => {
@@ -885,6 +955,48 @@ export default function RoleMenuManagementPage() {
                   {menuCount(selectedRole)}/{ALL_MENU_ITEM_IDS.length} aktif
                 </div>
               </div>
+
+              {/* PRESET MODUL: 1 klik untuk mode "Web Publish + CMS" */}
+              {activeRole && !activeRole.locked && (
+                <div className="mb-4 p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
+                  <div className="flex items-start gap-2.5">
+                    <Sparkles className="w-4 h-4 text-brand-400 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-bold text-white">
+                        Preset modul cepat
+                      </p>
+                      <p className="text-[10px] text-slate-500 mt-0.5 leading-relaxed">
+                        Menu yang dimatikan juga <strong>menutup akses route</strong>{" "}
+                        modul tsb (bukan cuma disembunyikan dari sidebar). Klik
+                        preset, lalu tekan &quot;Simpan&quot;.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {MENU_PRESETS.map((p) => {
+                      const active = (map[selectedRole] ?? []).length === p.keep.length;
+                      return (
+                        <button
+                          key={p.key}
+                          type="button"
+                          onClick={() => applyPreset(p.key)}
+                          title={p.desc}
+                          className={`px-3 py-2 rounded-xl text-[11px] font-bold border transition-all ${
+                            active
+                              ? "bg-brand-500/20 border-brand-500/50 text-brand-200"
+                              : "bg-slate-950 border-slate-700 text-slate-300 hover:border-brand-500/40 hover:text-white"
+                          }`}
+                        >
+                          {p.label}
+                          <span className="block font-normal text-[9px] text-slate-500 mt-0.5">
+                            {p.keep.length} menu
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               <div className="divide-y divide-slate-800/80">
                 {groups.map((group) => {

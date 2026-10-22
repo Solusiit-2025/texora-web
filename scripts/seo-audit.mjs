@@ -175,7 +175,33 @@ async function audit(page) {
 (async () => {
   console.log("=== SEO AUDIT TEXORA ===");
 
+  // Halaman yang dinonaktifkan di CMS (fitur Visibilitas Modul) WAJIB
+  // membalas 404 - kalau tidak, kontennya masih ter-index mesin pencari.
+  let disabledPaths = [];
+  try {
+    const r = await fetch(`${BASE}/api/seo`);
+    const j = await r.json();
+    disabledPaths = Object.entries(j?.data?.pages || {})
+      .filter(([, m]) => m && m.enabled === false)
+      .map(([k]) => k);
+  } catch {
+    /* biarkan kosong */
+  }
+
   for (const page of PAGES) {
+    if (disabledPaths.includes(page.path)) {
+      try {
+        const res = await fetch(`${BASE}${page.path}`, { redirect: "manual" });
+        check(
+          `${page.name} dinonaktifkan -> 404 (tidak ter-index)`,
+          res.status === 404,
+          `status=${res.status}`
+        );
+      } catch (e) {
+        check(`${page.name} dinonaktifkan -> 404`, false, e.message);
+      }
+      continue;
+    }
     try {
       await audit(page);
     } catch (e) {

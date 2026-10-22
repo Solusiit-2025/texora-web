@@ -26,6 +26,61 @@ const REDIRECT_CACHE_TTL_MS = 60 * 1000;
 let redirectCache: { rules: EdgeRedirectRule[]; fetchedAt: number } | null = null;
 let redirectFetchInFlight: Promise<EdgeRedirectRule[]> | null = null;
 
+/**
+ * Cache peta hak akses menu per role (dipakai untuk guarding route portal).
+ *
+ * Kenapa tidak cukup pakai klaim `menu` di JWT?
+ *  - Klaim JWT dibuat saat login -> kalau admin mengubah Role & Menu
+ *    Management, akses route portal masih TERBUKA sampai user login ulang
+ *    (bisa 30-60 menit).
+ *  - Menu di sidebar sendiri diambil dari DB (via /api/rbac/menu?scope=me),
+ *    jadi sidebar & route guard bisa berbeda -> membingungkan.
+ *
+ * Solusi: middleware mengambil peta menu FRESH dari API publik (di-cache
+ * CDN 60 detik + cache memory di edge). Bila API tidak terjangkau, fallback
+ * ke klaim JWT (fail open, tidak memblokir user yang sah).
+ */
+const MENU_CACHE_TTL_MS = 60 * 1000;
+let menuCache: {
+  byRole: Record<string, string[]>;
+  fetchedAt: number;
+} | null = null;
+let menuFetchInFlight: Promise<Record<string, string[]>> | null = null;
+
+async function getRoleMenuIds(
+  origin: string,
+  role: string
+): Promise<string[] | null> {
+  const now = Date.now();
+  if (menuCache && now - menuCache.fetchedAt < MENU_CACHE_TTL_MS) {
+    return menuCache.byRole[role] ?? null;
+  }
+
+  if (!menuFetchInFlight) {
+    menuFetchInFlight = fetch(
+      `${origin}/api/rbac/menu?public=1&role=${encodeURIComponent(role)}`
+    )
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        const ids: string[] = Array.isArray(json?.data?.menuIds)
+          ? json.data.menuIds
+          : [];
+        menuCache = { byRole: { [role]: ids }, fetchedAt: Date.now() };
+        return { [role]: ids };
+      })
+      .catch(() => {
+        menuCache = { byRole: {}, fetchedAt: Date.now() };
+        return {} as Record<string, string[]>;
+      })
+      .finally(() => {
+        menuFetchInFlight = null;
+      });
+  }
+
+  const map = await menuFetchInFlight;
+  return map[role] ?? null;
+}
+
 function normalizePath(path: string): string {
   if (!path) return "/";
   let p = String(path).trim();
@@ -49,8 +104,7 @@ const LOCALE_ALLOWED_SEGMENTS = [
   "artikel",
 ];
 
-async function getRedirectRules(origin: string): Promise<EdgeRedirectRule[]> {
-  const now = Date.now();
+async function getRedirectRules(origin: string): Promise<EdgeRedirectRule[]> {  const now = Date.now();
   if (redirectCache && now - redirectCache.fetchedAt < REDIRECT_CACHE_TTL_MS) {
     return redirectCache.rules;
   }
@@ -152,6 +206,9 @@ export async function middleware(req: NextRequest) {
         url.pathname = clean;
         const requestHeaders = new Headers(req.headers);
         requestHeaders.set("x-locale", locale);
+        // Path tanpa prefix bahasa -> dipakai server component untuk
+        // mengecek apakah halaman ini dinonaktifkan di CMS.
+        requestHeaders.set("x-pathname", clean);
         return NextResponse.rewrite(url, {
           request: { headers: requestHeaders },
         });
@@ -222,7 +279,22 @@ export async function middleware(req: NextRequest) {
 
     // RBAC Dinamis: menu yang disembunyikan pada Role & Menu Management
     // ikut memblokir akses URL langsung (bukan hanya disembunyikan di sidebar).
-    const menuDenied = isMenuDenied(pathname, userPayload.role, userPayload.menu);
+    // Prioritas: peta menu FRESH dari API (bisa saja admin baru saja
+    // mengubahnya) -> baru fallback ke klaim JWT bila API tidak terjangkau.
+    const freshMenuIds = await getRoleMenuIds(
+      req.nextUrl.origin,
+      userPayload.role
+    );
+    const effectiveMenuIds =
+      freshMenuIds && freshMenuIds.length > 0
+        ? freshMenuIds
+        : userPayload.menu;
+
+    const menuDenied = isMenuDenied(
+      pathname,
+      userPayload.role,
+      effectiveMenuIds
+    );
     if (menuDenied) {
       const unauthorizedUrl = new URL("/unauthorized", req.url);
       unauthorizedUrl.searchParams.set("from", pathname);
@@ -326,7 +398,14 @@ export async function middleware(req: NextRequest) {
     });
   }
 
-  return NextResponse.next();
+  // Halaman publik: teruskan pathname (tanpa prefix bahasa) ke server
+  // component supaya modul yang dinonaktifkan di CMS bisa diblokir
+  // di sisi server (status 404), bukan hanya disembunyikan di menu.
+  {
+    const requestHeaders = new Headers(req.headers);
+    requestHeaders.set("x-pathname", pathname);
+    return NextResponse.next({ request: { headers: requestHeaders } });
+  }
 }
 
 export const config = {

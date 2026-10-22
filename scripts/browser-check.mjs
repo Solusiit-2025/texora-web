@@ -33,7 +33,25 @@ const browser = await chromium.launch({
 
 let totalErrors = 0;
 
+// Halaman yang dinonaktifkan di CMS (Visibilitas Modul) memang 404 -> browser
+// mencatat error 404 di console. Lewati, karena itu perilaku yang BENAR.
+let disabledPaths = [];
+try {
+  const r = await fetch(`${BASE}/api/seo`);
+  const j = await r.json();
+  disabledPaths = Object.entries(j?.data?.pages || {})
+    .filter(([, m]) => m && m.enabled === false)
+    .map(([k]) => k);
+} catch {
+  /* biarkan kosong */
+}
+
 for (const path of PAGES) {
+  if (disabledPaths.includes(path)) {
+    console.log(`\n=== ${path} : dilewati (modul dinonaktifkan di CMS) ===`);
+    continue;
+  }
+
   const context = await browser.newContext();
   const page = await context.newPage();
 

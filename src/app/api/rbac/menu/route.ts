@@ -23,6 +23,33 @@ export async function GET(req: NextRequest) {
   try {
     const user = await getAuthenticatedUser(req);
 
+    // ---------------------------------------------------------------
+    // Mode publik (dipakai middleware edge untuk guarding route portal):
+    // hanya mengembalikan ID menu milik satu role. Tidak ada data sensitif
+    // (nama/deskripsi menu tidak ditampilkan), dan di-cache CDN 60 detik.
+    // ---------------------------------------------------------------
+    const params = req.nextUrl.searchParams;
+    if (params.get("public") === "1") {
+      const role = params.get("role");
+      if (!role) {
+        return NextResponse.json(
+          { success: false, error: "Parameter role wajib diisi." },
+          { status: 400 }
+        );
+      }
+      const map = await getMenuAccessMap();
+      const menuIds = map[role] ?? [];
+      return NextResponse.json(
+        { success: true, data: { role, menuIds } },
+        {
+          headers: {
+            "Cache-Control":
+              "public, max-age=60, s-maxage=60, stale-while-revalidate=300",
+          },
+        }
+      );
+    }
+
     if (!user) {
       return NextResponse.json(
         { success: false, error: "Sesi tidak valid. Silakan login kembali." },
