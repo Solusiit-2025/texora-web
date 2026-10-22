@@ -60,7 +60,11 @@ await page.goto(`${BASE}/portal/content-management?tab=faqs`, {
   waitUntil: "networkidle",
   timeout: 60000,
 });
-await page.waitForTimeout(2500);
+// Tunggu tab bar CMS siap (produksi bisa lebih lambat dari lokal)
+await page
+  .waitForSelector('[role="tablist"]', { timeout: 30000 })
+  .catch(() => {});
+await page.waitForTimeout(1500);
 
 // CATATAN: jangan pakai class*="pen" -> ikut cocok dengan icon "book-open".
 const faqEditBtn = page.locator('main button:has(svg.lucide-square-pen)').first();
@@ -68,7 +72,7 @@ check("Tombol edit FAQ ada", (await faqEditBtn.count()) > 0);
 
 if ((await faqEditBtn.count()) > 0) {
   await faqEditBtn.click();
-  await page.waitForSelector('[contenteditable="true"]', { timeout: 15000 });
+  await page.waitForSelector('[contenteditable="true"]', { timeout: 30000 });
 
   const editor = page.locator('[contenteditable="true"]').last();
   const initialHtml = (await editor.innerHTML().catch(() => "")) || "";
@@ -120,14 +124,17 @@ await page.goto(`${BASE}/portal/content-management?tab=artikel`, {
   waitUntil: "networkidle",
   timeout: 60000,
 });
-await page.waitForTimeout(2500);
+await page
+  .waitForSelector('[role="tablist"]', { timeout: 30000 })
+  .catch(() => {});
+await page.waitForTimeout(2000);
 
 const artEditBtn = page.locator('main button[title="Edit artikel"]').first();
 check("Tombol edit artikel ada", (await artEditBtn.count()) > 0);
 
 if ((await artEditBtn.count()) > 0) {
   await artEditBtn.click();
-  await page.waitForSelector('[contenteditable="true"]', { timeout: 15000 });
+  await page.waitForSelector('[contenteditable="true"]', { timeout: 30000 });
 
   const editor = page.locator('[contenteditable="true"]').last();
   const bodyHtml = (await editor.innerHTML().catch(() => "")) || "";

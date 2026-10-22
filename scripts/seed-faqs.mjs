@@ -42,21 +42,26 @@ const DEFAULT_FAQS = [
 
 (async () => {
   const existing = await prisma.faqItem.findMany({ orderBy: { order: "asc" } });
+  const existingQuestions = new Set(existing.map((f) => f.question));
 
-  if (existing.length > 0) {
-    console.log(`Tabel FAQ sudah berisi ${existing.length} baris - tidak ada yang diubah.`);
-    await prisma.$disconnect();
-    return;
-  }
-
+  // Seed per pertanyaan (idempotent): FAQ yang sudah ada tidak diduplikasi,
+  // FAQ yang hilang (mis. terhapus saat pengujian) dikembalikan.
+  let created = 0;
   for (const f of DEFAULT_FAQS) {
+    if (existingQuestions.has(f.question)) {
+      console.log(`SKIP   ${f.question.slice(0, 50)}`);
+      continue;
+    }
     const row = await prisma.faqItem.create({
       data: { ...f, isActive: true },
     });
+    created++;
     console.log(`CREATE ${row.id} | ${row.question.slice(0, 50)}`);
   }
 
   const total = await prisma.faqItem.count();
-  console.log(`\nSelesai: ${total} FAQ tersimpan di database.`);
+  console.log(
+    `\nSelesai: ${created} FAQ dibuat, ${total} FAQ total di database.`
+  );
   await prisma.$disconnect();
 })();
