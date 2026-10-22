@@ -197,7 +197,26 @@ Dengan begitu:
 ### Testing
 ```bash
 npm run test:translations  # 9 tes: stats, override, filter, delete, job status
+npm run test:locale-switch # 7 tes: ganti bahasa harus LANGSUNG berubah
 ```
+
+### Ganti bahasa dari dropdown (client-side)
+
+| Target | Cara |
+|---|---|
+| `/de/artikel`, `/zh/...` (ada prefix) | Navigasi client-side biasa — server membaca bahasa dari **header `x-locale`** yang diset middleware, jadi selalu konsisten |
+| `/artikel` (Bahasa Indonesia, tanpa prefix) | Konten server ditentukan **cookie** `texora-locale`. Karena router cache Next.js bisa memakai payload lama untuk path yang sama, navigasi diberi param cache-buster singkat (`?_l=id`) lalu URL dibersihkan lagi dengan `history.replaceState` |
+
+Dua hal penting yang sudah diperbaiki:
+1. **Cookie ditulis SEBELUM navigasi** (dulu ditulis di `useEffect` setelah render) —
+   kalau tidak, request RSC sudah terlanjur dyeing dengan cookie lama.
+2. **Cache-buster untuk target tanpa prefix** — tanpa ini halaman tidak berubah
+   sampai di-reload manual.
+
+> Catatan: request RSC dari client **tidak selalu mengirim cookie**, jadi server
+> akan memakai bahasa default (Indonesia) untuk URL tanpa prefix. Karena itu
+> prefensi bahasa selalu ikut ditulis ke cookie dan URL prefix dipakai sebagai
+> penentu utama untuk 5 bahasa lainnya.
 
 ---
 

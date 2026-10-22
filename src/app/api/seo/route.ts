@@ -24,9 +24,10 @@ export async function PUT(req: NextRequest) {
     const body = await req.json().catch(() => null);
     const settings = body?.settings ?? body;
 
+    const currentSettings = await getSeoSettings().catch(() => null);
     const merged = {
-      global: { ...DEFAULT_SEO.global, ...(settings?.global || {}) },
-      pages: { ...DEFAULT_SEO.pages, ...(settings?.pages || {}) },
+      global: { ...DEFAULT_SEO.global, ...(currentSettings?.global || {}), ...(settings?.global || {}) },
+      pages: { ...DEFAULT_SEO.pages, ...(currentSettings?.pages || {}), ...(settings?.pages || {}) },
     };
 
     await saveSeoSettings(merged);

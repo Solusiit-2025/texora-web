@@ -26,6 +26,29 @@ import { LOCALES, LOCALE_META, translate, type Locale } from "./dictionary";
 const COOKIE_KEY = "texora-locale";
 const STORAGE_KEY = "texora-locale";
 
+/**
+ * Simpan preferensi bahasa (cookie + localStorage) SECARA SINKRON.
+ *
+ * Penting: untuk URL tanpa prefix bahasa (mis. "/artikel" untuk Bahasa
+ * Indonesia), server menentukan bahasa dari cookie. Kalau cookie baru ditulis
+ * setelah navigasi (useEffect), RSC payload sudah terlanjur di-fetch dengan
+ * cookie lama -> halaman tidak berubah sampai di-reload.
+ * Karena itu LanguageSwitcher memanggil fungsi ini SEBELUM router.push().
+ */
+export function persistLocalePreference(locale: Locale): void {
+  if (typeof document === "undefined") return;
+  try {
+    document.cookie = `${COOKIE_KEY}=${locale}; path=/; max-age=31536000; SameSite=Lax`;
+  } catch {
+    /* ignore */
+  }
+  try {
+    window.localStorage.setItem(STORAGE_KEY, locale);
+  } catch {
+    /* ignore */
+  }
+}
+
 interface I18nValue {
   locale: Locale;
   dir: "ltr" | "rtl";

@@ -28,6 +28,7 @@ import {
   Languages,
 } from "lucide-react";
 import { formatRupiah } from "@/lib/utils";
+import { DEFAULT_SEO } from "@/lib/seo";
 import { ImageUpload } from "@/components/common/ImageUpload";
 import { RichTextEditor } from "@/components/common/RichTextEditor";
 import { RichContent } from "@/components/common/RichContent";
@@ -165,9 +166,10 @@ function ContentManagementInner() {
   const [modalType, setModalType] = useState<"hero" | "testimonial" | "faq" | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-  const [seoData, setSeoData] = useState<any>(null);
+  const [seoData, setSeoData] = useState<any>(DEFAULT_SEO);
   const [seoSelectedPage, setSeoSelectedPage] = useState<string>("/");
   const [currentRole, setCurrentRole] = useState<string>("");
+  const [togglingPath, setTogglingPath] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -622,20 +624,20 @@ function ContentManagementInner() {
   };
 
   const handleToggleModule = async (path: string) => {
-    if (!seoData) return;
-    const currentEnabled = seoData.pages?.[path]?.enabled !== false;
+    const base = seoData || DEFAULT_SEO;
+    const currentEnabled = base.pages?.[path]?.enabled !== false;
     const nextEnabled = !currentEnabled;
 
     // Optimistic update
     const optimistic = {
-      ...seoData,
+      ...base,
       pages: {
-        ...seoData.pages,
-        [path]: { ...seoData.pages[path], enabled: nextEnabled },
+        ...(base.pages || {}),
+        [path]: { ...(base.pages?.[path] || {}), enabled: nextEnabled },
       },
     };
     setSeoData(optimistic);
-    setSubmitting(true);
+    setTogglingPath(path);
 
     try {
       const res = await fetch("/api/seo", {
@@ -652,14 +654,14 @@ function ContentManagementInner() {
         );
       } else {
         // Rollback
-        setSeoData(seoData);
+        setSeoData(base);
         showNotice("error", json?.error || "Gagal mengubah visibilitas modul.");
       }
     } catch (err: any) {
-      setSeoData(seoData);
+      setSeoData(base);
       showNotice("error", err.message || "Gagal mengubah visibilitas modul.");
     } finally {
-      setSubmitting(false);
+      setTogglingPath(null);
     }
   };
 
@@ -1690,29 +1692,30 @@ function ContentManagementInner() {
             <div className="space-y-2">
               {MODULE_TOGGLES.map((mod) => {
                 const enabled = seoData?.pages?.[mod.path]?.enabled !== false;
-                const canToggle = currentRole === "ADMINISTRATOR";
+                const canToggle = !currentRole || currentRole === "ADMINISTRATOR";
+                const isTogglingThis = togglingPath === mod.path;
                 return (
                   <div
                     key={mod.path}
-                    className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between gap-4"
+                    className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 hover:border-slate-700/80 transition-all flex items-center justify-between gap-4"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs font-bold text-white">{mod.label}</span>
-                        <code className="text-[10px] font-mono text-slate-500 bg-slate-900 px-1.5 py-0.5 rounded">
+                        <code className="text-[10px] font-mono text-slate-400 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded-md">
                           {mod.path}
                         </code>
                         <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold border transition-colors ${
                             enabled
                               ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/40"
-                              : "bg-slate-800 text-slate-500 border-slate-700"
+                              : "bg-slate-800 text-slate-400 border-slate-700"
                           }`}
                         >
                           {enabled ? "Aktif" : "Nonaktif"}
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                      <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
                         {mod.description}
                       </p>
                     </div>
@@ -1720,16 +1723,19 @@ function ContentManagementInner() {
                     {canToggle ? (
                       <button
                         type="button"
+                        role="switch"
+                        aria-checked={enabled}
                         onClick={() => handleToggleModule(mod.path)}
-                        disabled={submitting}
+                        disabled={isTogglingThis}
                         title={enabled ? "Klik untuk menonaktifkan modul" : "Klik untuk mengaktifkan modul"}
-                        className={`relative w-12 h-6 rounded-full shrink-0 transition-colors disabled:opacity-50 ${
+                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-slate-950 disabled:opacity-50 ${
                           enabled ? "bg-emerald-500" : "bg-slate-700"
                         }`}
                       >
                         <span
-                          className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                            enabled ? "translate-x-[1.5rem]" : "translate-x-0.5"
+                          aria-hidden="true"
+                          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                            enabled ? "translate-x-5" : "translate-x-0"
                           }`}
                         />
                       </button>
@@ -1745,7 +1751,7 @@ function ContentManagementInner() {
               })}
             </div>
 
-            {currentRole !== "ADMINISTRATOR" && (
+            {currentRole && currentRole !== "ADMINISTRATOR" && (
               <p className="text-[10px] text-amber-400/80 flex items-center gap-1.5">
                 <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                 <span>

@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Check, Globe } from "lucide-react";
-import { useI18n } from "@/lib/i18n/LanguageContext";
+import { useI18n, persistLocalePreference } from "@/lib/i18n/LanguageContext";
 import { LOCALES, LOCALE_META, type Locale } from "@/lib/i18n/dictionary";
 
 interface LanguageSwitcherProps {
@@ -27,6 +27,7 @@ export function LanguageSwitcher({ fullWidth = false }: LanguageSwitcherProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -59,18 +60,51 @@ export function LanguageSwitcher({ fullWidth = false }: LanguageSwitcherProps) {
   })();
 
   const handleSelect = (next: Locale) => {
-    setLocale(next);
     setOpen(false);
+
+    // Tulis cookie & localStorage SEBELUM navigasi.
+    // Untuk URL tanpa prefix bahasa (mis. "/artikel" utk Bahasa Indonesia)
+    // server membaca bahasa dari cookie; kalau cookie baru ditulis setelah
+    // router.push(), RSC payload sudah terlanjur di-fetch dengan cookie lama
+    // sehingga halaman tidak berubah sampai di-reload.
+    persistLocalePreference(next);
+    setLocale(next);
+
     if (!canLocalize) return; // halaman privat/noindex -> cukup ubah preferensi
+
     const target =
       next === "id"
         ? basePath
-        : next === "ar" || next === "en" || next === "zh" || next === "ja" || next === "de"
-          ? basePath === "/"
-            ? `/${next}`
-            : `/${next}${basePath.startsWith("/") ? basePath : `/${basePath}`}`
-          : basePath;
-    router.push(target);
+        : basePath === "/"
+          ? `/${next}`
+          : `/${next}${basePath.startsWith("/") ? basePath : `/${basePath}`}`;
+
+    // Navigasi ke URL target.
+    //
+    // CATATAN untuk target TANPA prefix bahasa (mis. "/artikel" utk Bahasa
+    // Indonesia): isinya ditentukan cookie, dan router cache Next.js bisa
+    // memakai payload lama untuk path yang sama -> halaman tidak berubah
+    // sampai di-reload. Solusinya: tambahkan param cache-buster singkat
+    // supaya router pasti fetch payload baru, lalu URL dibersihkan lagi
+    // dengan history.replaceState (tanpa navigasi tambahan).
+    const needsBust = next === "id";
+    const targetWithBust = needsBust
+      ? `${target}${target.includes("?") ? "&" : "?"}_l=${next}`
+      : target;
+
+    startTransition(() => {
+      router.push(targetWithBust);
+    });
+
+    if (needsBust) {
+      window.setTimeout(() => {
+        try {
+          window.history.replaceState(null, "", target);
+        } catch {
+          /* ignore */
+        }
+      }, 600);
+    }
   };
 
   return (
