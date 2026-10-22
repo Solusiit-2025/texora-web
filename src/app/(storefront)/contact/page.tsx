@@ -37,15 +37,15 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function ContactPage() {
   const breadcrumbSchema = buildBreadcrumbSchema([
-    { name: "Hubungi Kami", path: "/contact" },
+    { name: "Kontak Kami", path: "/contact" },
   ]);
 
   const webPageSchema = buildWebPageSchema({
     path: "/contact",
-    name: "Hubungi Kami — XoraMateria",
+    name: "Kontak Kami — XoraMateria",
     description:
       "Konsultasi pengadaan kain sublimasi B2B dan permintaan sampel swatch gratis.",
-    breadcrumb: [{ name: "Hubungi Kami", path: "/contact" }],
+    breadcrumb: [{ name: "Kontak Kami", path: "/contact" }],
   });
 
   const businessSchema = buildLocalBusinessSchema();
@@ -56,7 +56,7 @@ export default async function ContactPage() {
     "@type": "ContactPage",
     "@id": "https://texora.co.id/contact#contactpage",
     url: "https://texora.co.id/contact",
-    name: "Hubungi Kami — XoraMateria",
+    name: "Kontak Kami — XoraMateria",
     description:
       "Formulir konsultasi procurement kain sublimasi dan permintaan sampel swatch.",
     inLanguage: "id-ID",

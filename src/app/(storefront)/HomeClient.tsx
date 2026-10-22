@@ -8,6 +8,7 @@ import { formatRupiah, formatNumber } from "@/lib/utils";
 import { FabricSpecCard } from "@/components/storefront/FabricSpecCard";
 import { RichContent } from "@/components/common/RichContent";
 import { Breadcrumb } from "@/components/common/Breadcrumb";
+import { CompanyLocationMap } from "@/components/common/CompanyLocationMap";
 import { useI18n, useLocalePath } from "@/lib/i18n/LanguageContext";
 import { HERO_TEXT_KEY, type HeroText } from "@/config/hero-text";
 import {
@@ -31,6 +32,7 @@ import {
   BadgeCheck,
   Calculator,
   FileText,
+  MapPin,
 } from "lucide-react";
 
 const ease = [0.16, 1, 0.3, 1] as const;
@@ -1136,6 +1138,27 @@ export default function HomePage({ initialData }: HomeClientProps) {
               </Link>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* ── PETA LOKASI KANTOR & PABRIK (DIATAS FOOTER) ───────────────────── */}
+      <section className={`${container} pb-16 lg:pb-24`}>
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+            <div>
+              <span className="inline-flex items-center gap-2 rounded-full border border-brand-400/30 bg-brand-500/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-brand-200">
+                <MapPin className="h-3.5 w-3.5 text-brand-400" /> {t("map.headingTag", "Lokasi Kantor & Workshop")}
+              </span>
+              <h2 className="mt-3 font-display text-fluid-h2 font-bold text-alabaster">
+                {t("map.headingTitle", "Kunjungi Fasilitas Produksi Kami")}
+              </h2>
+            </div>
+            <p className="max-w-md text-xs sm:text-sm text-slate-400 leading-relaxed">
+              {t("map.headingDesc", "Konsultasi langsung pemilihan bahan kain, kalibrasi warna ICC printing, dan peninjauan workshop mesin cetak sublimasi skala industri di Jakarta Utara.")}
+            </p>
+          </div>
+
+          <CompanyLocationMap />
         </div>
       </section>
     </div>
