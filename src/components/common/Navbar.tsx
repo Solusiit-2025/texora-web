@@ -178,24 +178,24 @@ export function Navbar({ initialDisabledPaths = [] }: NavbarProps) {
         <div className="flex items-center justify-between h-16 lg:h-[4.25rem] xl:h-[4.5rem]">
           
           {/* Brand Logo */}
-          <Link href={localePath("/")} className="flex items-center space-x-3 group shrink-0">
-            <div className="relative w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-gradient-to-b from-slate-50 via-slate-100 to-slate-200 p-1 border border-brand-400/60 flex items-center justify-center shadow-md shadow-black/40 group-hover:border-brand-400 transition-all duration-300">
+          <Link href={localePath("/")} className="flex items-center space-x-2.5 sm:space-x-3 group min-w-0 shrink">
+            <div className="relative w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-gradient-to-b from-slate-50 via-slate-100 to-slate-200 p-1 border border-brand-400/60 flex items-center justify-center shadow-md shadow-black/40 group-hover:border-brand-400 transition-all duration-300 shrink-0">
               <img
                 src="/icons/xoramateria-mark.png"
                 alt="XoraMateria"
                 className="w-full h-full object-contain filter drop-shadow-[0_1px_2px_rgba(15,23,42,0.45)] group-hover:scale-105 transition-transform duration-300"
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="text-base lg:text-lg font-bold tracking-tight text-white font-display">
+                <span className="text-sm sm:text-base lg:text-lg font-bold tracking-tight text-white font-display truncate">
                   XORAMATERIA
                 </span>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-brand-500/20 text-brand-300 border border-brand-500/40 tracking-wider uppercase">
+                <span className="hidden sm:inline-flex text-[9px] font-bold px-1.5 py-0.5 rounded bg-brand-500/20 text-brand-300 border border-brand-500/40 tracking-wider uppercase whitespace-nowrap">
                   FABRIC · PRINT
                 </span>
               </div>
-              <p className="text-[9px] text-slate-400 tracking-wider uppercase font-medium">
+              <p className="hidden sm:block text-[9px] text-slate-400 tracking-wider uppercase font-medium truncate">
                 Industrial Textile & Sublimation
               </p>
             </div>
@@ -473,8 +473,8 @@ export function Navbar({ initialDisabledPaths = [] }: NavbarProps) {
           </div>
 
           {/* Mobile menu button */}
-          <div className="flex md:hidden items-center space-x-2">
-            <LanguageSwitcher />
+          <div className="flex md:hidden items-center gap-1.5 shrink-0">
+            <LanguageSwitcher compact />
             <ThemeDropdown compact />
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
