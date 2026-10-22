@@ -81,6 +81,64 @@ async function getRoleMenuIds(
   return map[role] ?? null;
 }
 
+/**
+ * Cache "slug artikel tidak ada" per instance.
+ *
+ * Dipakai middleware untuk mengembalikan 404 yang SEBENARNYA (bukan 200
+ * "soft 404") untuk artikel yang tidak dipublikasikan. Cache 60 detik
+ * supaya tidak query DB pada setiap permintaan artikel.
+ */
+const ARTICLE_CHECK_TTL_MS = 60 * 1000;
+const articleMissingCache = new Map<string, { missing: boolean; fetchedAt: number }>();
+
+/**
+ * Apakah path ini artikel yang tidak ada?
+ *
+ * Hanya untuk path "/artikel/<slug>". Non-artikel -> false.
+ */
+async function isMissingArticle(
+  origin: string,
+  path: string
+): Promise<boolean> {
+  const m = path.match(/^\/artikel\/([^/]+)$/);
+  if (!m) return false;
+
+  const slug = decodeURIComponent(m[1]);
+  const now = Date.now();
+  const hit = articleMissingCache.get(slug);
+  if (hit && now - hit.fetchedAt < ARTICLE_CHECK_TTL_MS) {
+    return hit.missing;
+  }
+
+  try {
+    const res = await fetch(
+      `${origin}/api/articles?check=1&slug=${encodeURIComponent(slug)}`
+    );
+    // Body harus dibaca APA ADANYA status (endpoint balas 404 kalau artikelnya
+    // tidak ada, jadi res.ok = false di kasus yang justru kita cari).
+    const json = await res.json().catch(() => null);
+    const missing = json?.exists === false;
+    articleMissingCache.set(slug, { missing, fetchedAt: now });
+    return missing;
+  } catch {
+    // Gagal cek -> jangan blokir user (fail open)
+    return false;
+  }
+}
+
+/**
+ * Respons 404 untuk artikel yang tidak ada.
+ *
+ * Render halaman not-found (tetap bagus untuk user) TETAPI dengan status
+ * HTTP 404 yang benar -> Google tidak mengindeksnya.
+ */
+function notFoundResponse(req: NextRequest): NextResponse {
+  const url = req.nextUrl.clone();
+  url.pathname = "/not-found";
+  url.search = "";
+  return NextResponse.rewrite(url, { status: 404 });
+}
+
 function normalizePath(path: string): string {
   if (!path) return "/";
   let p = String(path).trim();
@@ -202,6 +260,12 @@ export async function middleware(req: NextRequest) {
         clean === "/" ? "" : clean.replace(/^\//, "").split("/")[0];
 
       if (clean === "/" || LOCALE_ALLOWED_SEGMENTS.includes(firstSegment)) {
+        // Slug artikel yang tidak ada -> 404 SEBELUM render (bukan soft 404).
+        const articleMissing = await isMissingArticle(req.nextUrl.origin, clean);
+        if (articleMissing) {
+          return notFoundResponse(req);
+        }
+
         const url = req.nextUrl.clone();
         url.pathname = clean;
         const requestHeaders = new Headers(req.headers);
@@ -402,6 +466,12 @@ export async function middleware(req: NextRequest) {
   // component supaya modul yang dinonaktifkan di CMS bisa diblokir
   // di sisi server (status 404), bukan hanya disembunyikan di menu.
   {
+    // Artikel yang tidak ada -> 404 asli (bukan soft 404)
+    const articleMissing = await isMissingArticle(req.nextUrl.origin, pathname);
+    if (articleMissing) {
+      return notFoundResponse(req);
+    }
+
     const requestHeaders = new Headers(req.headers);
     requestHeaders.set("x-pathname", pathname);
     return NextResponse.next({ request: { headers: requestHeaders } });

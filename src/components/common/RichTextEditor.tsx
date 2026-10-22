@@ -80,9 +80,15 @@ export function RichTextEditor({
   const [isFocused, setIsFocused] = useState(false);
   const [showSource, setShowSource] = useState(false);
   const [sourceValue, setSourceValue] = useState(value || "");
-  const lastValueRef = useRef<string>(value || "");
+  // PENTING: mulai dari string KOSONG, bukan dari `value`.
+  // Kalau diinisialisasi dengan `value`, efek sinkronisasi di bawah
+  // menganggap "tidak ada perubahan" -> editor tetap KOSONG padahal
+  // isinya ada. Akibatnya: saat admin membuka form edit (artikel, FAQ,
+  // hero, dll) isi tidak muncul di editor, dan kalau disimpan isinya hilang.
+  const lastValueRef = useRef<string>("");
 
-  // Sinkronkan nilai eksternal -> editor (hanya jika benar-benar berubah & editor tidak fokus)
+  // Isi editor dengan nilai awal (mount) & nilai eksternal berikutnya
+  // (hanya jika benar-benar berubah & editor tidak sedang fokus).
   useEffect(() => {
     if (editorRef.current && !isFocused && value !== lastValueRef.current) {
       editorRef.current.innerHTML = value || "";

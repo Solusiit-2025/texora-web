@@ -288,7 +288,7 @@ function ContentManagementInner() {
         .catch(() => {});
 
       // Load SEO settings
-      fetch("/api/seo")
+      fetch("/api/seo?fresh=1", { cache: "no-store" })
         .then((r) => r.json())
         .then((d) => {
           if (d?.success && d.data) {
@@ -297,7 +297,7 @@ function ContentManagementInner() {
         })
         .catch(() => {});
 
-      const res = await fetch("/api/cms");
+      const res = await fetch("/api/cms?fresh=1", { cache: "no-store" });
       const json = await res.json();
       if (json.success && json.data) {
         setHeroSlides(json.data.heroSlides || []);
@@ -547,9 +547,13 @@ function ContentManagementInner() {
     if (!window.confirm(`Hapus pertanyaan "${question.slice(0, 30)}..."?`)) return;
     try {
       const res = await fetch(`/api/cms?type=faq&id=${id}`, { method: "DELETE" });
-      const json = await res.json();
+      const json = await res.json().catch(() => ({}));
       if (json.success) {
         showNotice("success", "FAQ berhasil dihapus.");
+        await loadData();
+      } else {
+        // GAGAL HARUS TERLIHAT (sebelumnya diam-diam -> admin mengira tombolnya rusak)
+        showNotice("error", json?.error || "Gagal menghapus FAQ.");
         await loadData();
       }
     } catch {

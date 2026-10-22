@@ -50,7 +50,7 @@ export default function CatalogManagementPage() {
   const fetchFabrics = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/products");
+      const res = await fetch("/api/products?fresh=1", { cache: "no-store" });
       const json = await res.json();
       if (json.success && json.data) {
         setFabrics(json.data);

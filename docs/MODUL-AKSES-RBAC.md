@@ -39,9 +39,15 @@ Tab **CMS Konten → SEO & AI Settings** (atau menu "Pengaturan Modul"):
 - Versi bahasa lain (`/en/custom-sublimation`) juga tertutup
 - Halaman 404-nya punya `robots: noindex, follow` + tombol kembali ke beranda/katalog
 
->Bug lama: halaman nonaktif masih balas **200** dengan konten lengkap — hanya
-> menu-nya yang disembunyikan (client-side). Sekarang diblokir di **server**
-> lewat `notFound()` di layout storefront.
+> **Di mana pengecekan 404 dilakukan?** Di **ROOT LAYOUT** (`src/app/layout.tsx`),
+> bukan di layout storefront. Alasannya: route storefront memakai `loading.tsx`
+> (skeleton) supaya perpindahan halaman terasa instan. Kalau `notFound()`
+> dipanggil DI DALAM boundary tersebut, respons sudah ter-flush dengan status
+> 200 → "soft 404" (halaman tetap ter-index). Dengan pengecekan di root layout,
+> status 404 tetap benar walau skeleton dipakai.
+
+> Artikel yang tidak ada juga dikembalikan **404 asli** oleh middleware
+> (`/api/articles?check=1`) sebelum halaman dirender, dengan alasan yang sama.
 
 ---
 

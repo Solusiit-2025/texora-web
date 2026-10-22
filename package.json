@@ -20,7 +20,7 @@
     "test:locale-nav": "node scripts/test-locale-nav.mjs",
     "test:translations": "node scripts/test-translations.mjs",
     "test:browser": "node scripts/browser-check.mjs",
-    "test:all": "npm run test:sanitize && npm run test:seo && npm run test:redirects && npm run test:i18n && npm run test:content-i18n && npm run test:locale-urls && npm run test:locale-nav && npm run test:translations && npm run test:quote && npm run test:articles && npm run test:locale-switch && npm run test:browser",
+    "test:all": "npm run test:sanitize && npm run test:seo && npm run test:redirects && npm run test:i18n && npm run test:content-i18n && npm run test:locale-urls && npm run test:locale-nav && npm run test:translations && npm run test:quote && npm run test:articles && npm run test:locale-switch && npm run test:cms-edit && npm run test:browser",
     "backup:manual": "node scripts/run-backup.mjs",
     "module:toggle": "node scripts/toggle-module.cjs",
     "test:quote": "node scripts/test-quote.mjs",
@@ -29,7 +29,8 @@
     "test:db": "node scripts/db-latency.mjs",
     "test:rsc": "node scripts/bench-rsc.mjs",
     "test:nav": "node scripts/bench-navigation.mjs",
-    "test:locale-switch": "node scripts/test-locale-switch.mjs"
+    "test:locale-switch": "node scripts/test-locale-switch.mjs",
+    "test:cms-edit": "node scripts/test-cms-edit.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1153.0",

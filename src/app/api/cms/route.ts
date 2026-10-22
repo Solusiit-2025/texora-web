@@ -153,7 +153,27 @@ const DEFAULT_FAQS = [
   },
 ];
 
+
+/**
+ * Header cache untuk endpoint publik.
+ *
+ * `?fresh=1` dipakai oleh PANEL ADMIN yang butuh data terbaru (mis. setelah
+ * hapus/simpan konten) -> tidak boleh dilayani dari cache browser/CDN.
+ * Tanpa parameter itu, respons boleh di-cache (hemat query DB untuk
+ * pengunjung).
+ */
+function cacheHeaders(fresh: boolean): Record<string, string> {
+  return fresh
+    ? { "Cache-Control": "no-store, no-cache, must-revalidate" }
+    : {
+        "Cache-Control":
+          "public, max-age=60, s-maxage=300, stale-while-revalidate=600",
+      };
+}
+
 export async function GET(request: Request) {
+  const fresh =
+    new URL(request.url).searchParams.get("fresh") === "1";
   try {
     // ?lang=xx -> terjemahkan konten on-demand (cache DB) untuk pembaca asing.
     const lang = normalizeLocale(new URL(request.url).searchParams.get("lang"));
@@ -172,7 +192,7 @@ export async function GET(request: Request) {
           ]);
         return { heroSlidesRaw, testimonialsRaw, faqsRaw, siteContentRaw };
       },
-      { ttl: 60_000, stale: 600_000 }
+      { ttl: 60_000, stale: 600_000, bypass: fresh }
     );
 
     const { heroSlidesRaw, testimonialsRaw, faqsRaw, siteContentRaw } = raw;
@@ -209,10 +229,7 @@ export async function GET(request: Request) {
         },
       },
       {
-        headers: {
-          "Cache-Control":
-            "public, max-age=60, s-maxage=300, stale-while-revalidate=600",
-        },
+        headers: cacheHeaders(fresh),
       }
     );
   } catch (err: any) {
@@ -348,7 +365,22 @@ export async function PUT(request: NextRequest) {
     } else if (type === "testimonial") {
       updated = await prisma.testimonial.update({ where: { id }, data });
     } else if (type === "faq") {
-      updated = await prisma.faqItem.update({ where: { id }, data });
+      // FAQ default (id "default-N") BELUM tersimpan di database - API
+      // presentation-nya memakai data bawaan. Saat admin mengeditnya, simpan
+      // sebagai baris baru (bukan update) supaya perubahan benar-benar
+      // tersimpan dan bisa dihapus nanti.
+      if (String(id).startsWith("default-")) {
+        updated = await prisma.faqItem.create({
+          data: {
+            question: data.question ?? "",
+            answer: data.answer ?? "",
+            order: Number(data.order ?? 99),
+            isActive: data.isActive !== false,
+          },
+        });
+      } else {
+        updated = await prisma.faqItem.update({ where: { id }, data });
+      }
     } else if (type === "siteContent") {
       updated = await prisma.siteContent.upsert({
         where: { key: data.key },
@@ -427,6 +459,17 @@ export async function PUT(request: NextRequest) {
     });
   } catch (err: any) {
     console.error("Error updating CMS item:", err);
+    // P2025 = record tidak ada -> bukan error server, tapi data sudah hilang
+    if (err?.code === "P2025" || /not found|tidak ditemukan/i.test(err?.message || "")) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Data yang diubah sudah tidak ada (mungkin sudah dihapus). Muat ulang daftar lalu coba lagi.",
+        },
+        { status: 404 }
+      );
+    }
     return NextResponse.json(
       { success: false, error: err.message || "Gagal memperbarui konten." },
       { status: 500 }
@@ -456,6 +499,17 @@ export async function DELETE(request: NextRequest) {
     } else if (type === "testimonial") {
       await prisma.testimonial.delete({ where: { id } });
     } else if (type === "faq") {
+      // FAQ bawaan (id "default-N") tidak ada di database -> tidak bisa dihapus.
+      if (String(id).startsWith("default-")) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              "FAQ bawaan belum tersimpan di database. Edit dulu (untuk menyimpannya), lalu hapus.",
+          },
+          { status: 404 }
+        );
+      }
       await prisma.faqItem.delete({ where: { id } });
     } else if (type === "siteContent") {
       await prisma.siteContent.delete({ where: { id } });
@@ -485,6 +539,16 @@ export async function DELETE(request: NextRequest) {
     });
   } catch (err: any) {
     console.error("Error deleting CMS item:", err);
+    // P2025 = record tidak ada (sudah dihapus / id salah) -> bukan error server
+    if (err?.code === "P2025" || /not found|tidak ditemukan/i.test(err?.message || "")) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Data sudah tidak ada (mungkin sudah dihapus). Muat ulang daftar.",
+        },
+        { status: 404 }
+      );
+    }
     return NextResponse.json(
       { success: false, error: err.message || "Gagal menghapus konten." },
       { status: 500 }

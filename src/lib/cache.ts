@@ -37,6 +37,14 @@ export interface CacheOptions {
   ttl?: number;
   /** Umur data masih boleh dipakai sambil di-refresh (ms). Default 10 menit. */
   stale?: number;
+  /**
+   * Lewati cache sepenuhnya (baca & tulis).
+   *
+   * Dipakai oleh panel admin yang butuh data terbaru (mis. daftar konten
+   * sesudah admin menyimpan/mengubah sesuatu). Tanpa ini, admin membaca
+   * respons basi selama masa TTL.
+   */
+  bypass?: boolean;
 }
 
 /**
@@ -48,7 +56,7 @@ export async function cached<T>(
   loader: () => Promise<T>,
   opts: CacheOptions = {}
 ): Promise<T> {
-  if (cacheDisabled()) return loader();
+  if (cacheDisabled() || opts.bypass) return loader();
 
   const ttl = opts.ttl ?? 60_000;
   const stale = opts.stale ?? 600_000;

@@ -1,10 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
+import { headers } from "next/headers";
+import { notFound } from "next/navigation";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { FloatingSocial } from "@/components/common/FloatingSocial";
 import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 import { getRequestLocale } from "@/lib/server-locale";
+import { isPageDisabled } from "@/lib/seo";
 import { LOCALE_META } from "@/lib/i18n/dictionary";
 import { JsonLd } from "@/components/common/JsonLd";
 import { VerificationTags } from "@/components/common/VerificationTags";
@@ -101,6 +104,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const locale = await getRequestLocale();
   const htmlLang = LOCALE_META[locale]?.htmlLang || "id";
   const htmlDir = locale === "ar" ? "rtl" : "ltr";
+
+  // Halaman yang dinonaktifkan di CMS -> 404 (blokir di server).
+  //
+  // PENTING: pengecekan ini dilakukan di ROOT LAYOUT, bukan di layout
+  // storefront. Root layout berada DI LUAR boundary loading.tsx, sehingga
+  // notFound() masih bisa mengubah status HTTP jadi 404. Kalau Dicek di
+  // layout storefront (di dalam boundary), respons sudah ter-flush 200 ->
+  // "soft 404" (halaman tetap ter-index mesin pencari).
+  const pathname = (await headers()).get("x-pathname") || "/";
+  if (await isPageDisabled(pathname)) {
+    notFound();
+  }
 
   return (
     <html lang={htmlLang} dir={htmlDir} className="dark">

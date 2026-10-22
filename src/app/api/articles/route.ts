@@ -26,6 +26,27 @@ export async function GET(req: NextRequest) {
     const params = req.nextUrl.searchParams;
     const lang = normalizeLocale(params.get("lang"));
     const isAdmin = params.get("admin") === "1";
+
+    // ---------------------------------------------------------------
+    // Mode check: dipakai middleware untuk menentukan apakah sebuah
+    // artikel masih ada. Balas 404 kalau tidak ada, supaya middleware
+    // bisa mengembalikan status 404 yang benar (bukan soft 404).
+    // ---------------------------------------------------------------
+    if (params.get("check") === "1") {
+      const slug = params.get("slug") || "";
+      const { getStorefrontArticleBySlug } = await import("@/lib/storefront-data");
+      const article = slug ? await getStorefrontArticleBySlug(slug, "id") : null;
+      if (!article) {
+        return NextResponse.json(
+          { success: false, exists: false },
+          { status: 404, headers: { "Cache-Control": "no-store" } }
+        );
+      }
+      return NextResponse.json(
+        { success: true, exists: true },
+        { headers: { "Cache-Control": "public, max-age=60, s-maxage=300" } }
+      );
+    }
     const slug = params.get("slug");
 
     if (isAdmin) {

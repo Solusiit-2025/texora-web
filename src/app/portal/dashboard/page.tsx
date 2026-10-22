@@ -133,7 +133,7 @@ export default function PortalDashboard() {
       fetch("/api/crm/leads").then((r) => r.json()),
       fetch("/api/crm/customers").then((r) => r.json()),
       fetch("/api/warehouse/inventory").then((r) => r.json()),
-      fetch("/api/products").then((r) => r.json()),
+      fetch("/api/products?fresh=1", { cache: "no-store" }).then((r) => r.json()),
     ]).then(([ordersRes, leadsRes, custRes, invRes, prodRes]) => {
       if (ordersRes.status === "fulfilled" && ordersRes.value?.success && Array.isArray(ordersRes.value.data)) {
         setOrders(ordersRes.value.data);

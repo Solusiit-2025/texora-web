@@ -33,7 +33,27 @@ function formatFabric(p: any) {
   };
 }
 
+
+/**
+ * Header cache untuk endpoint publik.
+ *
+ * `?fresh=1` dipakai oleh PANEL ADMIN yang butuh data terbaru (mis. setelah
+ * hapus/simpan konten) -> tidak boleh dilayani dari cache browser/CDN.
+ * Tanpa parameter itu, respons boleh di-cache (hemat query DB untuk
+ * pengunjung).
+ */
+function cacheHeaders(fresh: boolean): Record<string, string> {
+  return fresh
+    ? { "Cache-Control": "no-store, no-cache, must-revalidate" }
+    : {
+        "Cache-Control":
+          "public, max-age=60, s-maxage=300, stale-while-revalidate=600",
+      };
+}
+
 export async function GET(request: Request) {
+  const fresh =
+    new URL(request.url).searchParams.get("fresh") === "1";
   const { searchParams } = new URL(request.url);
   const category = searchParams.get("category");
   const query = searchParams.get("q");
@@ -74,7 +94,7 @@ export async function GET(request: Request) {
           },
           orderBy: { createdAt: "asc" },
         }),
-      { ttl: 60_000, stale: 600_000 }
+      { ttl: 60_000, stale: 600_000, bypass: fresh }
     );
 
     if (dbFabrics.length > 0) {
@@ -98,10 +118,7 @@ export async function GET(request: Request) {
           data: formatted,
         },
         {
-          headers: {
-            "Cache-Control":
-              "public, max-age=60, s-maxage=300, stale-while-revalidate=600",
-          },
+          headers: cacheHeaders(fresh),
         }
       );
     }

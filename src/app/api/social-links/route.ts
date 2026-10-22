@@ -16,7 +16,27 @@ export const dynamic = "force-dynamic";
  * Cache 60 detik: endpoint ini dipanggil 2x per halaman (Footer +
  * FloatingSocial) dan DB-nya remote (~180ms/query).
  */
-export async function GET() {
+
+/**
+ * Header cache untuk endpoint publik.
+ *
+ * `?fresh=1` dipakai oleh PANEL ADMIN yang butuh data terbaru (mis. setelah
+ * hapus/simpan konten) -> tidak boleh dilayani dari cache browser/CDN.
+ * Tanpa parameter itu, respons boleh di-cache (hemat query DB untuk
+ * pengunjung).
+ */
+function cacheHeaders(fresh: boolean): Record<string, string> {
+  return fresh
+    ? { "Cache-Control": "no-store, no-cache, must-revalidate" }
+    : {
+        "Cache-Control":
+          "public, max-age=60, s-maxage=300, stale-while-revalidate=600",
+      };
+}
+
+export async function GET(request: Request) {
+  const fresh =
+    new URL(request.url).searchParams.get("fresh") === "1";
   const data = await cached(
     "api.social-links",
     async () => {
@@ -30,16 +50,15 @@ export async function GET() {
         return DEFAULT_SOCIAL_LINKS;
       }
     },
-    { ttl: 60_000, stale: 600_000 }
+    { ttl: 60_000, stale: 600_000, bypass: fresh }
   );
 
   return NextResponse.json(
     { success: true, data },
     {
-      headers: {
-        // Browser & CDN boleh menyimpan 60 detik (isi jarang berubah)
-        "Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=600",
-      },
+      // Browser & CDN boleh menyimpan 60 detik (isi jarang berubah),
+      // kecuali diminta fresh oleh panel admin.
+      headers: cacheHeaders(fresh),
     }
   );
 }

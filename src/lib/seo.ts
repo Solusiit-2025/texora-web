@@ -115,6 +115,20 @@ export async function getSeoSettings(): Promise<SeoSettings> {
   );
 }
 
+/**
+ * Apakah halaman ini dinonaktifkan di CMS (fitur Visibilitas Modul)?
+ *
+ * Dipakai oleh root layout untuk memblokir halaman nonaktif dengan status
+ * 404. Cache 60 detik (getSeoSettings) -> cepat & tidak membebani DB.
+ */
+export async function isPageDisabled(pathname: string): Promise<boolean> {
+  if (!pathname || pathname === "/") return false;
+  const seo = await getSeoSettings().catch(() => null);
+  if (!seo?.pages) return false;
+  const meta = seo.pages[pathname] as SeoPageMeta | undefined;
+  return !!meta && meta.enabled === false;
+}
+
 export async function saveSeoSettings(settings: SeoSettings): Promise<void> {
   await prisma.siteContent.upsert({
     where: { key: SEO_GLOBAL_KEY },
