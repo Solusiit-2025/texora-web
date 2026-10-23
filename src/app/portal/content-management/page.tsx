@@ -27,8 +27,14 @@ import {
   Shuffle,
   Languages,
   Type,
+  BadgeCheck,
+  ArrowUpRight,
+  MapPin,
+  Mail,
+  Phone,
 } from "lucide-react";
 import { formatRupiah } from "@/lib/utils";
+import { SOCIAL_ICONS, SOCIAL_BRAND } from "@/components/common/SocialLinks";
 import { invalidateClientFetch } from "@/lib/client-api";
 import { DEFAULT_SEO } from "@/lib/seo";
 import { ImageUpload } from "@/components/common/ImageUpload";
@@ -1692,6 +1698,90 @@ function ContentManagementInner() {
       {/* TAB 4: STATS & B2B BANNER */}
       {!loading && activeTab === "content" && (
         <div className="space-y-8 max-w-4xl">
+          {/* ── PRATINJAU LANGSUNG — selalu di paling atas (pola tab Hero Text) ── */}
+          <div className="glass-panel rounded-3xl border border-brand-500/25 overflow-hidden shadow-xl shadow-black/20">
+            <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-slate-800 bg-slate-900/70">
+              <div className="flex items-center gap-2 text-xs font-bold text-brand-200">
+                <Eye className="w-3.5 h-3.5" />
+                Pratinjau Langsung
+              </div>
+              <div className="flex items-center gap-1.5" aria-hidden="true">
+                <span className="h-2.5 w-2.5 rounded-full bg-red-400/70" />
+                <span className="h-2.5 w-2.5 rounded-full bg-amber-400/70" />
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/70" />
+              </div>
+            </div>
+
+            <div className="p-4 sm:p-6 bg-slate-950 space-y-6">
+              {/* A. Metrik Statistik — tampil di Hero homepage */}
+              <div>
+                <div className="text-[10px] uppercase font-bold text-slate-500 tracking-[0.14em] mb-2">
+                  Metrik Statistik — Hero Homepage
+                </div>
+                <dl className="grid grid-cols-3 gap-2.5">
+                  {statsData.map((stat, i) => (
+                    <div
+                      key={i}
+                      className="rounded-2xl border border-slate-800 bg-slate-900/50 px-3 py-3 backdrop-blur"
+                    >
+                      <dt className="font-display text-lg xl:text-2xl font-bold text-alabaster truncate">
+                        {stat.v || "—"}
+                      </dt>
+                      <dd className="mt-0.5 text-[9px] uppercase tracking-[0.12em] text-slate-500 leading-tight">
+                        {stat.k || "—"}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+
+              {/* B. Banner Penawaran B2B — blok pre-footer */}
+              <div>
+                <div className="text-[10px] uppercase font-bold text-slate-500 tracking-[0.14em] mb-2">
+                  Banner Penawaran B2B — Pre-Footer Homepage
+                </div>
+                <div className="relative overflow-hidden rounded-3xl border border-brand-500/20 bg-gradient-to-br from-brand-950/60 via-slate-900 to-slate-900 p-5 sm:p-7">
+                  {/* Pola diagonal halus — menyamai storefront */}
+                  <div
+                    className="pointer-events-none absolute inset-0 opacity-[0.06]"
+                    style={{
+                      backgroundImage:
+                        "repeating-linear-gradient(45deg, rgb(var(--brand-300)) 0 1px, transparent 1px 14px)",
+                    }}
+                  />
+                  <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+                    <div>
+                      <span className="inline-flex items-center gap-2 rounded-full border border-brand-400/30 bg-brand-500/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-brand-200">
+                        <BadgeCheck className="h-3.5 w-3.5" />
+                        Status Mitra B2B
+                      </span>
+                      <h3 className="mt-3 font-display text-lg sm:text-xl font-bold text-alabaster">
+                        {b2bData.title || "—"}
+                      </h3>
+                      <p className="mt-2 max-w-lg text-xs leading-relaxed text-slate-300">
+                        {b2bData.description || "—"}
+                      </p>
+                    </div>
+                    <div className="shrink-0">
+                      <span className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-500 to-brand-400 px-6 py-3.5 text-xs font-bold text-ink shadow-xl shadow-brand-500/30">
+                        {b2bData.actionText || "Minta penawaran"}
+                        <ArrowUpRight className="h-4 w-4" />
+                      </span>
+                      <p className="mt-2 text-center text-[9px] text-slate-500 font-mono">
+                        → {b2bData.actionLink || "/contact"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-5 py-2.5 border-t border-slate-800 bg-slate-900/40 text-[10px] text-slate-500">
+              Pratinjau ringkas — tata letak final mengikuti storefront (label badge, spacing, dan
+              efek diambil dari kamus i18n).
+            </div>
+          </div>
+
           {/* Section 1: Stats */}
           <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
@@ -1806,6 +1896,122 @@ function ContentManagementInner() {
       {/* TAB 5: MEDIA SOSIAL */}
       {!loading && activeTab === "social" && (
         <div className="space-y-6 w-full">
+          {/* ── PRATINJAU LANGSUNG — pola tab Hero Text ── */}
+          <div className="glass-panel rounded-3xl border border-brand-500/25 overflow-hidden shadow-xl shadow-black/20">
+            <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-slate-800 bg-slate-900/70">
+              <div className="flex items-center gap-2 text-xs font-bold text-brand-200">
+                <Eye className="w-3.5 h-3.5" />
+                Pratinjau Langsung
+              </div>
+              <div className="flex items-center gap-1.5" aria-hidden="true">
+                <span className="h-2.5 w-2.5 rounded-full bg-red-400/70" />
+                <span className="h-2.5 w-2.5 rounded-full bg-amber-400/70" />
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/70" />
+              </div>
+            </div>
+
+            <div className="p-4 sm:p-6 bg-slate-950 space-y-6">
+              {/* A. Baris ikon sosial Footer */}
+              <div>
+                <div className="text-[10px] uppercase font-bold text-slate-500 tracking-[0.14em] mb-3">
+                  Footer Storefront — Baris Ikon Media Sosial
+                </div>
+                <div className="flex flex-wrap items-center gap-2.5">
+                  {socialLinks.map((s) => {
+                    const Icon = SOCIAL_ICONS[s.id as keyof typeof SOCIAL_ICONS] || Share2;
+                    const brand = SOCIAL_BRAND[s.id as keyof typeof SOCIAL_BRAND];
+                    const active = s.isActive && Boolean(s.href);
+                    return (
+                      <div
+                        key={s.id}
+                        title={s.isActive ? s.label : `${s.label} (non-aktif — disembunyikan)`}
+                        className={`group flex flex-col items-center gap-1.5 ${
+                          active ? "" : "opacity-30 grayscale"
+                        }`}
+                      >
+                        <span
+                          className="w-9 h-9 rounded-xl border flex items-center justify-center"
+                          style={
+                            active
+                              ? {
+                                  color: brand.color,
+                                  backgroundColor: brand.bg,
+                                  borderColor: brand.border,
+                                }
+                              : undefined
+                          }
+                        >
+                          <span
+                            className="flex"
+                            style={
+                              brand?.chromatic && active
+                                ? { filter: "drop-shadow(1px 0 0 #25F4EE) drop-shadow(-1px 0 0 #FE2C55)" }
+                                : undefined
+                            }
+                          >
+                            <Icon className="w-4 h-4" />
+                          </span>
+                        </span>
+                        <span className="text-[9px] text-slate-500 font-mono truncate max-w-[80px]">
+                          {s.handle || s.id}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* B. Floating dock (mengapung sisi kanan layar) */}
+              <div>
+                <div className="text-[10px] uppercase font-bold text-slate-500 tracking-[0.14em] mb-3">
+                  Tombol Mengapung — Sisi Kanan Layar
+                </div>
+                <div className="flex flex-col gap-2 w-fit rounded-2xl border border-slate-800 bg-slate-900/60 p-3 shadow-lg shadow-black/30">
+                  {socialLinks.filter((s) => s.isActive && s.href).length === 0 ? (
+                    <span className="text-[11px] italic text-slate-500 px-2 py-1">
+                      Semua tautan non-aktif — dock tidak menampilkan ikon apa pun.
+                    </span>
+                  ) : (
+                    socialLinks
+                      .filter((s) => s.isActive && s.href)
+                      .map((s) => {
+                        const Icon = SOCIAL_ICONS[s.id as keyof typeof SOCIAL_ICONS] || Share2;
+                        const brand = SOCIAL_BRAND[s.id as keyof typeof SOCIAL_BRAND];
+                        return (
+                          <span
+                            key={s.id}
+                            title={s.label}
+                            className="w-8 h-8 rounded-lg border flex items-center justify-center"
+                            style={{
+                              color: brand.color,
+                              backgroundColor: brand.bg,
+                              borderColor: brand.border,
+                            }}
+                          >
+                            <span
+                              className="flex"
+                              style={
+                                brand.chromatic
+                                  ? { filter: "drop-shadow(1px 0 0 #25F4EE) drop-shadow(-1px 0 0 #FE2C55)" }
+                                  : undefined
+                              }
+                            >
+                              <Icon className="w-3.5 h-3.5" />
+                            </span>
+                          </span>
+                        );
+                      })
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="px-5 py-2.5 border-t border-slate-800 bg-slate-900/40 text-[10px] text-slate-500">
+              Pratinjau ringkas — ikon, warna brand, dan glow mengikuti komponen Footer &amp; FloatingSocial
+              storefront. Item non-aktif dan/atau tanpa URL disembunyikan dari pengunjung.
+            </div>
+          </div>
+
           <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-2">
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
               <Share2 className="w-4 h-4 text-brand-400" />
@@ -2082,6 +2288,140 @@ function ContentManagementInner() {
       {/* TAB 7: HALAMAN STATIS */}
       {!loading && activeTab === "pages" && (
         <div className="space-y-6 w-full">
+          {/* ── PRATINJAU LANGSUNG — pola tab Hero Text ── */}
+          <div className="glass-panel rounded-3xl border border-brand-500/25 overflow-hidden shadow-xl shadow-black/20">
+            <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-slate-800 bg-slate-900/70">
+              <div className="flex items-center gap-2 text-xs font-bold text-brand-200">
+                <Eye className="w-3.5 h-3.5" />
+                Pratinjau Langsung
+              </div>
+              <div className="flex items-center gap-1.5" aria-hidden="true">
+                <span className="h-2.5 w-2.5 rounded-full bg-red-400/70" />
+                <span className="h-2.5 w-2.5 rounded-full bg-amber-400/70" />
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/70" />
+              </div>
+            </div>
+
+            <div className="p-4 sm:p-6 bg-slate-950 space-y-6">
+              {/* A. Navbar — modul nonaktif hilang dari menu & sitemap */}
+              <div>
+                <div className="text-[10px] uppercase font-bold text-slate-500 tracking-[0.14em] mb-3">
+                  Menu Navigasi &amp; Sitemap — Modul Nonaktif Disembunyikan
+                </div>
+                <div className="p-2.5 rounded-2xl border border-slate-800 bg-slate-900/60 flex flex-wrap items-center gap-2">
+                  {MODULE_TOGGLES.map((mod) => {
+                    const enabled = seoData?.pages?.[mod.path]?.enabled !== false;
+                    return (
+                      <span
+                        key={mod.path}
+                        title={
+                          enabled
+                            ? `${mod.label} — aktif (masuk nav & sitemap)`
+                            : `${mod.label} — nonaktif (tersembunyi dari nav & sitemap)`
+                        }
+                        className={`relative inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${
+                          enabled
+                            ? "bg-slate-800/60 border-slate-700 text-slate-200"
+                            : "bg-slate-950 border-slate-800 text-slate-500 line-through opacity-60"
+                        }`}
+                      >
+                        {!enabled && <EyeOff className="w-3 h-3" />}
+                        {mod.label}
+                      </span>
+                    );
+                  })}
+                </div>
+                <div className="mt-2 text-[9px] font-mono text-slate-600 px-1">
+                  sitemap.xml:
+                  {MODULE_TOGGLES.filter((m) => seoData?.pages?.[m.path]?.enabled !== false)
+                    .map((m) => `${m.path}`)
+                    .join(" · ") || " (kosong — semua modul nonaktif)"}
+                </div>
+              </div>
+
+              {/* B. Hero Halaman About */}
+              <div>
+                <div className="text-[10px] uppercase font-bold text-slate-500 tracking-[0.14em] mb-3">
+                  Hero Halaman &quot;Tentang Kami&quot;
+                </div>
+                <div className="rounded-2xl border border-slate-800 bg-gradient-to-br from-brand-950/50 via-slate-900 to-slate-900 overflow-hidden">
+                  <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 p-4 sm:p-5">
+                    <div className="sm:col-span-2">
+                      {pagesData.aboutHeroImage ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={pagesData.aboutHeroImage}
+                          alt="Hero About"
+                          className="w-full aspect-[4/3] object-cover rounded-xl border border-slate-800"
+                        />
+                      ) : (
+                        <div className="w-full aspect-[4/3] rounded-xl border border-dashed border-slate-700 bg-slate-900/60 flex items-center justify-center text-slate-500">
+                          <ImageIcon className="w-5 h-5" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="sm:col-span-3">
+                      <span className="inline-flex items-center rounded-full border border-brand-500/30 bg-brand-500/10 px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.18em] text-brand-200">
+                        Tentang Kami
+                      </span>
+                      <h3 className="mt-2 font-display text-base sm:text-lg font-bold leading-snug text-white">
+                        {pagesData.aboutTitle || "—"}
+                      </h3>
+                      <p className="mt-1.5 text-[11px] leading-relaxed text-slate-300 line-clamp-4">
+                        {pagesData.aboutDescription || "—"}
+                      </p>
+                      <p className="mt-2 text-[11px] italic text-brand-200/90 leading-relaxed line-clamp-3">
+                        {pagesData.aboutCaption}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* C. Info Kontak — kecil seperti grid kartu asli */}
+              <div>
+                <div className="text-[10px] uppercase font-bold text-slate-500 tracking-[0.14em] mb-3">
+                  Kartu Info Kontak
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[11px]">
+                  <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex items-start gap-2">
+                    <MapPin className="w-3.5 h-3.5 text-brand-400 shrink-0 mt-0.5" />
+                    <span className="text-slate-300 leading-snug">{pagesData.contactAddress || "—"}</span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex items-start gap-2">
+                    <Mail className="w-3.5 h-3.5 text-brand-400 shrink-0 mt-0.5" />
+                    <span className="text-slate-300 font-mono leading-snug break-all">{pagesData.contactEmail || "—"}</span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex items-start gap-2">
+                    <Phone className="w-3.5 h-3.5 text-brand-400 shrink-0 mt-0.5" />
+                    <span className="text-slate-300 font-mono leading-snug">{pagesData.contactPhone || "—"}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* D. Footer Bar */}
+              <div>
+                <div className="text-[10px] uppercase font-bold text-slate-500 tracking-[0.14em] mb-3">
+                  Bar Copyright Footer
+                </div>
+                <div className="px-4 py-3 rounded-2xl border-t-2 border-brand-500/40 bg-slate-900/70 flex flex-col sm:flex-row items-center justify-between gap-2">
+                  <span className="text-[11px] font-display font-bold tracking-widest text-brand-200 uppercase">
+                    ×oramateria
+                  </span>
+                  <span className="text-[10px] text-slate-500 text-center">
+                    {pagesData.footerCopyright || "—"}
+                  </span>
+                  <span className="text-[9px] text-slate-600 font-mono">privacy · terms · faq</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-5 py-2.5 border-t border-slate-800 bg-slate-900/40 text-[10px] text-slate-500">
+              Pratinjau ringkas — layout final mengikuti Navbar, halaman About/Contact, dan Footer
+              storefront. Toggle modul berlaku setelah disimpan (tombol switch di bawah).
+            </div>
+          </div>
+
           {/* VISIBILITAS MODUL — hanya untuk Administrator bawaan */}
           {isSystemAdministrator && (
           <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">

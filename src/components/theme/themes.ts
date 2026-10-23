@@ -8,11 +8,11 @@ export interface ThemeDef {
   swatch: string;
 }
 
-// v2: brand refresh — tema Xora Blue menjadi default. Key lama sengaja
-// tidak dipakai lagi agar pengunjung existing melihat identitas baru.
+// v2: brand refresh — tema dapat dipilih pengunjung (persist di localStorage).
+// Default kini kembali ke Antique Brass (identitas PRD V3).
 export const STORAGE_KEY = "texora-theme-v2";
 
-export const DEFAULT_THEME: ThemeId = "xora";
+export const DEFAULT_THEME: ThemeId = "brass";
 
 export const THEMES: ThemeDef[] = [
   {

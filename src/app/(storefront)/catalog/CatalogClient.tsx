@@ -4,9 +4,11 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { formatRupiah, formatNumber } from "@/lib/utils";
+import { metersToYards, pricePerYard } from "@/lib/units";
 import { Breadcrumb } from "@/components/common/Breadcrumb";
 import { htmlToPlainText } from "@/lib/sanitize";
 import { CATEGORY_SEO } from "@/lib/category-seo";
+import { ImageCarousel } from "@/components/common/ImageCarousel";
 import { useI18n, useLocalePath } from "@/lib/i18n/LanguageContext";
 import type { StorefrontProduct } from "@/lib/storefront-data";
 import { 
@@ -25,9 +27,11 @@ import {
 interface CatalogClientProps {
   /** Produk hasil SSR (sudah ada di HTML awal untuk crawler). */
   initialFabrics: StorefrontProduct[];
+  /** true saat admin portal menyembunyikan harga (setting terpusat). */
+  hidePrices?: boolean;
 }
 
-export default function CatalogClient({ initialFabrics }: CatalogClientProps) {
+export default function CatalogClient({ initialFabrics, hidePrices = false }: CatalogClientProps) {
   const { t, locale } = useI18n();
   const localePath = useLocalePath();
   const [fabrics, setFabrics] = useState<StorefrontProduct[]>(initialFabrics);
@@ -273,7 +277,11 @@ export default function CatalogClient({ initialFabrics }: CatalogClientProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredFabrics.map((fabric) => {
           const defaultVariant = fabric.variants[0];
-          const lowestTierPrice = fabric.priceTiers[fabric.priceTiers.length - 1].unitPrice;
+          // Kalau harga disembunyikan (priceTiers kosong), nilai ini tak dipakai render.
+          const lowestTierPrice =
+            fabric.priceTiers?.length > 0
+              ? fabric.priceTiers[fabric.priceTiers.length - 1].unitPrice
+              : 0;
 
           return (
             <article
@@ -281,16 +289,29 @@ export default function CatalogClient({ initialFabrics }: CatalogClientProps) {
               className="rounded-2xl glass-panel glass-panel-hover border border-slate-800 flex flex-col justify-between overflow-hidden group"
             >
               <div>
-                {/* Thumbnail */}
-                <div className="relative aspect-[16/10] overflow-hidden bg-slate-950">
-                  <Image
-                    src={fabric.thumbnailUrl}
-                    alt={`${fabric.name} — kain ${fabric.composition} siap sublimasi, lebar ${fabric.widthInch} inci, kategori ${fabric.category}`}
-                    fill
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute top-3 left-3 flex gap-1.5">
+                {/* Thumbnail / galeri gambar (pindah manual via klik) */}
+                <div className="relative">
+                  {fabric.images && fabric.images.length > 1 ? (
+                    <ImageCarousel
+                      images={fabric.images}
+                      alt={`${fabric.name} — kain ${fabric.composition} siap sublimasi, lebar ${fabric.widthInch} inci, kategori ${fabric.category}`}
+                      aspect="16/10"
+                      auto={false}
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      className="rounded-xl"
+                    />
+                  ) : (
+                    <div className="relative aspect-[16/10] overflow-hidden bg-slate-950">
+                      <Image
+                        src={fabric.thumbnailUrl}
+                        alt={`${fabric.name} — kain ${fabric.composition} siap sublimasi, lebar ${fabric.widthInch} inci, kategori ${fabric.category}`}
+                        fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    </div>
+                  )}
+                  <div className="absolute top-3 left-3 flex gap-1.5 z-20">
                     <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-900/90 text-accent-cyan border border-accent-cyan/30 backdrop-blur-md">
                       {fabric.category}
                     </span>
@@ -336,18 +357,26 @@ export default function CatalogClient({ initialFabrics }: CatalogClientProps) {
                   <div>
                     <div className="text-[10px] uppercase font-bold text-slate-400 mb-1.5 flex items-center justify-between">
                       <span>{t("catalog.tier")}</span>
-                      <span className="text-accent-cyan font-normal lowercase">{t("catalog.perMeter")}</span>
+                      {!hidePrices && (
+                        <span className="text-accent-cyan font-normal lowercase">{t("catalog.perMeter")}</span>
+                      )}
                     </div>
-                    <div className="grid grid-cols-2 gap-1.5 text-[11px] font-mono">
-                      {fabric.priceTiers.slice(0, 2).map((tier) => (
-                        <div key={tier.id} className="p-1.5 rounded bg-slate-900 border border-slate-800 text-center">
-                          <span className="text-slate-400 text-[10px] block">
-                            {tier.maxMeters ? `${tier.minMeters}-${tier.maxMeters}m` : `≥${tier.minMeters}m`}
-                          </span>
-                          <span className="font-bold text-slate-200">{formatRupiah(tier.unitPrice)}</span>
-                        </div>
-                      ))}
-                    </div>
+                    {hidePrices ? (
+                      <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-300 italic leading-relaxed">
+                        {t("catalog.priceHidden")}
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-1.5 text-[11px] font-mono">
+                        {fabric.priceTiers.slice(0, 2).map((tier) => (
+                          <div key={tier.id} className="p-1.5 rounded bg-slate-900 border border-slate-800 text-center">
+                            <span className="text-slate-400 text-[10px] block">
+                              {tier.maxMeters ? `${metersToYards(tier.minMeters)}–${metersToYards(tier.maxMeters)} yd` : `≥${metersToYards(tier.minMeters)} yd`}
+                            </span>
+                            <span className="font-bold text-slate-200">{formatRupiah(pricePerYard(tier.unitPrice))}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                 </div>
@@ -356,11 +385,19 @@ export default function CatalogClient({ initialFabrics }: CatalogClientProps) {
               {/* Card Footer Actions */}
               <div className="p-5 pt-0 border-t border-slate-800/60 mt-4 flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] text-slate-500 block uppercase font-bold">{t("catalog.best")}</span>
-                  <span className="text-base font-extrabold text-white font-mono">
-                    {formatRupiah(lowestTierPrice)}
-                    <span className="text-xs text-slate-400 font-normal"> /m</span>
-                  </span>
+                  {hidePrices ? (
+                    <span className="text-[11px] text-slate-400 italic">
+                      {t("catalog.priceHidden")}
+                    </span>
+                  ) : (
+                    <>
+                      <span className="text-[10px] text-slate-500 block uppercase font-bold">{t("catalog.best")}</span>
+                      <span className="text-base font-extrabold text-white font-mono">
+                        {formatRupiah(lowestTierPrice)}
+                        <span className="text-xs text-slate-400 font-normal"> /m</span>
+                      </span>
+                    </>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2">

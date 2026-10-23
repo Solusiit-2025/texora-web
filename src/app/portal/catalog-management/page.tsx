@@ -18,14 +18,22 @@ import {
   Layers,
   FileText,
   Upload,
+  Loader2,
   Download,
   ExternalLink,
+  Eye,
+  EyeOff,
 } from "lucide-react";
-import { formatRupiah } from "@/lib/utils";
+import { formatRupiah, formatNumber } from "@/lib/utils";
+import { metersToYards, yardsToMeters, pricePerYard, pricePerMeterFromYard } from "@/lib/units";
 import { FabricProduct } from "@/types";
-import { ImageUpload } from "@/components/common/ImageUpload";
 import { RichTextEditor } from "@/components/common/RichTextEditor";
 import { htmlToPlainText } from "@/lib/sanitize";
+import { getImageFileDimensions, isLowResolutionImage } from "@/lib/image-gallery";
+
+/** Batas galeri gambar kain (sinkron lib/image-gallery). */
+const MAX_PRODUCT_IMAGES = 5;
+const MAX_PRODUCT_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB per gambar
 
 export default function CatalogManagementPage() {
   const [fabrics, setFabrics] = useState<FabricProduct[]>([]);
@@ -37,6 +45,20 @@ export default function CatalogManagementPage() {
   const [editingFabric, setEditingFabric] = useState<FabricProduct | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  // ── Mode sembunyikan harga (TERPUSAT di database via SystemSetting) ──
+  // Berlaku untuk portal DAN storefront; hanya tulisan yang di-mask,
+  // data harga di database tetap utuh.
+  const [hidePrice, setHidePrice] = useState(false);
+  const [hidePriceBusy, setHidePriceBusy] = useState(false);
+
+  // ── Master kategori (dikelola via /api/categories) ──
+  const [categories, setCategories] = useState<string[]>([]);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [categoryError, setCategoryError] = useState<string | null>(null);
+  const [categoryWarning, setCategoryWarning] = useState<string | null>(null);
+  const [savingCategory, setSavingCategory] = useState(false);
 
   /** Katalog PDF unggahan manual (CMS). null = memakai katalog otomatis. */
   const [catalogPdf, setCatalogPdf] = useState<{
@@ -60,7 +82,67 @@ export default function CatalogManagementPage() {
     stockMeters: 2000,
     description: "",
     thumbnailUrl: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=800&q=80",
+    images: [] as string[], // galeri (maks 5) — untuk /catalog manual carousel
   });
+
+  const [imageBusy, setImageBusy] = useState(false);
+
+  /** Upload gambar galeri kain: JPG/PNG/GIF/AVIF → otomatis .webp (maks 5 gambar, 5MB). */
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
+    if (!files.length) return;
+
+    const slots = MAX_PRODUCT_IMAGES - formData.images.length;
+    if (slots <= 0) {
+      showNotice("error", `Maksimal ${MAX_PRODUCT_IMAGES} gambar per kain.`);
+      return;
+    }
+    const accepted = files.slice(0, slots);
+    const skipped = files.length - accepted.length;
+
+    for (const file of accepted) {
+      if (!file.type.startsWith("image/")) {
+        showNotice("error", `"${file.name}" ditolak — hanya file gambar.`);
+        continue;
+      }
+      if (file.size > MAX_PRODUCT_IMAGE_SIZE) {
+        showNotice("error", `"${file.name}" melebihi batas 5MB.`);
+        continue;
+      }
+      // Peringatan resolusi rendah — kartu besar akan tampil kurang tajam.
+      const dims = await getImageFileDimensions(file);
+      if (isLowResolutionImage(dims.width, dims.height)) {
+        showNotice(
+          "error",
+          `"${file.name}" beresolusi ${dims.width}×${dims.height}px — agak kecil. Idealnya ≥800px (mis. 1200×800) supaya tajam di kartu.`
+        );
+        continue; // jangan upload gambar yang pasti pecah
+      }
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("convert", "webp");
+      setImageBusy(true);
+      try {
+        const res = await fetch("/api/upload", { method: "POST", body: fd });
+        const json = await res.json();
+        if (json?.success) {
+          setFormData((f) =>
+            f.images.length < MAX_PRODUCT_IMAGES ? { ...f, images: [...f.images, json.url] } : f
+          );
+        } else {
+          showNotice("error", json?.error || `Gagal mengunggah "${file.name}".`);
+        }
+      } catch {
+        showNotice("error", `Gagal mengunggah "${file.name}" (periksa koneksi/sesi).`);
+      } finally {
+        setImageBusy(false);
+      }
+    }
+    if (skipped > 0) {
+      showNotice("error", `${skipped} gambar dilewati — batas ${MAX_PRODUCT_IMAGES} gambar.`);
+    }
+  };
 
   const fetchFabrics = async () => {
     try {
@@ -81,11 +163,133 @@ export default function CatalogManagementPage() {
 
   useEffect(() => {
     fetchFabrics();
+    fetchCategories();
+    // Muat status sembunyikan harga dari server (SystemSetting, terpusat)
+    fetch("/api/catalog-settings")
+      .then((r) => r.json())
+      .then((j) => {
+        if (typeof j?.hidePrices === "boolean") setHidePrice(j.hidePrices);
+      })
+      .catch(() => {
+        /* default: harga tampil */
+      });
   }, []);
+
+  const toggleHidePrice = async () => {
+    const next = !hidePrice;
+    setHidePrice(next);
+    setHidePriceBusy(true);
+    try {
+      const res = await fetch("/api/catalog-settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hidePrices: next }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        setHidePrice(!next);
+        showNotice("error", json.error || "Gagal menyimpan pengaturan harga.");
+      } else {
+        showNotice(
+          "success",
+          next
+            ? "Harga disembunyikan — berlaku juga di halaman katalog pengunjung."
+            : "Harga ditampilkan kembali di portal & storefront."
+        );
+      }
+    } catch {
+      setHidePrice(!next);
+      showNotice("error", "Koneksi gagal. Pengaturan tidak tersimpan.");
+    } finally {
+      setHidePriceBusy(false);
+    }
+  };
 
   const showNotice = (type: "success" | "error", message: string) => {
     setNotification({ type, message });
     setTimeout(() => setNotification(null), 4500);
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch("/api/categories", { cache: "no-store" });
+      const json = await res.json();
+      if (json?.categories?.length) setCategories(json.categories);
+    } catch (err) {
+      console.error("Failed to load categories:", err);
+      // Fallback: derive dari produk + default ((service tetap jalan walau API kategori error)
+    }
+  };
+
+  // Kunci perbandingan: huruf kecil, hanya alfanumerik & buang akhiran jamak
+  // → "Sportswears"/"sportswear" dianggap sama. Sumber kebenaran tetap server.
+  const catKey = (s: string) =>
+    s.toLowerCase().replace(/[^a-z0-9]+/g, "").replace(/(es|s)$/, "");
+
+  // Daftar dropdown & chip: dari master kategori (API). Fallback dari produk jika API gagal.
+  const categoryList =
+    categories.length > 0
+      ? categories
+      : Array.from(
+          new Set([
+            ...fabrics.map((f) => f.category),
+            "Sportswear",
+            "Fashion & Hijab",
+            "Merchandise & Flag",
+            "Home Living",
+          ])
+        )
+          .filter(Boolean)
+          .sort((a, b) => a.localeCompare(b, "id"));
+
+  // Dropdown selalu memuat kategori produk yang sedang diedit (legacy data bisa di luar master).
+  const dropdownCats = categoryList.includes(formData.category)
+    ? categoryList
+    : Array.from(new Set([formData.category, ...categoryList]));
+
+  const handleCategoryNameChange = (value: string) => {
+    setNewCategoryName(value);
+    setCategoryError(null);
+    const key = catKey(value);
+    if (!key.trim()) {
+      setCategoryWarning(null);
+      return;
+    }
+    const hit = categoryList.find((c) => catKey(c) === key);
+    setCategoryWarning(
+      hit
+        ? `Kategori "${hit}" sudah ada — gunakan yang tersedia, jangan buat variasi baru.`
+        : null
+    );
+  };
+
+  const handleAddCategory = async () => {
+    const name = newCategoryName.trim().replace(/\s+/g, " ");
+    if (!name) return;
+    setSavingCategory(true);
+    setCategoryError(null);
+    try {
+      const res = await fetch("/api/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        setCategoryError(json.error || "Gagal menyimpan kategori.");
+        return;
+      }
+      setCategories(json.categories || []);
+      setFormData({ ...formData, category: json.category });
+      setShowCategoryModal(false);
+      setNewCategoryName("");
+      setCategoryWarning(null);
+      showNotice("success", `Kategori "${json.category}" ditambahkan & langsung terpilih.`);
+    } catch {
+      setCategoryError("Koneksi gagal. Silakan coba lagi.");
+    } finally {
+      setSavingCategory(false);
+    }
   };
 
   const loadCatalogPdf = async () => {
@@ -116,8 +320,8 @@ export default function CatalogManagementPage() {
       showNotice("error", "File katalog harus berformat PDF.");
       return;
     }
-    if (file.size > 20 * 1024 * 1024) {
-      showNotice("error", "Ukuran katalog maksimal 20 MB.");
+    if (file.size > 30 * 1024 * 1024) {
+      showNotice("error", "Ukuran katalog maksimal 30 MB.");
       return;
     }
 
@@ -186,6 +390,7 @@ export default function CatalogManagementPage() {
       basePricePerMeter: 34000,
       gsm: 140,
       stockMeters: 2000,
+      images: [],
       description: "",
       thumbnailUrl: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=800&q=80",
     });
@@ -205,6 +410,12 @@ export default function CatalogManagementPage() {
       stockMeters: fabric.variants[0]?.stockMeters || 2000,
       description: fabric.description,
       thumbnailUrl: fabric.thumbnailUrl || "",
+      // Galeri legacy: thumbnail lama + galleryImages (dedupe, maks 5).
+      images: (fabric.images?.length
+        ? fabric.images
+        : [fabric.thumbnailUrl || ""])
+        .filter((v, i, arr) => v && arr.indexOf(v) === i)
+        .slice(0, 5),
     });
   };
 
@@ -232,7 +443,8 @@ export default function CatalogManagementPage() {
             widthInch: Number(formData.widthInch),
             basePricePerMeter: Number(formData.basePricePerMeter),
             description: formData.description,
-            thumbnailUrl: formData.thumbnailUrl,
+            thumbnailUrl: formData.images[0] || "",
+            galleryImages: formData.images,
             variants: updatedVariants,
           }),
         });
@@ -259,7 +471,8 @@ export default function CatalogManagementPage() {
             basePricePerMeter: Number(formData.basePricePerMeter),
             gsm: Number(formData.gsm),
             description: formData.description,
-            thumbnailUrl: formData.thumbnailUrl,
+            thumbnailUrl: formData.images[0] || "",
+            galleryImages: formData.images,
             variants: [
               {
                 gsm: Number(formData.gsm),
@@ -384,7 +597,7 @@ export default function CatalogManagementPage() {
               <span>Katalog PDF untuk Pengunjung</span>
             </h2>
             <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
-              Unggah katalog yang Anda desain sendiri di komputer (PDF, maks. 20 MB). File ini
+              Unggah katalog yang Anda desain sendiri di komputer (PDF, maks. 30 MB). File ini
               otomatis dipakai oleh semua tombol &quot;Unduh Katalog&quot; di website. Jika belum ada,
               website membuat katalog otomatis dari data produk di bawah.
             </p>
@@ -511,9 +724,9 @@ export default function CatalogManagementPage() {
           />
         </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 w-full sm:w-auto">
-          {["ALL", "Sportswear", "Fashion & Hijab", "Merchandise & Flag", "Home Living"].map((cat) => (
-            <button
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 w-full sm:w-auto">
+          {["ALL", ...categoryList].map((cat) => (            <button
               key={cat}
               type="button"
               onClick={() => setSelectedCategory(cat)}
@@ -526,6 +739,27 @@ export default function CatalogManagementPage() {
               {cat === "ALL" ? "Semua Kategori" : cat}
             </button>
           ))}
+          </div>
+
+          {/* Toggle tampilkan/sembunyikan harga di kartu */}
+          <button
+            type="button"
+            onClick={toggleHidePrice}
+            disabled={hidePriceBusy}
+            title={hidePrice ? "Tampilkan harga" : "Sembunyikan harga (berlaku juga di storefront)"}
+            className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all disabled:opacity-50 ${
+              hidePrice
+                ? "bg-amber-500/10 border-amber-600/40 text-amber-400"
+                : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
+            }`}
+          >
+            {hidePrice ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+            {hidePriceBusy
+              ? "Menyimpan..."
+              : hidePrice
+              ? "Harga Disembunyikan"
+              : "Sembunyikan Harga"}
+          </button>
         </div>
       </div>
 
@@ -589,28 +823,36 @@ export default function CatalogManagementPage() {
                     <div className="flex justify-between text-slate-400">
                       <span>Total Stok Tersedia:</span>
                       <span className="font-mono text-emerald-400 font-semibold">
-                        {fabric.variants.reduce((acc, v) => acc + (v.stockMeters || 0), 0)} Meter
+                        {metersToYards(fabric.variants.reduce((acc, v) => acc + (v.stockMeters || 0), 0))} Yard
                       </span>
                     </div>
                   </div>
 
-                  {/* Pricing Tiers Preview */}
+                  {/* Pricing Tiers Preview (bisa disembunyikan via toggle) */}
                   <div className="pt-1">
                     <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1.5">
-                      Tingkat Harga Grosir (Volume Tiers)
+                      {hidePrice
+                        ? "Tingkat Harga Grosir (disembunyikan)"
+                        : "Tingkat Harga Grosir (Volume Tiers)"}
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-[11px]">
-                      {fabric.priceTiers.slice(0, 2).map((tier, idx) => (
-                        <div key={idx} className="p-2 rounded-lg bg-slate-900 border border-slate-800">
-                          <div className="text-[9px] text-slate-400 font-medium">
-                            {tier.maxMeters ? `${tier.minMeters}-${tier.maxMeters}m` : `≥ ${tier.minMeters}m`}
+                    {hidePrice ? (
+                      <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-400 italic">
+                        Harga disembunyikan — aktifkan toggle "Tampilkan harga" untuk melihatnya.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2 text-[11px]">
+                        {fabric.priceTiers.slice(0, 2).map((tier, idx) => (
+                          <div key={idx} className="p-2 rounded-lg bg-slate-900 border border-slate-800">
+                            <div className="text-[9px] text-slate-400 font-medium">
+                              {tier.maxMeters ? `${metersToYards(tier.minMeters)}-${metersToYards(tier.maxMeters)} yd` : `≥ ${metersToYards(tier.minMeters)} yd`}
+                            </div>
+                            <div className="font-bold text-brand-300 font-mono">
+                              {formatRupiah(pricePerYard(tier.unitPrice))}
+                            </div>
                           </div>
-                          <div className="font-bold text-brand-300 font-mono">
-                            {formatRupiah(tier.unitPrice)}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -652,7 +894,7 @@ export default function CatalogManagementPage() {
       {/* Modal Add / Edit */}
       {(showAddModal || editingFabric) && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="max-w-xl w-full max-h-[90vh] overflow-y-auto glass-panel p-6 sm:p-8 rounded-3xl border border-brand-500/30 shadow-2xl space-y-5">
+          <div className="max-w-5xl w-full max-h-[90vh] overflow-y-auto glass-panel p-6 sm:p-8 rounded-3xl border border-brand-500/30 shadow-2xl space-y-5">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div>
                 <h3 className="text-xl font-display font-bold text-white">
@@ -699,17 +941,36 @@ export default function CatalogManagementPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Kategori</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-slate-300 font-semibold">Kategori</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCategoryModal(true);
+                        setNewCategoryName("");
+                        setCategoryError(null);
+                        setCategoryWarning(null);
+                      }}
+                      className="flex items-center gap-1 text-[11px] font-bold text-brand-400 hover:text-brand-300 transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Kategori
+                    </button>
+                  </div>
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                     className="w-full bg-slate-900 border border-slate-700 rounded-xl py-2 px-3 text-white focus:outline-none focus:border-brand-500"
                   >
-                    <option value="Sportswear">Sportswear</option>
-                    <option value="Fashion & Hijab">Fashion & Hijab</option>
-                    <option value="Merchandise & Flag">Merchandise & Flag</option>
-                    <option value="Home Living">Home Living</option>
+                    {dropdownCats.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
                   </select>
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    Daftar tervalidasi tanpa duplikat. Kategori baru lewat tombol + Kategori.
+                  </p>
                 </div>
                 <div>
                   <label className="block text-slate-300 font-semibold mb-1">Gramasi (GSM)</label>
@@ -760,38 +1021,101 @@ export default function CatalogManagementPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Harga Dasar (Rp/m)</label>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    Harga Dasar (Rp/yd)
+                    <span className="text-[10px] text-slate-500 ml-1">({formatRupiah(formData.basePricePerMeter)}/m di database)</span>
+                  </label>
                   <input
                     type="number"
                     required
-                    value={formData.basePricePerMeter}
+                    value={pricePerYard(formData.basePricePerMeter)}
                     onChange={(e) =>
-                      setFormData({ ...formData, basePricePerMeter: Number(e.target.value) })
+                      setFormData({ ...formData, basePricePerMeter: pricePerMeterFromYard(Number(e.target.value) || 0) })
                     }
                     className="w-full bg-slate-900 border border-slate-700 rounded-xl py-2 px-3 text-white focus:outline-none focus:border-brand-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Stok (Meter)</label>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    Stok (Yard)
+                    <span className="text-[10px] text-slate-500 ml-1">({formatNumber(formData.stockMeters)} m di database)</span>
+                  </label>
                   <input
                     type="number"
                     required
-                    value={formData.stockMeters}
+                    value={metersToYards(formData.stockMeters)}
                     onChange={(e) =>
-                      setFormData({ ...formData, stockMeters: Number(e.target.value) })
+                      setFormData({ ...formData, stockMeters: yardsToMeters(Number(e.target.value) || 0) })
                     }
                     className="w-full bg-slate-900 border border-slate-700 rounded-xl py-2 px-3 text-white focus:outline-none focus:border-brand-500"
                   />
                 </div>
               </div>
 
+              {/* Galeri gambar — maks 5, JPG/PNG/GIF otomatis .webp */}
               <div>
-                <ImageUpload
-                  label="Gambar Thumbnail"
-                  value={formData.thumbnailUrl}
-                  onChange={(url) => setFormData({ ...formData, thumbnailUrl: url })}
-                  onError={(m) => showNotice("error", m)}
-                />
+                <label className="block text-slate-300 font-semibold mb-2">
+                  Galeri Gambar ({formData.images.length}/{MAX_PRODUCT_IMAGES})
+                  <span className="text-[10px] text-slate-500 font-normal ml-1">
+                    JPG/PNG/GIF/AVIF otomatis jadi .webp · maks 5MB/gambar · gambar pertama = thumbnail
+                  </span>
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {formData.images.map((url, i) => (
+                    <div
+                      key={url}
+                      className="relative w-24 h-24 rounded-lg overflow-hidden border border-slate-800 group"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={url} alt={`Gambar ${i + 1}`} className="w-full h-full object-cover" />
+                      {i === 0 && (
+                        <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-brand-500/90 text-slate-950 text-[9px] font-bold">
+                          UTAMA
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData({ ...formData, images: formData.images.filter((u) => u !== url) })
+                        }
+                        className="absolute top-1 right-1 w-6 h-6 rounded-full bg-slate-950/80 text-slate-300 hover:text-white hover:bg-rose-600 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Hapus gambar"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+
+                  {formData.images.length < MAX_PRODUCT_IMAGES && (
+                    <label
+                      className={`w-24 h-24 rounded-lg border-2 border-dashed transition-colors flex flex-col items-center justify-center cursor-pointer ${
+                        imageBusy
+                          ? "border-brand-500/60 bg-brand-500/5 cursor-wait"
+                          : "border-slate-700 hover:border-brand-500/60 bg-slate-900/40"
+                      }`}
+                    >
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif,image/avif,image/bmp"
+                        multiple
+                        className="hidden"
+                        onChange={handleGalleryUpload}
+                        disabled={imageBusy}
+                      />
+                      {imageBusy ? (
+                        <Loader2 className="w-5 h-5 text-brand-400 animate-spin" />
+                      ) : (
+                        <>
+                          <Upload className="w-5 h-5 text-slate-400" />
+                          <span className="text-[10px] text-slate-400 mt-1 text-center leading-tight">
+                            JPG/PNG/GIF
+                            <br />→ .webp otomatis
+                          </span>
+                        </>
+                      )}
+                    </label>
+                  )}
+                </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-4 border-t border-slate-800">
@@ -816,6 +1140,86 @@ export default function CatalogManagementPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Tambah Kategori Baru */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="max-w-sm w-full glass-panel p-6 rounded-3xl border border-brand-500/30 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div>
+                <h3 className="text-lg font-display font-bold text-white">Tambah Kategori Baru</h3>
+                <p className="text-[11px] text-slate-400">
+                  Kategori akan tervalidasi otomatis (anti-duplikat).
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCategoryModal(false)}
+                className="w-8 h-8 rounded-full bg-slate-900 text-slate-400 hover:text-white flex items-center justify-center"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-slate-300 font-semibold mb-1 text-xs">Nama Kategori</label>
+              <input
+                type="text"
+                autoFocus
+                value={newCategoryName}
+                onChange={(e) => handleCategoryNameChange(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !savingCategory) handleAddCategory();
+                }}
+                placeholder="mis. Industrial Tent"
+                maxLength={60}
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl py-2 px-3 text-xs text-white focus:outline-none focus:border-brand-500"
+              />
+              {categoryWarning && (
+                <p className="text-[11px] text-amber-400 mt-2 flex items-start gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                  {categoryWarning}
+                </p>
+              )}
+              {categoryError && (
+                <p className="text-[11px] text-red-400 mt-2 flex items-start gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                  {categoryError}
+                </p>
+              )}
+              {categoryWarning && !categoryError && (
+                <p className="text-[10px] text-slate-500 mt-1">
+                  Cukup pilih kategori yang sudah ada di dropdown — server juga
+                  akan memvalidasi ulang saat disimpan.
+                </p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowCategoryModal(false)}
+                className="px-4 py-2 rounded-xl text-[11px] font-bold bg-slate-900 text-slate-300 hover:text-white border border-slate-800 transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={!newCategoryName.trim() || savingCategory}
+                onClick={handleAddCategory}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-bold bg-brand-500 text-slate-950 hover:bg-brand-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                {savingCategory ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Plus className="w-3.5 h-3.5" />
+                )}
+                {savingCategory ? "Menyimpan..." : "Tambah Kategori"}
+              </button>
+            </div>
           </div>
         </div>
       )}

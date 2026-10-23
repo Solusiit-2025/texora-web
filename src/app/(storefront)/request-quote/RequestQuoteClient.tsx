@@ -6,9 +6,6 @@ import {
   Loader2,
   CheckCircle2,
   AlertTriangle,
-  Upload,
-  FileText,
-  X,
   Send,
   Package,
 } from "lucide-react";
@@ -50,7 +47,9 @@ export default function RequestQuoteClient({
   const [selectedProducts, setSelectedProducts] = useState<string[]>(
     presetProduct ? [presetProduct] : []
   );
-  const [file, setFile] = useState<{ dataUrl: string; name: string; size: number } | null>(null);
+  // Upload file referensi DINONAKTIFKAN (hardening keamanan): celah unggah
+  // file dari form publik dihapus total (client & server) supaya tidak bisa
+  // dipakai menyimpan script berbahaya ke server.
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
@@ -63,27 +62,7 @@ export default function RequestQuoteClient({
     );
   };
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    if (f.size > 2 * 1024 * 1024) {
-      setError(copy.fileTooBig);
-      return;
-    }
-    const allowed = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
-    if (!allowed.includes(f.type)) {
-      setError(copy.fileType);
-      return;
-    }
-    const dataUrl = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.onerror = reject;
-      reader.readAsDataURL(f);
-    });
-    setFile({ dataUrl, name: f.name, size: f.size });
-    setError(null);
-  };
+  // handleFile DIHAPUS — input file referensi sudah dinonaktifkan.
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,8 +88,7 @@ export default function RequestQuoteClient({
           productIds: selectedProducts,
           productsText: productNames.join(", "),
           needsSample: form.needsSample,
-          fileDataUrl: file?.dataUrl || null,
-          fileName: file?.name || null,
+          // fileDataUrl/fileName dihilangkan — upload file dinonaktifkan.
           locale,
           source,
         }),
@@ -285,43 +263,6 @@ export default function RequestQuoteClient({
           className={`${inputCls} resize-y leading-relaxed`}
           placeholder={copy.messagePlaceholder}
         />
-      </div>
-
-      {/* File referensi */}
-      <div>
-        <label className={labelCls}>{copy.file}</label>
-        {file ? (
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-900 border border-slate-700">
-            <FileText className="w-4 h-4 text-brand-400 shrink-0" />
-            <span className="text-[11px] text-slate-300 truncate flex-1">
-              {file.name}
-              <span className="text-slate-500 ml-2">
-                {(file.size / 1024).toFixed(0)} KB
-              </span>
-            </span>
-            <button
-              type="button"
-              onClick={() => setFile(null)}
-              className="p-1 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-white transition-colors"
-              title={copy.removeFile}
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        ) : (
-          <label className="flex items-center gap-3 p-4 rounded-xl border border-dashed border-slate-700 hover:border-brand-500/60 transition-colors cursor-pointer">
-            <Upload className="w-4 h-4 text-slate-500" />
-            <span className="text-[11px] text-slate-500">
-              {copy.fileHint}
-            </span>
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp,application/pdf"
-              onChange={handleFile}
-              className="hidden"
-            />
-          </label>
-        )}
       </div>
 
       {/* Sample gratis */}

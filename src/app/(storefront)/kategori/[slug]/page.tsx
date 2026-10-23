@@ -5,6 +5,7 @@ import Image from "next/image";
 import { JsonLd } from "@/components/common/JsonLd";
 import { Breadcrumb } from "@/components/common/Breadcrumb";
 import { getStorefrontProducts } from "@/lib/storefront-data";
+import { isPriceHidden, stripProductPrices } from "@/lib/catalog-visibility";
 import { getRequestLocale, getContentLocale } from "@/lib/server-locale";
 import { localizeRows, localizeObject } from "@/lib/content-translator";
 import {
@@ -58,6 +59,11 @@ export default async function CategoryPage({ params }: PageProps) {
   let products = allProductsRaw.filter(
     (p) => p.category === category.dbCategory
   );
+
+  // Sembunyikan harga bila admin mengaktifkannya (setting terpusat dari portal).
+  if (await isPriceHidden()) {
+    products = stripProductPrices(products);
+  }
 
   let c = category;
   if (lang) {
@@ -263,13 +269,21 @@ export default async function CategoryPage({ params }: PageProps) {
 
                     <div className="p-5 pt-0 border-t border-slate-800/60 flex items-center justify-between">
                       <div>
-                        <span className="text-[10px] text-slate-500 block uppercase font-bold">
-                          Harga Terbaik
-                        </span>
-                        <span className="text-base font-extrabold text-white font-mono">
-                          {formatRupiah(lowestPrice)}
-                          <span className="text-xs text-slate-400 font-normal"> /m</span>
-                        </span>
+                        {lowestPrice > 0 ? (
+                          <>
+                            <span className="text-[10px] text-slate-500 block uppercase font-bold">
+                              Harga Terbaik
+                            </span>
+                            <span className="text-base font-extrabold text-white font-mono">
+                              {formatRupiah(lowestPrice)}
+                              <span className="text-xs text-slate-400 font-normal"> /m</span>
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-[11px] italic text-slate-400 leading-snug">
+                            Silakan ajukan penawaran untuk informasi harga.
+                          </span>
+                        )}
                       </div>
                       <Link
                         href={`/catalog/${fabric.slug}`}

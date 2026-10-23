@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatRupiah, formatNumber } from "@/lib/utils";
+import { yardsToMeters, metersToYards, pricePerYard } from "@/lib/units";
 import { loadCart, saveCart, type CartLineItem } from "@/lib/cart";
 import { useI18n } from "@/lib/i18n/LanguageContext";
 import { 
@@ -141,19 +142,20 @@ export default function CartClient() {
                   {/* Quantity & Pricing Controls */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
                     <div className="flex items-center gap-3">
-                      <span className="text-xs text-slate-400">Panjang:</span>
+                       <span className="text-xs text-slate-400">Panjang:</span>
                       <div className="flex items-center gap-1.5">
                         <input
                           type="number"
                           min={1}
-                          value={item.meters}
-                          onChange={(e) => updateMeters(item.id, Number(e.target.value))}
+                          value={metersToYards(item.meters)}
+                          onChange={(e) => updateMeters(item.id, yardsToMeters(Math.max(1, Number(e.target.value))))}
                           className="w-20 px-2 py-1 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono font-bold text-xs text-center"
                         />
-                        <span className="text-xs text-slate-400 font-semibold">Meter</span>
+                        <span className="text-xs text-slate-400 font-semibold">Yard</span>
+                        <span className="text-[10px] text-slate-500 font-mono hidden sm:inline">(≈ {formatNumber(item.meters)} m)</span>
                       </div>
                       <div className="text-[11px] text-slate-400 hidden sm:inline">
-                        (@ {formatRupiah(totalCostPerMeter)} /m termasuk cetak)
+                        (@ ≈ {formatRupiah(pricePerYard(totalCostPerMeter))} /yd termasuk cetak)
                       </div>
                     </div>
 

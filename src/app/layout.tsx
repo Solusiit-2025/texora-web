@@ -146,7 +146,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html
       lang={htmlLang}
       dir={htmlDir}
-      data-theme="xora"
+      data-theme="brass"
       className={`dark ${fontSans.variable} ${fontDisplay.variable}`}
     >
       <head>

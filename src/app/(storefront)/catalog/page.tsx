@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import CatalogClient from "./CatalogClient";
 import { JsonLd } from "@/components/common/JsonLd";
 import { getStorefrontProducts } from "@/lib/storefront-data";
+import { isPriceHidden, stripProductPrices } from "@/lib/catalog-visibility";
 import { getRequestLocale, getContentLocale } from "@/lib/server-locale";
 import { localizeRows } from "@/lib/content-translator";
 import {
@@ -46,6 +47,11 @@ export default async function CatalogPage() {
     ? await localizeRows("product", productsRaw, (p: any) => p.slug, ["description"], lang)
     : productsRaw;
 
+  // Harga disembunyikan di level SERVER (setting terpusat dari portal):
+  // field harga dibuang sebelum dikirim ke browser, bukan sekadar CSS.
+  const hidePrices = await isPriceHidden();
+  const visibleProducts = hidePrices ? stripProductPrices(products) : products;
+
   const breadcrumbSchema = buildBreadcrumbSchema([{ name: "Katalog", path: "/catalog" }]);
 
   const webPageSchema = buildWebPageSchema({
@@ -78,7 +84,7 @@ export default async function CatalogPage() {
         schema={[breadcrumbSchema, webPageSchema, itemListSchema]}
         id="ld-catalog"
       />
-      <CatalogClient initialFabrics={products} />
+      <CatalogClient initialFabrics={visibleProducts} hidePrices={hidePrices} />
     </>
   );
 }

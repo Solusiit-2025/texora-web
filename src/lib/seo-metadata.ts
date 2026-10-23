@@ -430,13 +430,10 @@ export function buildProductSchema(input: ProductSchemaInput): Record<string, un
             },
           })),
         }
-      : {
-          "@type": "Offer",
-          priceCurrency: currency,
-          price: input.basePrice ?? 0,
-          availability: "https://schema.org/InStock",
-          url: `${SITE_URL}/catalog/${input.slug}`,
-        };
+      // Tidak ada data harga valid (mis. admin menyembunyikan harga via
+      // setting terpusat) → JANGAN tayangkan Offer dengan price 0 di schema;
+      // schema Product tetap valid tanpa offers.
+      : undefined;
 
   const props: Record<string, unknown>[] = [];
   if (input.composition) {

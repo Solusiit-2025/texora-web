@@ -5,9 +5,11 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { formatRupiah, formatNumber } from "@/lib/utils";
+import { yardsToMeters, metersToYards, pricePerYard } from "@/lib/units";
 import { addToCart } from "@/lib/cart";
 import { RichContent } from "@/components/common/RichContent";
 import { Breadcrumb } from "@/components/common/Breadcrumb";
+import { ImageCarousel } from "@/components/common/ImageCarousel";
 import { useI18n, useLocalePath } from "@/lib/i18n/LanguageContext";
 import type { StorefrontProduct } from "@/lib/storefront-data";
 import { 
@@ -50,7 +52,12 @@ export default function ProductDetailClient({
   const [selectedVariantId, setSelectedVariantId] = useState(
     initialFabric?.variants?.[0]?.id || ""
   );
-  const [orderMeters, setOrderMeters] = useState<number>(100);
+  // Satuan user = YARD (trade tekstil); database & harga = METER.
+  const [orderYards, setOrderYards] = useState<number>(110);
+  // ...meter konversi dipakai untuk hitung tier harga & cart.
+  const orderMeters = yardsToMeters(
+    Number(orderYards) > 0 ? Number(orderYards) : 0
+  ) || 1;
   const [isAdded, setIsAdded] = useState(false);
 
   // User session state
@@ -119,17 +126,24 @@ export default function ProductDetailClient({
 
   const selectedVariant = fabric.variants.find(v => v.id === selectedVariantId) || fabric.variants[0];
 
-  // Calculate pricing based on tiers
-  const activeTier = fabric.priceTiers.find((tier) => {
-    if (tier.maxMeters) {
-      return orderMeters >= tier.minMeters && orderMeters <= tier.maxMeters;
-    }
-    return orderMeters >= tier.minMeters;
-  }) || fabric.priceTiers[0];
+  // Harga disembunyikan (setting terpusat dari portal) — server mengosongkan
+  // priceTiers; UI menampilkan kalimat RFQ alih-alih angka harga.
+  const priceHidden = !fabric.priceTiers || fabric.priceTiers.length === 0;
 
-  const subtotal = activeTier.unitPrice * orderMeters;
+  // Calculate pricing based on tiers
+  const activeTier = priceHidden
+    ? null
+    : fabric.priceTiers.find((tier) => {
+        if (tier.maxMeters) {
+          return orderMeters >= tier.minMeters && orderMeters <= tier.maxMeters;
+        }
+        return orderMeters >= tier.minMeters;
+      }) || fabric.priceTiers[0];
+
+  const subtotal = activeTier ? activeTier.unitPrice * orderMeters : 0;
 
   const handleAddToCart = () => {
+    if (!activeTier) return;
     if (!currentUser) {
       router.push(`/login?redirect=${encodeURIComponent(`/catalog/${slug}`)}&reason=auth_required`);
       return;
@@ -173,16 +187,30 @@ export default function ProductDetailClient({
         
         {/* Left Column: Image preview & Tech badges */}
         <div className="lg:col-span-6 space-y-6">
-          <div className="relative aspect-[4/3] rounded-2xl overflow-hidden glass-panel border border-slate-800 shadow-2xl bg-slate-950">
-            <Image
-              src={fabric.thumbnailUrl}
-              alt={`${fabric.name} — kain ${fabric.composition}, lebar ${fabric.widthInch} inci, siap cetak sublimasi, kategori ${fabric.category}`}
-              fill
-              priority
-              sizes="(max-width: 1024px) 100vw, 50vw"
-              className="object-cover"
-            />
-            <div className="absolute top-4 left-4 flex gap-2">
+          <div className="relative">
+            {fabric.images && fabric.images.length > 1 ? (
+              <ImageCarousel
+                images={fabric.images}
+                alt={`${fabric.name} — kain ${fabric.composition}, lebar ${fabric.widthInch} inci, siap cetak sublimasi, kategori ${fabric.category}`}
+                aspect="4/3"
+                auto={false}
+                slideMs={700}
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="rounded-2xl border border-slate-800 shadow-2xl"
+              />
+            ) : (
+              <div className="relative aspect-[4/3] rounded-2xl overflow-hidden glass-panel border border-slate-800 shadow-2xl bg-slate-950">
+                <Image
+                  src={fabric.thumbnailUrl}
+                  alt={`${fabric.name} — kain ${fabric.composition}, lebar ${fabric.widthInch} inci, siap cetak sublimasi, kategori ${fabric.category}`}
+                  fill
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  className="object-cover"
+                />
+              </div>
+            )}
+            <div className="absolute top-4 left-4 flex gap-2 z-20">
               <span className="px-3 py-1 rounded-lg text-xs font-bold bg-slate-900/90 text-accent-cyan border border-accent-cyan/30 backdrop-blur-md">
                 {fabric.category}
               </span>
@@ -190,7 +218,7 @@ export default function ProductDetailClient({
                 {selectedVariant?.gsm} GSM
               </span>
             </div>
-            <div className="absolute bottom-4 left-4 right-4 p-3 rounded-xl bg-slate-900/90 border border-slate-700 backdrop-blur-md flex items-center justify-between text-xs">
+            <div className="absolute bottom-4 left-4 right-4 p-3 rounded-xl bg-slate-900/90 border border-slate-700 backdrop-blur-md flex items-center justify-between text-xs z-20">
               <span className="text-slate-300">{t("prod.colorSupport")}</span>
               <span className="font-bold text-accent-cyan">CMYK & Fluorescent Sublimation</span>
             </div>
@@ -251,42 +279,50 @@ export default function ProductDetailClient({
                   <div className="font-bold text-sm text-white">{variant.gsm} GSM</div>
                   <div className="text-[11px] text-slate-400 mt-0.5">{variant.colorName}</div>
                   <div className="text-[10px] text-emerald-400 mt-1">
-                    {t("prod.stockAvailable")} {formatNumber(variant.stockMeters)} m
+                    {t("prod.stockAvailable")} {formatNumber(metersToYards(variant.stockMeters))} yd
                   </div>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Volume Tier Table */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
-              <span>{t("prod.tierTable")}</span>
-              <span className="text-accent-cyan font-normal text-[11px] lowercase">{t("catalog.perMeter")}</span>
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-              {fabric.priceTiers.map((tier) => {
-                const isSelectedTier = activeTier.id === tier.id;
-                return (
-                  <div
-                    key={tier.id}
-                    className={`p-3 rounded-xl border text-center transition-all ${
-                      isSelectedTier
-                        ? "bg-accent-cyan/15 border-accent-cyan text-white shadow-md shadow-accent-cyan/10"
-                        : "bg-slate-900/60 border-slate-800 text-slate-400"
-                    }`}
-                  >
-                    <div className="text-[10px] uppercase font-bold text-slate-400">
-                      {tier.maxMeters ? `${tier.minMeters} - ${tier.maxMeters} m` : `≥ ${tier.minMeters} m`}
+            {/* Volume Tier Table */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                <span>{t("prod.tierTable")}</span>
+                {!priceHidden && (
+                  <span className="text-accent-cyan font-normal text-[11px] lowercase">{t("catalog.perMeter")}</span>
+                )}
+              </label>
+              {priceHidden ? (
+                <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-300 italic leading-relaxed">
+                  {t("catalog.priceHidden")}
+                </div>
+              ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                {fabric.priceTiers.map((tier) => {
+                  const isSelectedTier = activeTier?.id === tier.id;
+                  return (
+                    <div
+                      key={tier.id}
+                      className={`p-3 rounded-xl border text-center transition-all ${
+                        isSelectedTier
+                          ? "bg-accent-cyan/15 border-accent-cyan text-white shadow-md shadow-accent-cyan/10"
+                          : "bg-slate-900/60 border-slate-800 text-slate-400"
+                      }`}
+                    >
+                      <div className="text-[10px] uppercase font-bold text-slate-400">
+                        {tier.maxMeters ? `${metersToYards(tier.minMeters)} – ${metersToYards(tier.maxMeters)} yd` : `≥ ${metersToYards(tier.minMeters)} yd`}
+                      </div>
+                      <div className={`font-mono font-bold mt-1 text-sm ${isSelectedTier ? "text-accent-cyan" : "text-slate-200"}`}>
+                        {formatRupiah(pricePerYard(tier.unitPrice))}
+                      </div>
                     </div>
-                    <div className={`font-mono font-bold mt-1 text-sm ${isSelectedTier ? "text-accent-cyan" : "text-slate-200"}`}>
-                      {formatRupiah(tier.unitPrice)}
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
+              )}
             </div>
-          </div>
 
           {/* Meter Quantity Slider & Input */}
           <div className="p-5 rounded-2xl glass-panel border border-slate-800 space-y-4">
@@ -299,8 +335,8 @@ export default function ProductDetailClient({
                   type="number"
                   min={1}
                   max={5000}
-                  value={orderMeters}
-                  onChange={(e) => setOrderMeters(Math.max(1, Number(e.target.value)))}
+                  value={orderYards}
+                  onChange={(e) => setOrderYards(Math.max(1, Number(e.target.value)))}
                   className="w-28 px-3 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono font-bold text-sm text-right focus:outline-none focus:border-brand-500"
                 />
                 <span className="text-xs text-slate-400 font-semibold">{t("prod.meters")}</span>
@@ -310,27 +346,34 @@ export default function ProductDetailClient({
             <input
               type="range"
               min={1}
-              max={1500}
+              max={1650}
               step={10}
-              value={orderMeters}
-              onChange={(e) => setOrderMeters(Number(e.target.value))}
+              value={orderYards}
+              onChange={(e) => setOrderYards(Number(e.target.value))}
               className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-brand-500"
             />
 
             <div className="pt-3 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <span className="text-xs text-slate-400 block">{t("prod.totalSubtotal")}</span>
-                <span className="text-2xl font-black text-white font-mono">
-                  {formatRupiah(subtotal)}
-                </span>
-                <span className="text-[11px] text-slate-500 block">
-                  ({formatRupiah(activeTier.unitPrice)} / m × {formatNumber(orderMeters)} m)
-                </span>
-              </div>
+              {priceHidden ? (
+                <div className="text-xs text-slate-300 italic leading-relaxed flex-1">
+                  {t("catalog.priceHidden")}
+                </div>
+              ) : (
+                <div>
+                  <span className="text-xs text-slate-400 block">{t("prod.totalSubtotal")}</span>
+                  <span className="text-2xl font-black text-white font-mono">
+                    {formatRupiah(subtotal)}
+                  </span>
+                  <span className="text-[11px] text-slate-500 block">
+                    (≈ {formatRupiah(pricePerYard(activeTier!.unitPrice))} / yd × {formatNumber(orderYards)} yd)
+                  </span>
+                </div>
+              )}
 
-              {/* Action Buttons with B2B Auth Check */}
+              {/* Action Buttons with B2B Auth Check (disembunyikan saat harga hidden) */}
               <div className="flex flex-col gap-2 shrink-0">
-                {currentUser ? (
+                {!priceHidden && (
+                  currentUser ? (
                   <>
                     <button
                       onClick={handleAddToCart}
@@ -366,10 +409,15 @@ export default function ProductDetailClient({
                       <span>Masuk untuk Kustom Sublimasi</span>
                     </Link>
                   </>
+                )
                 )}
                 <Link
                   href={localePath(`/request-quote?product=${fabric.slug}&source=product`)}
-                  className="px-5 py-2.5 rounded-xl bg-brand-500/10 hover:bg-brand-500/25 text-brand-200 hover:text-white border border-brand-500/40 font-bold text-xs transition-colors flex items-center justify-center gap-2"
+                  className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-colors flex items-center justify-center gap-2 ${
+                    priceHidden
+                      ? "bg-brand-600 hover:bg-brand-500 text-white shadow-lg"
+                      : "bg-brand-500/10 hover:bg-brand-500/25 text-brand-200 hover:text-white border border-brand-500/40"
+                  }`}
                 >
                   <FileText className="w-4 h-4" />
                   <span>{t("catalog.quoteCta")}</span>
@@ -439,9 +487,11 @@ export default function ProductDetailClient({
                 <p className="text-[11px] text-slate-500 mt-1">
                   {rp.composition} &middot; {rp.category}
                 </p>
-                <p className="text-[11px] font-mono text-brand-400 mt-1.5">
-                  {formatRupiah(rp.basePricePerMeter)}/m
-                </p>
+                {rp.basePricePerMeter > 0 && (
+                  <p className="text-[11px] font-mono text-brand-400 mt-1.5">
+                    {formatRupiah(pricePerYard(rp.basePricePerMeter))}/yd
+                  </p>
+                )}
               </Link>
             ))}
           </div>

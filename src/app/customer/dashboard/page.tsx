@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatRupiah } from "@/lib/utils";
+import { metersToYards } from "@/lib/units";
 import { 
   Package, 
   FileText, 
@@ -486,8 +487,8 @@ export default function CustomerDashboardPage() {
       {/* 5. Quick Metrics Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1.5 shadow-lg">
-          <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Total Meter Dipesan</span>
-          <div className="text-2xl sm:text-3xl font-black text-white font-mono">{totalMeters.toLocaleString("id-ID")} m</div>
+          <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Total Yard Dipesan</span>
+          <div className="text-2xl sm:text-3xl font-black text-white font-mono">{metersToYards(totalMeters).toLocaleString("id-ID")} yd</div>
           <div className="text-[11px] text-accent-cyan font-semibold">Dryfit Milano, Scuba & Voal</div>
         </div>
 
@@ -524,7 +525,7 @@ export default function CustomerDashboardPage() {
                 </span>
               </div>
               <h3 className="text-lg font-bold text-white mt-1">
-                SPK {orders[0].orderNumber} — {orders[0].items[0]?.fabricName} ({orders[0].items[0]?.lengthMeters} Meter)
+                SPK {orders[0].orderNumber} — {orders[0].items[0]?.fabricName} ({metersToYards(orders[0].items[0]?.lengthMeters || 0)} Yard)
               </h3>
             </div>
 
@@ -689,7 +690,7 @@ export default function CustomerDashboardPage() {
                       <td className="py-4 px-4 space-y-1">
                         {(ord.items || []).map((item: any) => (
                           <div key={item.id} className="text-slate-300">
-                            <span className="font-semibold text-white">{item.fabricName}</span> • <span className="font-mono text-accent-cyan font-bold">{item.lengthMeters} m</span>
+                            <span className="font-semibold text-white">{item.fabricName}</span> • <span className="font-mono text-accent-cyan font-bold">{metersToYards(item.lengthMeters)} yd</span>
                             {item.customDesignTitle && (
                               <span className="block font-mono text-[10px] text-slate-400 truncate max-w-xs mt-0.5">
                                 ↳ Motif: {item.customDesignTitle}
@@ -789,7 +790,7 @@ export default function CustomerDashboardPage() {
             </div>
             <h4 className="text-base font-bold text-white">Budi Santoso — PIC Senior XoraMateria</h4>
             <p className="text-xs text-slate-400">
-              Siap melayani konsultasi profil warna ICC, permintaan sample swatch kain, dan pemesanan partai besar (&gt; 1.000 meter).
+              Siap melayani konsultasi profil warna ICC, permintaan sample swatch kain, dan pemesanan partai besar (&gt; 1.100 yard).
             </p>
           </div>
         </div>

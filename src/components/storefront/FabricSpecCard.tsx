@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import type { FabricProduct } from "@/types";
 import { formatRupiah, formatNumber } from "@/lib/utils";
+import { metersToYards, pricePerYard } from "@/lib/units";
 
 /**
  * PRD V3 §4 Micro-Interactions: fluid hover zoom that reveals technical
@@ -14,7 +15,11 @@ import { formatRupiah, formatNumber } from "@/lib/utils";
 export function FabricSpecCard({ fabric, index = 0 }: { fabric: FabricProduct; index?: number }) {
   const [hovered, setHovered] = useState(false);
   const variant = fabric.variants[0];
-  const bestPrice = fabric.priceTiers[fabric.priceTiers.length - 1].unitPrice;
+  // priceTiers bisa kosong saat admin menyembunyikan harga (setting terpusat).
+  const bestPrice =
+    fabric.priceTiers?.length > 0
+      ? fabric.priceTiers[fabric.priceTiers.length - 1].unitPrice
+      : 0;
 
   return (
     <motion.article
@@ -78,17 +83,21 @@ export function FabricSpecCard({ fabric, index = 0 }: { fabric: FabricProduct; i
         <div>
           <h3 className="font-display text-2xl font-semibold text-alabaster">{fabric.name}</h3>
           <p className="mt-1 text-xs text-slate-400">
-            {fabric.composition} · Stok {formatNumber(variant?.stockMeters || 0)} m
+            {fabric.composition} · Stok {formatNumber(metersToYards(variant?.stockMeters || 0))} yd
           </p>
         </div>
 
         <div className="flex items-end justify-between border-t border-brand-500/15 pt-4">
           <div>
             <span className="block text-[10px] uppercase tracking-[0.18em] text-slate-500">Mulai dari</span>
-            <span className="text-lg font-semibold text-brand-300">
-              {formatRupiah(bestPrice)}
-              <span className="text-xs font-normal text-slate-400"> / m</span>
-            </span>
+            {bestPrice > 0 ? (
+              <span className="text-lg font-semibold text-brand-300">
+                {formatRupiah(pricePerYard(bestPrice))}
+                <span className="text-xs font-normal text-slate-400"> / yd</span>
+              </span>
+            ) : (
+              <span className="text-[11px] italic text-slate-400">via penawaran</span>
+            )}
           </div>
           <Link
             href={`/catalog/${fabric.slug}`}

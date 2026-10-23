@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cached, invalidateCache } from "@/lib/cache";
 import { normalizeLocale, localizeRows } from "@/lib/content-translator";
+import { isPriceHidden, stripProductPrices } from "@/lib/catalog-visibility";
+import { parseGalleryImages, serializeGalleryImages, PRODUCT_FALLBACK_THUMB } from "@/lib/image-gallery";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +18,8 @@ function formatFabric(p: any) {
     widthInch: Number(p.widthInch),
     isSublimationReady: Boolean(p.isSublimationReady),
     basePricePerMeter: Number(p.basePricePerMeter),
-    thumbnailUrl: p.thumbnailUrl || "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=800&q=80",
+    thumbnailUrl: p.thumbnailUrl || PRODUCT_FALLBACK_THUMB,
+    images: parseGalleryImages(p.galleryImages),
     category: p.category || "Sportswear",
     variants: (p.variants || []).map((v: any) => ({
       id: v.id,
@@ -110,6 +113,12 @@ export async function GET(request: Request) {
           lang
         );
       }
+      // Sembunyikan harga bila admin mengaktifkannya (setting terpusat).
+      // NOTE: portal admin memanggil dengan ?fresh=1 & butuh harga utuh,
+      // jadi strip di-skip untuk fresh mode.
+      if (!fresh && (await isPriceHidden())) {
+        formatted = stripProductPrices(formatted);
+      }
       return NextResponse.json(
         {
           success: true,
@@ -172,9 +181,10 @@ export async function POST(request: Request) {
         widthInch: widthInch,
         isSublimationReady: body.isSublimationReady ?? true,
         basePricePerMeter: basePrice,
-        thumbnailUrl:
-          body.thumbnailUrl ||
-          "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=800&q=80",
+        thumbnailUrl: body.thumbnailUrl || parseGalleryImages(body.galleryImages)[0] || PRODUCT_FALLBACK_THUMB,
+        galleryImages: body.galleryImages !== undefined
+          ? serializeGalleryImages(body.galleryImages)
+          : undefined,
         category: body.category || "Sportswear",
         variants: {
           create: body.variants && body.variants.length > 0

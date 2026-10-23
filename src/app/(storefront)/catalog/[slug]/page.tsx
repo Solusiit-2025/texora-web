@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import ProductDetailClient from "./ProductDetailClient";
 import { JsonLd } from "@/components/common/JsonLd";
 import { getStorefrontProductBySlug, getStorefrontProducts, getStorefrontTestimonials } from "@/lib/storefront-data";
+import { isPriceHidden, stripProductPrices } from "@/lib/catalog-visibility";
 import { getRequestLocale, getContentLocale } from "@/lib/server-locale";
 import { localizeRows } from "@/lib/content-translator";
 import { translate } from "@/lib/i18n/dictionary";
@@ -77,6 +78,11 @@ export default async function FabricDetailPage({ params }: PageProps) {
     notFound();
   }
 
+  // Harga disembunyikan di level SERVER (setting terpusat dari portal):
+  // field harga dibuang sebelum dikirim ke schema JSON-LD maupun browser.
+  const hidePrices = await isPriceHidden();
+  const visibleProduct = hidePrices ? stripProductPrices([product])[0] : product;
+
   // Produk terkait: kategori sama, atau GSM terdekat bila kategori berbeda
   const [all, testimonials] = await Promise.all([
     getStorefrontProducts(),
@@ -106,9 +112,9 @@ export default async function FabricDetailPage({ params }: PageProps) {
     category: product.category,
     composition: product.composition,
     widthInch: product.widthInch,
-    basePrice: product.basePricePerMeter,
+    basePrice: visibleProduct.basePricePerMeter,
     variants: product.variants,
-    priceTiers: product.priceTiers,
+    priceTiers: visibleProduct.priceTiers,
     color: product.variants?.[0]?.colorName || "Optic White",
     dateModified: product.updatedAt,
     // Ulasan dari testimoni CMS (dikonversi menjadi schema.org Review)
@@ -132,9 +138,9 @@ export default async function FabricDetailPage({ params }: PageProps) {
     <>
       <JsonLd schema={[productSchema, breadcrumbSchema, webPageSchema]} id="ld-product" />
       <ProductDetailClient
-        initialFabric={product}
+        initialFabric={visibleProduct}
         slug={params.slug}
-        relatedProducts={related}
+        relatedProducts={hidePrices ? related.map((r) => stripProductPrices([r])[0]) : related}
       />
     </>
   );

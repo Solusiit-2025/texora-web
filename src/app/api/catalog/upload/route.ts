@@ -13,7 +13,7 @@ import {
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const MAX_SIZE = 20 * 1024 * 1024; // 20 MB
+const MAX_SIZE = 30 * 1024 * 1024; // 30 MB
 const ALLOWED_TYPES = ["application/pdf", "application/x-pdf"];
 
 /** Hapus file lokal lama (kalau ada) supaya folder upload tidak menumpuk. */
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
 
     if (file.size > MAX_SIZE) {
       return NextResponse.json(
-        { success: false, error: "Ukuran katalog maksimal 20 MB." },
+        { success: false, error: "Ukuran katalog maksimal 30 MB." },
         { status: 400 }
       );
     }

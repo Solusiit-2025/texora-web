@@ -124,7 +124,7 @@ export async function GET() {
   lines.push("## Request a Quote");
   lines.push("");
   lines.push(
-    `- [Minta Penawaran](${SITE_URL}/request-quote): formulir permintaan harga kain (RFQ) berisi nama, perusahaan, email, negara, jenis kain, estimasi panjang (meter), kebutuhan sample swatch gratis, dan unggah file referensi (JPG/PNG/WebP/PDF, maks 2MB). Tim sales membalas harga bertingkat, termin, dan jadwal produksi dalam 1-2 jam kerja.`
+    `- [Minta Penawaran](${SITE_URL}/request-quote): formulir permintaan harga kain (RFQ) berisi nama, perusahaan, email, negara, jenis kain, estimasi panjang (yard), kebutuhan sample swatch gratis. Unggah file tidak tersedia (file dikirim via WhatsApp/email setelah RFQ diterima). Tim sales membalas harga bertingkat, termin, dan jadwal produksi dalam 1-2 jam kerja.`
   );
   lines.push(
     `- [Katalog PDF](${SITE_URL}/api/catalog/pdf): katalog produk lengkap (spesifikasi, varian GSM, stok, dan harga bertingkat) dalam format PDF A4, Bahasa Indonesia.`

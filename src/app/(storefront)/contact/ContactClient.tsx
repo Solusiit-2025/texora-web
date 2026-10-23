@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   FileText,
   Zap,
+  X,
   Check,
   Copy,
   MessageCircle,
@@ -90,16 +91,26 @@ const FABRIC_OPTIONS: FabricOption[] = [
 ];
 
 const QUANTITY_CHIPS = [
-  { label: "100 - 300 m", value: "300", tag: "Roll Sample" },
-  { label: "500 m", value: "500", tag: "Standard Batch" },
-  { label: "1.000 m", value: "1000", tag: "Tier Grosir Pabrik 🔥" },
-  { label: "> 3.000 m", value: "3000", tag: "Kontrak Industri ⚡" },
+  { label: "250 yd", value: "250", tag: "Roll Sample" },
+  { label: "500 yd", value: "500", tag: "Standard Batch" },
+  { label: "1.500 yd", value: "1500", tag: "Tier Grosir Pabrik 🔥" },
+  { label: "3.500 yd", value: "3500", tag: "Kontrak Industri ⚡" },
 ];
 
+// Konversi satuan: UI memakai YARD (standar trade tekstil),
+// database/CRM tetap menyimpan METER sebagai satuan kanonik.
+const YARD_TO_METER = 0.9144;
+const yardsToMeters = (yards: number) =>
+  Math.round(yards * YARD_TO_METER * 10) / 10;
+const metersToYards = (meters: number) =>
+  Math.round(meters / YARD_TO_METER);
+
 export default function ContactClient() {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [showPreview, setShowPreview] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState(false);
   const [inquiryCode, setInquiryCode] = useState("");
@@ -126,16 +137,91 @@ export default function ContactClient() {
     }
   };
 
+  const getProductsText = () => {
+    const fabricObj = FABRIC_OPTIONS.find((f) => f.id === formData.fabricInterest);
+    return fabricObj ? `${fabricObj.defaultName} (${fabricObj.gsm})` : formData.fabricInterest;
+  };
+
+  // Format pesan RFQ yang tampil di dialog preview — identik dengan data
+  // yang dikirim ke /api/quote-requests.
+  const buildRfqMessage = () => {
+    const yards = Number(formData.estimatedMeters);
+    const meters = Number.isFinite(yards) && yards > 0 ? yardsToMeters(yards) : null;
+    return [
+      "=== PERMINTAAN PENAWARAN RESMI (RFQ) ===",
+      `PIC / Nama         : ${formData.name || "-"}`,
+      `Perusahaan / Brand : ${formData.company || "-"}`,
+      `WhatsApp Aktif     : ${formData.phone || "-"}`,
+      `Email Perusahaan   : ${formData.email || "-"}`,
+      `Bahan Kain         : ${getProductsText()}`,
+      `Estimasi Volume    : ${
+        meters !== null
+          ? `${yards.toLocaleString("id-ID")} yard (≈ ${meters.toLocaleString("id-ID")} meter)`
+          : "-"
+      }`,
+      `Sample Swatch      : ${
+        formData.requestSwatch ? "Ya — kirim buku sampel fisik" : "Tidak"
+      }`,
+      `Catatan Produksi   : ${formData.message || "-"}`,
+      "=========================================",
+      `Sumber Form        : Halaman Kontak (${locale.toUpperCase()})`,
+    ].join("\n");
+  };
+
+  // Step 1: validasi form lalu tampilkan dialog preview.
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
+    setSubmitError("");
+    setShowPreview(true);
+  };
 
-    setTimeout(() => {
-      const randomCode = `XORA-INQ-${Math.floor(1000 + Math.random() * 9000)}`;
-      setInquiryCode(randomCode);
-      setSubmitting(false);
+  // Step 2: konfirmasi di dialog preview → kirim RFQ resmi ke
+  // /api/quote-requests (database + pipeline CRM Lead).
+  const doSubmit = async () => {
+    setSubmitting(true);
+    setSubmitError("");
+
+    try {
+      const yards = Number(formData.estimatedMeters);
+      const hasYards = Number.isFinite(yards) && yards > 0;
+
+      const res = await fetch("/api/quote-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.name,
+          company: formData.company,
+          email: formData.email,
+          phone: formData.phone,
+          message: formData.message,
+          // Satuan user = yard; database/CRM menerima meter (kanonik).
+          yards: hasYards ? yards : undefined,
+          meters: hasYards ? yardsToMeters(yards) : undefined,
+          needsSample: formData.requestSwatch,
+          productsText: getProductsText(),
+          source: "contact-page",
+          locale,
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        throw new Error(
+          data?.error || "Terjadi kesalahan saat mengirim permintaan. Silakan coba lagi."
+        );
+      }
+
+      // Ticket code resmi dari ID RFQ yang tersimpan di server.
+      const rfqId = String(data?.data?.id || "");
+      setInquiryCode(rfqId ? `XORA-RFQ-${rfqId.slice(-6).toUpperCase()}` : "XORA-RFQ-BARU");
       setSubmitted(true);
-    }, 600);
+      setShowPreview(false);
+    } catch (err: any) {
+      setSubmitError(err?.message || "Terjadi kesalahan saat mengirim permintaan.");
+      setShowPreview(false);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const createWhatsAppLink = () => {
@@ -144,7 +230,9 @@ export default function ContactClient() {
         formData.company || "perusahaan"
       }.\nSaya baru saja mengirimkan permintaan penawaran [Kode: ${
         inquiryCode || "INQ-WEB"
-      }] untuk bahan ${formData.fabricInterest} estimasi ${formData.estimatedMeters} meter.`
+      }] untuk bahan ${formData.fabricInterest} estimasi ${
+        formData.estimatedMeters
+      } yard (≈ ${yardsToMeters(Number(formData.estimatedMeters) || 0)} meter).`
     );
     return `https://wa.me/6285810646157?text=${text}`;
   };
@@ -334,40 +422,23 @@ export default function ContactClient() {
               )}
             </p>
 
-            {/* Quick 1-Click Inquiry Options */}
+            {/* Value Highlights — informative, hanya 1 CTA WhatsApp */}
             <div className="space-y-1.5 pt-1">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                {t("contact.wa.quickTopics", "Pilihan Konsultasi Cepat:")}
+                {t("contact.wa.pointsTitle", "Yang Anda Dapatkan via Chat Langsung:")}
               </span>
-              <a
-                href="https://wa.me/6285810646157?text=Halo%20Xora%20Materia,%20saya%20ingin%20cek%20stok%20roll%20kain%20dan%20penawaran%20harga%20partai%20besar."
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-900/80 hover:bg-emerald-950/50 border border-slate-800 hover:border-emerald-500/40 text-slate-300 hover:text-white text-xs transition-all group"
-              >
-                <span>📦 {t("contact.wa.topic1", "Cek Stok Roll & Tier Harga Pabrik")}</span>
-                <ArrowRight className="w-3.5 h-3.5 text-emerald-400 group-hover:translate-x-1 transition-transform" />
-              </a>
-
-              <a
-                href="https://wa.me/6285810646157?text=Halo%20Xora%20Materia,%20saya%20ingin%20meminta%20Buku%20Sampel%20Swatch%20Kain%20Fisik%20Gratis."
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-900/80 hover:bg-emerald-950/50 border border-slate-800 hover:border-emerald-500/40 text-slate-300 hover:text-white text-xs transition-all group"
-              >
-                <span>✨ {t("contact.wa.topic2", "Permintaan Buku Swatch Sample Fisik")}</span>
-                <ArrowRight className="w-3.5 h-3.5 text-emerald-400 group-hover:translate-x-1 transition-transform" />
-              </a>
-
-              <a
-                href="https://wa.me/6285810646157?text=Halo%20Xora%20Materia,%20saya%20ingin%20konsultasi%20profil%20warna%20ICC%20dan%20proofing%20cetak%20sublimasi."
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-900/80 hover:bg-emerald-950/50 border border-slate-800 hover:border-emerald-500/40 text-slate-300 hover:text-white text-xs transition-all group"
-              >
-                <span>🎨 {t("contact.wa.topic3", "Konsultasi Profil Warna & Proofing")}</span>
-                <ArrowRight className="w-3.5 h-3.5 text-emerald-400 group-hover:translate-x-1 transition-transform" />
-              </a>
+              <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300">
+                <span className="shrink-0">⚡</span>
+                <span>{t("contact.wa.point1", "Respon cepat ±1 jam kerja pada jam operasional")}</span>
+              </div>
+              <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300">
+                <span className="shrink-0">🎯</span>
+                <span>{t("contact.wa.point2", "Rekomendasi gramasi & jenis kain sesuai kebutuhan produk")}</span>
+              </div>
+              <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300">
+                <span className="shrink-0">🏭</span>
+                <span>{t("contact.wa.point3", "Akses langsung PIC pabrik, tanpa perantara reseller")}</span>
+              </div>
             </div>
 
             <a
@@ -377,7 +448,7 @@ export default function ContactClient() {
               className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 transition-all hover:-translate-y-0.5"
             >
               <Phone className="w-4 h-4" />
-              <span>{t("contact.wa.btn", "Mulai Chat WhatsApp: +62 858-1064-6157")}</span>
+              <span>{t("contact.wa.btn", "Chat WhatsApp Sekarang")}</span>
               <ArrowRight className="w-4 h-4 ml-1" />
             </a>
           </div>
@@ -484,6 +555,8 @@ export default function ContactClient() {
                     type="button"
                     onClick={() => {
                       setSubmitted(false);
+                      setSubmitError("");
+                      setShowPreview(false);
                       setFormData({
                         name: "",
                         company: "",
@@ -628,15 +701,17 @@ export default function ContactClient() {
                   </div>
                 </div>
 
-                {/* Section 3: Estimated Volume & Tier Chips */}
+                {/* Section 3: Estimated Volume & Tier Chips (Yard) */}
                 <div className="space-y-3 pt-2">
                   <div className="flex items-center justify-between">
                     <label className="text-[11px] font-bold uppercase tracking-wider text-brand-400 flex items-center gap-1.5">
                       <Ruler className="w-3.5 h-3.5" />
-                      <span>{t("contact.form.sectionVolume", "03. Estimasi Volume Roll (Meter)")}</span>
+                      <span>{t("contact.form.sectionVolume", "03. Estimasi Volume Roll (Yard)")}</span>
                     </label>
                     <span className="text-[11px] font-mono text-brand-300 font-bold">
-                      {formData.estimatedMeters ? `${formData.estimatedMeters} m` : t("contact.form.notSet", "Belum ditentukan")}
+                      {Number(formData.estimatedMeters) > 0
+                        ? `${Number(formData.estimatedMeters).toLocaleString("id-ID")} yd ≈ ${yardsToMeters(Number(formData.estimatedMeters)).toLocaleString("id-ID")} m`
+                        : t("contact.form.notSet", "Belum ditentukan")}
                     </span>
                   </div>
 
@@ -661,14 +736,19 @@ export default function ContactClient() {
                     ))}
                   </div>
 
-                  <input
-                    type="number"
-                    min="1"
-                    placeholder={t("contact.form.volumePlaceholder", "Atau ketik kuantitas custom, misal: 2500")}
-                    value={formData.estimatedMeters}
-                    onChange={(e) => setFormData({ ...formData, estimatedMeters: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all text-xs"
-                  />
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="1"
+                      placeholder={t("contact.form.volumePlaceholder", "Atau ketik kuantitas custom dalam yard, misal: 2500")}
+                      value={formData.estimatedMeters}
+                      onChange={(e) => setFormData({ ...formData, estimatedMeters: e.target.value })}
+                      className="w-full pl-3.5 pr-12 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all text-xs"
+                    />
+                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none px-1.5 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-[10px] font-mono font-bold text-brand-300">
+                      yd
+                    </span>
+                  </div>
                 </div>
 
                 {/* Section 4: Free Fabric Swatch Sample Checkbox */}
@@ -709,6 +789,111 @@ export default function ContactClient() {
                     className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all text-xs"
                   />
                 </div>
+
+                {/* Preview Confirmation Dialog */}
+                {showPreview && (
+                  <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm"
+                    role="dialog"
+                    aria-modal="true"
+                    onClick={() => !submitting && setShowPreview(false)}
+                  >
+                    <div
+                      className="w-full max-w-lg max-h-[85vh] overflow-y-auto p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-slate-900 border border-brand-500/40 shadow-2xl space-y-4 text-xs animate-in fade-in zoom-in-95 duration-200"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-2 text-brand-400 font-bold uppercase tracking-wider text-[11px]">
+                            <FileText className="w-3.5 h-3.5" />
+                            <span>{t("contact.preview.tag", "Preview Sebelum Dikirim")}</span>
+                          </div>
+                          <h4 className="text-base sm:text-lg font-bold text-white font-display mt-1">
+                            {t("contact.preview.title", "Beres-kan Format Permintaan Anda")}
+                          </h4>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowPreview(false)}
+                          disabled={submitting}
+                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+                          aria-label={t("contact.preview.close", "Tutup")}
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <p className="text-slate-400 text-[11px] leading-relaxed">
+                        {t(
+                          "contact.preview.desc",
+                          "Ini pesan yang akan dikirim ke tim sales pabrik. Pastikan seluruh data sudah benar sebelum melanjutkan."
+                        )}
+                      </p>
+
+                      <pre className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-700/80 text-[11px] leading-relaxed text-slate-200 whitespace-pre-wrap overflow-x-auto font-mono">
+                        {buildRfqMessage()}
+                      </pre>
+
+                      <div className="p-2.5 rounded-xl bg-brand-500/10 border border-brand-500/25 flex items-start gap-2 text-[10px] text-brand-200">
+                        <Building2 className="w-3.5 h-3.5 shrink-0 mt-0.5 text-brand-400" />
+                        <span>
+                          {t(
+                            "contact.preview.route",
+                            "Data akan tersimpan di Database RFQ dan otomatis masuk Pipeline CRM (Lead) XoraMateria."
+                          )}
+                        </span>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+                        <button
+                          type="button"
+                          onClick={doSubmit}
+                          disabled={submitting}
+                          className="flex-1 py-3 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-bold text-xs shadow-lg shadow-brand-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-75"
+                        >
+                          {submitting ? (
+                            <>
+                              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                              <span>{t("contact.form.submitting", "Memproses Permintaan...")}</span>
+                            </>
+                          ) : (
+                            <>
+                              <Send className="w-4 h-4" />
+                              <span>{t("contact.preview.sendBtn", "Kirim Sekarang")}</span>
+                            </>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowPreview(false)}
+                          disabled={submitting}
+                          className="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 transition-colors"
+                        >
+                          {t("contact.preview.editBtn", "Ubah Data")}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Error Banner */}
+                {submitError && (
+                  <div
+                    role="alert"
+                    className="p-3 rounded-xl bg-red-950/40 border border-red-500/40 text-red-300 text-[11px] flex items-start gap-2"
+                  >
+                    <span className="shrink-0 mt-0.5">⚠️</span>
+                    <span>
+                      {submitError}{" "}
+                      <span className="block mt-1 text-red-400/80">
+                        {t(
+                          "contact.form.errorFallback",
+                          "Butuh bantuan cepat? Gunakan tombol Chat WhatsApp Sekarang di atas."
+                        )}
+                      </span>
+                    </span>
+                  </div>
+                )}
 
                 {/* Submit Action */}
                 <div className="pt-2">

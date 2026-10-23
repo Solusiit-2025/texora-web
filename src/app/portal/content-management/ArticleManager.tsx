@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import { RichTextEditor } from "@/components/common/RichTextEditor";
 import { RichContent } from "@/components/common/RichContent";
-import { ImageUpload } from "@/components/common/ImageUpload";
+import { getImageFileDimensions, isLowResolutionImage } from "@/lib/image-gallery";
 
 interface ArticleRow {
   id: string;
@@ -35,6 +35,7 @@ interface ArticleRow {
   excerpt: string;
   body: string;
   coverImage: string | null;
+  galleryImages?: string | null;
   category: string;
   articleType: string;
   tags: string;
@@ -72,13 +73,17 @@ const TYPES = [
   { value: "news", label: "Berita Pabrik" },
 ];
 
+/** Batas galeri gambar artikel (sinkron dengan MAX_ARTICLE_IMAGES di api). */
+const MAX_IMAGES = 5;
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB per gambar
+
 const EMPTY_FORM = {
   id: "" as string,
   slug: "",
   title: "",
   excerpt: "",
   body: "",
-  coverImage: "",
+  images: [] as string[],
   category: "proses",
   articleType: "panduan",
   tags: "",
@@ -91,6 +96,25 @@ const EMPTY_FORM = {
 };
 
 type FormState = typeof EMPTY_FORM;
+
+/** "hijab-fashion" → "Hijab Fashion" */
+function prettifySlug(slug: string): string {
+  return slug
+    .split(/[-_]/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+/** Kunci perbandingan anti-duplikat (ignore case/huruf) */
+function taxKey(v: string): string {
+  return String(v || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+}
+
+/** Kunci bentuk jamak: "panduans"/"panduan" dianggap sama */
+function taxPluralKey(v: string): string {
+  return taxKey(v).replace(/(es|s)$/, "");
+}
 
 function parseArray(raw: string | null | undefined): string[] {
   if (!raw) return [];
@@ -119,10 +143,129 @@ export default function ArticleManager() {
     message: string;
   } | null>(null);
 
+  // ── Taksonomi artikel (kategori & tipe) — dikelola via /api/article-taxonomy ──
+  const [categories, setCategories] = useState<{ value: string; label: string }[]>(CATEGORIES);
+  const [articleTypes, setArticleTypes] = useState<{ value: string; label: string }[]>(TYPES);
+  const [showTaxModal, setShowTaxModal] = useState<null | "category" | "type">(null);
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [newTaxLabel, setNewTaxLabel] = useState("");
+  const [taxError, setTaxError] = useState<string | null>(null);
+  const [taxWarning, setTaxWarning] = useState<string | null>(null);
+  const [savingTax, setSavingTax] = useState(false);
+
   const notify = useCallback((type: "success" | "error", message: string) => {
     setNotification({ type, message });
     setTimeout(() => setNotification(null), 4500);
   }, []);
+
+  // ── Galeri gambar artikel (maks 5, otomatis dikonversi ke .webp) ──
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = ""; // reset agar file yang sama bisa diunggah ulang
+    if (!files.length || !form) return;
+
+    const slots = MAX_IMAGES - form.images.length;
+    if (slots <= 0) {
+      notify("error", `Maksimal ${MAX_IMAGES} gambar per artikel.`);
+      return;
+    }
+    const accepted = files.slice(0, slots);
+    const skipped = files.length - accepted.length;
+
+    for (const file of accepted) {
+      if (!file.type.startsWith("image/")) {
+        notify("error", `"${file.name}" ditolak — hanya file gambar (JPG/PNG/WebP/GIF).`);
+        continue;
+      }
+      if (file.size > MAX_IMAGE_SIZE) {
+        notify("error", `"${file.name}" melebihi batas 5MB.`);
+        continue;
+      }
+      // Peringatan resolusi rendah — kartu besar akan tampil kurang tajam.
+      const dims = await getImageFileDimensions(file);
+      if (isLowResolutionImage(dims.width, dims.height)) {
+        notify(
+          "error",
+          `"${file.name}" beresolusi ${dims.width}×${dims.height}px — agak kecil. Idealnya ≥800px (mis. 1200×800) supaya tajam di kartu.`
+        );
+        continue; // jangan upload gambar yang pasti pecah
+      }
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("convert", "webp"); // server mengonversi JPG/PNG/GIF → .webp
+      setUploadingImages(true);
+      try {
+        const res = await fetch("/api/upload", { method: "POST", body: fd });
+        const json = await res.json();
+        if (json?.success) {
+          setForm((f) =>
+            f && f.images.length < MAX_IMAGES ? { ...f, images: [...f.images, json.url] } : f
+          );
+        } else {
+          notify("error", json?.error || `Gagal mengunggah "${file.name}".`);
+        }
+      } catch {
+        notify("error", `Gagal mengunggah "${file.name}" (periksa koneksi/sesi).`);
+      } finally {
+        setUploadingImages(false);
+      }
+    }
+    if (skipped > 0) {
+      notify("error", `${skipped} gambar dilewati — batas ${MAX_IMAGES} gambar sudah tercapai.`);
+    }
+  };
+
+
+  // ── Handler taksonomi: live-check + simpan via /api/article-taxonomy ──
+  const handleTaxLabelChange = (value: string) => {
+    setNewTaxLabel(value);
+    setTaxError(null);
+    const key = taxKey(value);
+    if (!key) {
+      setTaxWarning(null);
+      return;
+    }
+    const list = showTaxModal === "type" ? articleTypes : categories;
+    const hit = list.find((c) => taxKey(c.value) === key);
+    setTaxWarning(
+      hit ? `Sudah ada "${hit.label}" — gunakan yang tersedia, jangan buat variasi.` : null
+    );
+  };
+
+  const handleAddTaxonomy = async () => {
+    const label = newTaxLabel.trim().replace(/\s+/g, " ");
+    if (!label || !showTaxModal) return;
+    setSavingTax(true);
+    setTaxError(null);
+    try {
+      const res = await fetch("/api/article-taxonomy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: showTaxModal, label }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        setTaxError(json.error || "Gagal menyimpan.");
+        return;
+      }
+      setCategories(json.categories || []);
+      setArticleTypes(json.types || []);
+      if (json.kind === "category") {
+        setForm((f) => (f ? { ...f, category: json.item.value } : f));
+      } else {
+        setForm((f) => (f ? { ...f, articleType: json.item.value } : f));
+      }
+      setShowTaxModal(null);
+      setNewTaxLabel("");
+      setTaxWarning(null);
+      notify("success", `${json.item.label} ditambahkan & langsung terpilih.`);
+    } catch {
+      setTaxError("Koneksi gagal. Silakan coba lagi.");
+    } finally {
+      setSavingTax(false);
+    }
+  };
+
 
   const load = useCallback(async () => {
     try {
@@ -134,6 +277,7 @@ export default function ArticleManager() {
       } else {
         notify("error", json?.error || "Gagal memuat artikel.");
       }
+      const rows: ArticleRow[] = json?.data || [];
 
       const pres = await fetch("/api/products", { cache: "no-store" });
       const pjson = await pres.json();
@@ -147,12 +291,56 @@ export default function ArticleManager() {
           }))
         );
       }
+
+      // Nilai legacy di artikel lama ikut masuk dropdown (label dari slug).
+      appendLegacyTaxonomy(rows);
+
+      // Taksonomi tersimpan (custom dari admin).
+      const tRes = await fetch("/api/article-taxonomy", { cache: "no-store" });
+      const tJson = await tRes.json();
+      if (tJson?.success) {
+        setCategories(tJson.categories || CATEGORIES);
+        setArticleTypes(tJson.types || TYPES);
+        // Slugs legacy yang belum ada di list tersimpan tetap dilengkapi.
+        const savedCats = new Set((tJson.categories || []).map((c: any) => c.value));
+        const savedTypes = new Set((tJson.types || []).map((c: any) => c.value));
+        setCategories((prev) => {
+          const extra = rows
+            .map((a: ArticleRow) => a.category)
+            .filter((v: string) => v && !savedCats.has(v) && !prev.some((p) => p.value === v))
+            .map((v: string) => ({ value: v, label: prettifySlug(v) }));
+          return extra.length ? [...prev, ...extra] : prev;
+        });
+        setArticleTypes((prev) => {
+          const extra = rows
+            .map((a: ArticleRow) => a.articleType)
+            .filter((v: string) => v && !savedTypes.has(v) && !prev.some((p) => p.value === v))
+            .map((v: string) => ({ value: v, label: prettifySlug(v) }));
+          return extra.length ? [...prev, ...extra] : prev;
+        });
+      }
     } catch {
       notify("error", "Gagal terhubung ke server.");
     } finally {
       setLoading(false);
     }
   }, [notify]);
+
+  /** Slugs legacy dari artikel lama → ditambahkan ke dropdown (label dari slug). */
+  const appendLegacyTaxonomy = (rows: ArticleRow[]) => {
+    const catExtras = rows
+      .map((a) => a.category)
+      .filter((v) => v && !CATEGORIES.some((c) => c.value === v))
+      .map((v) => ({ value: v, label: prettifySlug(v) }));
+    const typeExtras = rows
+      .map((a) => a.articleType)
+      .filter((v) => v && !TYPES.some((t) => t.value === v))
+      .map((v) => ({ value: v, label: prettifySlug(v) }));
+    if (catExtras.length || typeExtras.length) {
+      setCategories([...CATEGORIES, ...catExtras]);
+      setArticleTypes([...TYPES, ...typeExtras]);
+    }
+  };
 
   useEffect(() => {
     load();
@@ -186,13 +374,18 @@ export default function ArticleManager() {
   };
 
   const openEdit = (a: ArticleRow) => {
+    // Galeri: cover lama + galleryImages (dedupe, maks 5) — backward-compat.
+    const legacyImages = [
+      ...(a.coverImage ? [a.coverImage] : []),
+      ...parseArray(a.galleryImages),
+    ].filter((v, i, arr) => v && arr.indexOf(v) === i);
     setForm({
       id: a.id,
       slug: a.slug,
       title: a.title,
       excerpt: a.excerpt,
       body: a.body,
-      coverImage: a.coverImage || "",
+      images: legacyImages.slice(0, MAX_IMAGES),
       category: a.category,
       articleType: a.articleType,
       tags: parseArray(a.tags).join(", "),
@@ -223,7 +416,8 @@ export default function ArticleManager() {
         title: form.title,
         excerpt: form.excerpt,
         body: form.body,
-        coverImage: form.coverImage || null,
+        coverImage: form.images[0] || null,
+        galleryImages: form.images,
         category: form.category,
         articleType: form.articleType,
         tags: form.tags
@@ -457,7 +651,7 @@ export default function ArticleManager() {
       ) : (
         <div className="space-y-2.5">
           {filtered.map((a) => {
-            const cat = CATEGORIES.find((c) => c.value === a.category);
+            const cat = categories.find((c) => c.value === a.category);
             return (
               <div
                 key={a.id}
@@ -641,16 +835,37 @@ export default function ArticleManager() {
                     />
                   </div>
 
-                  {/* Kategori, tipe, cover */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* Kategori & tipe */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className={labelCls}>Kategori</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className={labelCls}>Kategori</label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowTaxModal("category");
+                            setNewTaxLabel("");
+                            setTaxError(null);
+                            setTaxWarning(null);
+                          }}
+                          className="flex items-center gap-1 text-[11px] font-bold text-brand-400 hover:text-brand-300 transition-colors"
+                        >
+                          <Plus className="w-3 h-3" /> Kategori
+                        </button>
+                      </div>
                       <select
                         className={inputCls}
-                        value={form.category}
+                        value={
+                          categories.some((c) => c.value === form.category)
+                            ? form.category
+                            : form.category || ""
+                        }
                         onChange={(e) => set("category", e.target.value)}
                       >
-                        {CATEGORIES.map((c) => (
+                        {!categories.some((c) => c.value === form.category) && form.category && (
+                          <option value={form.category}>{prettifySlug(form.category)}</option>
+                        )}
+                        {categories.map((c) => (
                           <option key={c.value} value={c.value}>
                             {c.label}
                           </option>
@@ -658,30 +873,107 @@ export default function ArticleManager() {
                       </select>
                     </div>
                     <div>
-                      <label className={labelCls}>Tipe</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className={labelCls}>Tipe</label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowTaxModal("type");
+                            setNewTaxLabel("");
+                            setTaxError(null);
+                            setTaxWarning(null);
+                          }}
+                          className="flex items-center gap-1 text-[11px] font-bold text-brand-400 hover:text-brand-300 transition-colors"
+                        >
+                          <Plus className="w-3 h-3" /> Tipe
+                        </button>
+                      </div>
                       <select
                         className={inputCls}
-                        value={form.articleType}
+                        value={form.articleType || ""}
                         onChange={(e) => set("articleType", e.target.value)}
                       >
-                        {TYPES.map((t) => (
+                        {!articleTypes.some((t) => t.value === form.articleType) && form.articleType && (
+                          <option value={form.articleType}>{prettifySlug(form.articleType)}</option>
+                        )}
+                        {articleTypes.map((t) => (
                           <option key={t.value} value={t.value}>
                             {t.label}
                           </option>
                         ))}
                       </select>
                     </div>
-                    <div>
-                      <label className={labelCls}>
-                        <span className="inline-flex items-center gap-1">
-                          <ImageIcon className="w-3 h-3" /> Gambar Cover
+                  </div>
+
+                  {/* Galeri gambar — maks 5, .webp, maks 5MB per gambar */}
+                  <div>
+                    <label className={labelCls}>
+                      <span className="inline-flex flex-wrap items-center gap-1">
+                        <ImageIcon className="w-3 h-3" /> Galeri Gambar (
+                        {form.images.length}/{MAX_IMAGES})
+                        <span className="text-slate-500 font-normal">
+                          · maks 5 gambar · 5MB/gambar · JPG/PNG/GIF otomatis jadi .webp · pertama = cover
                         </span>
-                      </label>
-                      <ImageUpload
-                        value={form.coverImage}
-                        onChange={(url) => set("coverImage", url)}
-                        onError={(m) => notify("error", m)}
-                      />
+                      </span>
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {form.images.map((url, i) => (
+                        <div
+                          key={url}
+                          className="relative w-24 h-24 rounded-lg overflow-hidden border border-slate-800 group"
+                        >
+                          <img
+                            src={url}
+                            alt={`Gambar ${i + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                          {i === 0 && (
+                            <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-brand-500/90 text-slate-950 text-[9px] font-bold">
+                              COVER
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              set("images", form.images.filter((u) => u !== url))
+                            }
+                            className="absolute top-1 right-1 w-6 h-6 rounded-full bg-slate-950/80 text-slate-300 hover:text-white hover:bg-rose-600 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Hapus gambar"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+
+                      {form.images.length < MAX_IMAGES && (
+                        <label
+                          className={`w-24 h-24 rounded-lg border-2 border-dashed transition-colors flex flex-col items-center justify-center cursor-pointer ${
+                            uploadingImages
+                              ? "border-brand-500/60 bg-brand-500/5 cursor-wait"
+                              : "border-slate-700 hover:border-brand-500/60 bg-slate-900/40"
+                          }`}
+                        >
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,image/gif,image/avif,image/bmp"
+                            multiple
+                            className="hidden"
+                            onChange={handleGalleryUpload}
+                            disabled={uploadingImages}
+                          />
+                          {uploadingImages ? (
+                            <Loader2 className="w-5 h-5 text-brand-400 animate-spin" />
+                          ) : (
+                            <>
+                              <ImageIcon className="w-5 h-5 text-slate-400" />
+                              <span className="text-[10px] text-slate-400 mt-1 text-center leading-tight">
+                                JPG/PNG/GIF
+                                <br />→ .webp otomatis
+                              </span>
+                            </>
+                          )}
+                        </label>
+                      )}
                     </div>
                   </div>
 
@@ -932,6 +1224,86 @@ export default function ArticleManager() {
                 className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-colors"
               >
                 Ya, Hapus
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal tambah Kategori / Tipe artikel */}
+      {showTaxModal && (
+        <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-slate-950 border border-brand-500/30 shadow-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div>
+                <h3 className="text-base font-bold text-white">
+                  {showTaxModal === "category" ? "Tambah Kategori Artikel" : "Tambah Tipe Artikel"}
+                </h3>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Di-validasi otomatis (anti-duplikat & anti-variasi jamak).
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTaxModal(null)}
+                className="w-8 h-8 rounded-full bg-slate-900 text-slate-400 hover:text-white flex items-center justify-center"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-slate-300 font-semibold mb-1 text-xs">
+                {showTaxModal === "category" ? "Nama Kategori" : "Nama Tipe"}
+              </label>
+              <input
+                type="text"
+                autoFocus
+                value={newTaxLabel}
+                onChange={(e) => handleTaxLabelChange(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !savingTax) handleAddTaxonomy();
+                }}
+                placeholder={showTaxModal === "category" ? "mis. Event & Pameran" : "mis. Wawancara"}
+                maxLength={50}
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl py-2 px-3 text-xs text-white focus:outline-none focus:border-brand-500"
+              />
+              {taxWarning && (
+                <p className="text-[11px] text-amber-400 mt-2 flex items-start gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                  {taxWarning}
+                </p>
+              )}
+              {taxError && (
+                <p className="text-[11px] text-red-400 mt-2 flex items-start gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                  {taxError}
+                </p>
+              )}
+              {taxWarning && !taxError && (
+                <p className="text-[10px] text-slate-500 mt-1">
+                  Pilih saja dari dropdown &quot;{showTaxModal === "category" ? "Kategori" : "Tipe"}&quot; —
+                  server juga memvalidasi ulang saat disimpan.
+                </p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowTaxModal(null)}
+                className="px-4 py-2 rounded-xl text-[11px] font-bold bg-slate-900 text-slate-300 hover:text-white border border-slate-800 transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={!newTaxLabel.trim() || savingTax}
+                onClick={handleAddTaxonomy}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-bold bg-brand-500 text-slate-950 hover:bg-brand-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                {savingTax ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                {savingTax ? "Menyimpan..." : showTaxModal === "category" ? "Tambah Kategori" : "Tambah Tipe"}
               </button>
             </div>
           </div>

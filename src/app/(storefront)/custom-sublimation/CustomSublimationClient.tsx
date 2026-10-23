@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MOCK_FABRICS } from "@/lib/mock-data";
 import { formatRupiah, formatNumber } from "@/lib/utils";
+import { yardsToMeters, metersToYards, pricePerYard } from "@/lib/units";
 import { addToCart } from "@/lib/cart";
 import { Breadcrumb } from "@/components/common/Breadcrumb";
 import { useI18n } from "@/lib/i18n/LanguageContext";
@@ -103,7 +104,9 @@ function CustomSublimationContent() {
   // Simulator controls
   const [patternMode, setPatternMode] = useState<"tile" | "single" | "roll">("tile");
   const [tileScale, setTileScale] = useState<number>(3);
-  const [requiredMeters, setRequiredMeters] = useState<number>(100);
+  // UI memakai YARD; hitung harga & cart tetap dalam METER (kanonik DB).
+  const [requiredYards, setRequiredYards] = useState<number>(110);
+  const requiredMeters = yardsToMeters(Number(requiredYards) > 0 ? Number(requiredYards) : 1) || 1;
   const [proofApproved, setProofApproved] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
@@ -134,14 +137,18 @@ function CustomSublimationContent() {
   }, [locale]);
 
   // Active fabric tier price
-  const activeTier = activeFabric.priceTiers.find((tier) => {
-    if (tier.maxMeters) {
-      return requiredMeters >= tier.minMeters && requiredMeters <= tier.maxMeters;
-    }
-    return requiredMeters >= tier.minMeters;
-  }) || activeFabric.priceTiers[0];
+  // (priceTiers bisa kosong saat admin menyembunyikan harga — setting terpusat)
+  const activeTier = activeFabric.priceTiers?.length
+    ? activeFabric.priceTiers.find((tier) => {
+        if (tier.maxMeters) {
+          return requiredMeters >= tier.minMeters && requiredMeters <= tier.maxMeters;
+        }
+        return requiredMeters >= tier.minMeters;
+      }) || activeFabric.priceTiers[0]
+    : null;
 
-  const fabricCostTotal = activeTier.unitPrice * requiredMeters;
+  const priceHidden = !activeTier;
+  const fabricCostTotal = activeTier ? activeTier.unitPrice * requiredMeters : 0;
   const printingCostTotal = pricingConfig.sublimationPrintFee * requiredMeters;
   const designFeeTotal = designOption === "TEXORA_DESIGN_SERVICE" ? pricingConfig.designServiceFee : 0;
   const grandTotal = fabricCostTotal + printingCostTotal + designFeeTotal;
@@ -179,7 +186,7 @@ function CustomSublimationContent() {
       setSelectedFabricId(fabricId);
     }
     if (meters) {
-      setRequiredMeters(Math.max(1, Number(meters)));
+      setRequiredYards(metersToYards(Math.max(1, Number(meters))));
     }
   }, []);
 
@@ -190,7 +197,7 @@ function CustomSublimationContent() {
       gsm: activeFabric.variants[0]?.gsm ?? 0,
       widthInch: activeFabric.widthInch,
       meters: requiredMeters,
-      unitPrice: activeTier.unitPrice,
+      unitPrice: activeTier ? activeTier.unitPrice : 0,
       sublimationPrintFeePerMeter: pricingConfig.sublimationPrintFee,
       customDesignTitle: designOption === "TEXORA_DESIGN_SERVICE" 
         ? (artworkFile?.name ? `Sampel: ${artworkFile.name}` : "Brief Desain Tim XoraMateria") 
@@ -293,6 +300,7 @@ function CustomSublimationContent() {
         <StudioArea
           activeFabric={activeFabric}
           activeTier={activeTier}
+          priceHidden={priceHidden}
           artworkFile={artworkFile}
           setArtworkFile={setArtworkFile}
           patternMode={patternMode}
@@ -300,7 +308,8 @@ function CustomSublimationContent() {
           tileScale={tileScale}
           setTileScale={setTileScale}
           requiredMeters={requiredMeters}
-          setRequiredMeters={setRequiredMeters}
+          requiredYards={requiredYards}
+          setRequiredYards={setRequiredYards}
           designOption={designOption}
           setDesignOption={setDesignOption}
           designNotes={designNotes}
@@ -340,7 +349,8 @@ function StudioArea(props: any) {
     tileScale,
     setTileScale,
     requiredMeters,
-    setRequiredMeters,
+    requiredYards,
+    setRequiredYards,
     designOption,
     setDesignOption,
     designNotes,
@@ -348,6 +358,7 @@ function StudioArea(props: any) {
     proofApproved,
     setProofApproved,
     pricingConfig,
+    priceHidden,
     fabricCostTotal,
     printingCostTotal,
     designFeeTotal,
@@ -682,39 +693,39 @@ function StudioArea(props: any) {
               </div>
             </div>
 
-            {/* 2. Meters Input */}
+            {/* 2. Yards Input */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                  2. Kebutuhan Panjang (Meter Lari):
+                  2. Kebutuhan Panjang (Yard):
                 </label>
                 <div className="flex items-center gap-1.5">
                   <input
                     type="number"
                     min={1}
                     max={5000}
-                    value={requiredMeters}
-                    onChange={(e) => setRequiredMeters(Math.max(1, Number(e.target.value)))}
+                    value={requiredYards}
+                    onChange={(e) => setRequiredYards(Math.max(1, Number(e.target.value)))}
                     className="w-24 px-3 py-1 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono font-bold text-sm text-right focus:outline-none focus:border-brand-500"
                   />
-                  <span className="text-xs text-slate-400 font-semibold">Meter</span>
+                  <span className="text-xs text-slate-400 font-semibold">Yard</span>
                 </div>
               </div>
 
               <input
                 type="range"
                 min={5}
-                max={1000}
+                max={1100}
                 step={5}
-                value={requiredMeters}
-                onChange={(e) => setRequiredMeters(Number(e.target.value))}
+                value={requiredYards}
+                onChange={(e) => setRequiredYards(Number(e.target.value))}
                 className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-brand-500"
               />
               <div className="flex justify-between text-[10px] text-slate-500 font-mono">
-                <span>5m</span>
-                <span>50m (Roll)</span>
-                <span>200m</span>
-                <span>1.000m+</span>
+                <span>5 yd</span>
+                <span>110 yd (Roll)</span>
+                <span>550 yd</span>
+                <span>1.100 yd+</span>
               </div>
             </div>
 
@@ -725,12 +736,18 @@ function StudioArea(props: any) {
               </div>
               
               <div className="flex justify-between text-slate-300">
-                <span>Biaya Kain ({formatRupiah(activeTier.unitPrice)}/m × {requiredMeters}m):</span>
-                <span className="font-mono text-white">{formatRupiah(fabricCostTotal)}</span>
+                {priceHidden ? (
+                  <span className="italic text-slate-400">Biaya kain mengikuti penawaran privée.</span>
+                ) : (
+                  <>
+                    <span>Biaya Kain (≈ {formatRupiah(pricePerYard(activeTier!.unitPrice))}/yd × {requiredYards} yd):</span>
+                    <span className="font-mono text-white">{formatRupiah(fabricCostTotal)}</span>
+                  </>
+                )}
               </div>
 
               <div className="flex justify-between text-slate-300">
-                <span>Jasa Cetak & Heatpress ({formatRupiah(pricingConfig.sublimationPrintFee)}/m × {requiredMeters}m):</span>
+                <span>Jasa Cetak &amp; Heatpress (≈ {formatRupiah(pricePerYard(pricingConfig.sublimationPrintFee))}/yd × {requiredYards} yd):</span>
                 <span className="font-mono text-white">{formatRupiah(printingCostTotal)}</span>
               </div>
 

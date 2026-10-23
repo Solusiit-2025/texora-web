@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MOCK_FABRICS } from "@/lib/mock-data";
 import { formatRupiah, formatNumber } from "@/lib/utils";
+import { yardsToMeters, metersToYards, pricePerYard } from "@/lib/units";
 import { FabricSpecCard } from "@/components/storefront/FabricSpecCard";
 import { RichContent } from "@/components/common/RichContent";
 import { Breadcrumb } from "@/components/common/Breadcrumb";
@@ -260,7 +261,9 @@ export default function HomePage({ initialData }: HomeClientProps) {
   const [calcFabricId, setCalcFabricId] = useState(
     initialData?.fabrics?.[0]?.id || MOCK_FABRICS[0].id
   );
-  const [calcMeters, setCalcMeters] = useState(150);
+  // Simulator memakai YARD di UI; seluruh perhitungan harga tetap dalam METER.
+  const [calcYards, setCalcYards] = useState(165);
+  const calcMeters = yardsToMeters(calcYards) || 1;
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   // Load live data from CMS & Products API (refresh ringan; konten utama sudah SSR)
@@ -333,14 +336,18 @@ export default function HomePage({ initialData }: HomeClientProps) {
   const activeHero = heroSlides[currentHeroIndex] || heroSlides[0] || HERO_SLIDES[0];
 
   const fabric = fabricsList.find((f) => f.id === calcFabricId) || fabricsList[0] || MOCK_FABRICS[0];
-  const tier =
-    fabric.priceTiers.find((t: any) =>
-      t.maxMeters ? calcMeters >= t.minMeters && calcMeters <= t.maxMeters : calcMeters >= t.minMeters
-    ) || fabric.priceTiers[0];
-  const baseTotal = fabric.basePricePerMeter * calcMeters;
-  const tierTotal = tier.unitPrice * calcMeters;
-  const savings = baseTotal - tierTotal;
-  const discountPct = Math.round((savings / baseTotal) * 100);
+  // Harga disembunyikan (setting terpusat dari portal) — priceTiers dikosongkan
+  // oleh server; UI kalkulator menampilkan kalimat RFQ alih-alih angka harga.
+  const priceHidden = !fabric.priceTiers || fabric.priceTiers.length === 0;
+  const tier: any = priceHidden
+    ? null
+    : fabric.priceTiers.find((t: any) =>
+          t.maxMeters ? calcMeters >= t.minMeters && calcMeters <= t.maxMeters : calcMeters >= t.minMeters
+        ) || fabric.priceTiers[0];
+  const baseTotal = tier ? fabric.basePricePerMeter * calcMeters : 0;
+  const tierTotal = tier ? tier.unitPrice * calcMeters : 0;
+  const savings = tier ? baseTotal - tierTotal : 0;
+  const discountPct = tier && baseTotal > 0 ? Math.round((savings / baseTotal) * 100) : 0;
 
   const fabrics = category === "All" ? fabricsList : fabricsList.filter((f) => f.category === category);
   const container = "texora-container";
@@ -866,44 +873,52 @@ export default function HomePage({ initialData }: HomeClientProps) {
                       type="number"
                       min={1}
                       max={5000}
-                      value={calcMeters}
-                      onChange={(e) => setCalcMeters(Math.max(1, Number(e.target.value)))}
+                      value={calcYards}
+                      onChange={(e) => setCalcYards(Math.max(1, Number(e.target.value)))}
                       className="w-20 bg-transparent text-right font-display text-xl font-bold text-alabaster focus:outline-none"
                     />
-                    <span className="text-xs text-slate-500">m</span>
+                    <span className="text-xs text-slate-500">yd</span>
                   </div>
                 </div>
                 <input
                   type="range"
                   min={1}
-                  max={2000}
+                  max={2200}
                   step={5}
-                  value={calcMeters}
-                  onChange={(e) => setCalcMeters(Number(e.target.value))}
+                  value={calcYards}
+                  onChange={(e) => setCalcYards(Number(e.target.value))}
                   className="w-full accent-brand-500"
                   aria-label="Geser panjang kain"
                 />
-                <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {fabric.priceTiers.map((t: any) => {
-                    const active = t.id === tier.id;
-                    return (
-                      <div
-                        key={t.id}
-                        className={`rounded-xl border px-3.5 py-3 transition-all ${
-                          active
-                            ? "border-brand-400 bg-gradient-to-br from-brand-500 to-brand-600 text-ink shadow-lg shadow-brand-500/25"
-                            : "border-slate-800 bg-slate-950/40 text-slate-400"
-                        }`}
-                      >
-                        <div className="text-[10px] font-semibold uppercase tracking-[0.12em]">
-                          {t.maxMeters ? `${t.minMeters}–${t.maxMeters} m` : `≥ ${t.minMeters} m`}
-                        </div>
-                        <div className={`mt-1 text-sm font-bold ${active ? "text-ink" : "text-alabaster"}`}>
-                          {formatRupiah(t.unitPrice)}
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="mt-4">
+                  {priceHidden ? (
+                    <div className="p-3 rounded-xl border border-slate-800 bg-slate-950/40 text-[11px] text-slate-300 italic leading-relaxed">
+                      {t("catalog.priceHidden")}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {fabric.priceTiers.map((t: any) => {
+                        const active = t.id === tier.id;
+                        return (
+                          <div
+                            key={t.id}
+                            className={`rounded-xl border px-3.5 py-3 transition-all ${
+                              active
+                                ? "border-brand-400 bg-gradient-to-br from-brand-500 to-brand-600 text-ink shadow-lg shadow-brand-500/25"
+                                : "border-slate-800 bg-slate-950/40 text-slate-400"
+                            }`}
+                          >
+                            <div className="text-[10px] font-semibold uppercase tracking-[0.12em]">
+                              {t.maxMeters ? `${metersToYards(t.minMeters)}–${metersToYards(t.maxMeters)} yd` : `≥ ${metersToYards(t.minMeters)} yd`}
+                            </div>
+                            <div className={`mt-1 text-sm font-bold ${active ? "text-ink" : "text-alabaster"}`}>
+                              {formatRupiah(pricePerYard(t.unitPrice))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -914,19 +929,27 @@ export default function HomePage({ initialData }: HomeClientProps) {
                   <Calculator className="h-4 w-4 text-brand-400" />
                   {t("home.calc.estimate")}
                 </div>
-                <motion.p
-                  key={tierTotal}
-                  initial={{ opacity: 0.4, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.35 }}
-                  className="mt-3 font-display text-fluid-price font-bold text-alabaster"
-                >
-                  {formatRupiah(tierTotal)}
-                </motion.p>
-                {discountPct > 0 && (
-                  <span className="mt-2 inline-flex w-fit items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-1 text-[11px] font-bold text-emerald-400">
-                    <Percent className="h-3 w-3" /> {t("home.calc.savings")} {discountPct}% · {formatRupiah(savings)}
-                  </span>
+                {priceHidden ? (
+                  <p className="mt-3 text-sm text-slate-300 italic leading-relaxed">
+                    {t("catalog.priceHidden")}
+                  </p>
+                ) : (
+                  <>
+                    <motion.p
+                      key={tierTotal}
+                      initial={{ opacity: 0.4, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.35 }}
+                      className="mt-3 font-display text-fluid-price font-bold text-alabaster"
+                    >
+                      {formatRupiah(tierTotal)}
+                    </motion.p>
+                    {discountPct > 0 && (
+                      <span className="mt-2 inline-flex w-fit items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-1 text-[11px] font-bold text-emerald-400">
+                        <Percent className="h-3 w-3" /> {t("home.calc.savings")} {discountPct}% · {formatRupiah(savings)}
+                      </span>
+                    )}
+                  </>
                 )}
                 <dl className="mt-6 space-y-3 text-sm">
                   <div className="flex justify-between gap-4 border-b border-slate-800 pb-3">
@@ -935,12 +958,14 @@ export default function HomePage({ initialData }: HomeClientProps) {
                   </div>
                   <div className="flex justify-between gap-4 border-b border-slate-800 pb-3">
                     <dt className="text-slate-400">{t("home.calc.volume")}</dt>
-                    <dd className="font-medium text-alabaster">{formatNumber(calcMeters)} m</dd>
+                    <dd className="font-medium text-alabaster">{formatNumber(calcYards)} yd ≈ {formatNumber(calcMeters)} m</dd>
                   </div>
-                  <div className="flex justify-between gap-4 border-b border-slate-800 pb-3">
-                    <dt className="text-slate-400">{t("home.calc.lockedPrice")}</dt>
-                    <dd className="font-semibold text-brand-300">{formatRupiah(tier.unitPrice)} / m</dd>
-                  </div>
+                  {!priceHidden && (
+                    <div className="flex justify-between gap-4 border-b border-slate-800 pb-3">
+                      <dt className="text-slate-400">{t("home.calc.lockedPrice")}</dt>
+                      <dd className="font-semibold text-brand-300">≈ {formatRupiah(pricePerYard(tier.unitPrice))} / yd</dd>
+                    </div>
+                  )}
                 </dl>
                 <div className="mt-auto pt-6 flex flex-col gap-2.5">
                   <Link

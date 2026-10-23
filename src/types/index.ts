@@ -37,7 +37,12 @@ export interface FabricProduct {
   isSublimationReady: boolean;
   basePricePerMeter: number;
   thumbnailUrl: string;
-  category: "Sportswear" | "Fashion & Hijab" | "Merchandise & Flag" | "Home Living";
+  /** JSON array URL galeri gambar (kolom galleryImages, maks 5). */
+  galleryImages?: string;
+  /** Galeri yang sudah di-parse (array URL) — termasuk fallback thumbnail. */
+  images?: string[];
+  /** Kategori bebas (string) - admin bisa menambahkan kategori baru dari portal catalog-management. Kategori bawaan: Sportswear, Fashion & Hijab, Merchandise & Flag, Home Living. */
+  category: string;
   variants: FabricVariant[];
   priceTiers: PriceTier[];
 }

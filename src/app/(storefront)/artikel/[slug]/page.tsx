@@ -13,6 +13,7 @@ import {
   Layers,
 } from "lucide-react";
 import ArticleToc from "./ArticleToc";
+import ArticleHeroGallery from "./ArticleHeroGallery";
 import { RichContent } from "@/components/common/RichContent";
 import { JsonLd } from "@/components/common/JsonLd";
 import { Breadcrumb } from "@/components/common/Breadcrumb";
@@ -188,15 +189,25 @@ export default async function ArticleDetailPage({ params }: PageProps) {
             </div>
           </header>
 
-          {/* Cover */}
-          {article.coverImage && (
-            <div className="relative aspect-[21/9] rounded-2xl overflow-hidden border border-slate-800 bg-slate-950">
+          {/* Cover / galeri gambar */}
+          {article.images.length > 0 ? (
+            <div>
+              <ArticleHeroGallery images={article.images} alt={article.title} />
+              {article.images.length > 1 && (
+                <p className="text-[10px] text-slate-600 mt-2 text-right">
+                  {article.images.length} gambar · berganti otomatis
+                </p>
+              )}
+            </div>
+          ) : article.coverImage && (
+            <div className="relative aspect-[16/9] sm:aspect-[21/9] sm:max-h-[500px] rounded-2xl sm:rounded-3xl overflow-hidden border border-slate-800 bg-slate-950 shadow-2xl">
               <Image
                 src={article.coverImage}
                 alt={article.title}
                 fill
                 priority
-                sizes="(max-width: 1200px) 100vw, 1200px"
+                quality={90}
+                sizes="(max-width: 768px) 100vw, (max-width: 1280px) 100vw, 1280px"
                 className="object-cover"
               />
             </div>

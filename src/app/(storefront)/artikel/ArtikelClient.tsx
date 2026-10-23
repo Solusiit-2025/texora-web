@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { Search, Clock, CalendarDays, ArrowRight, BookOpen, Layers } from "lucide-react";
+import { Search, Clock, CalendarDays, ArrowRight, BookOpen } from "lucide-react";
+import { ImageCarousel } from "@/components/common/ImageCarousel";
 import { useI18n, useLocalePath } from "@/lib/i18n/LanguageContext";
 import type { ArticleCopy } from "@/lib/i18n/article-dictionary";
 
@@ -13,12 +13,16 @@ export interface ArticleCardData {
   title: string;
   excerpt: string;
   coverImage: string | null;
+  images: string[];
   category: string;
   articleType: string;
   readMinutes: number;
   publishedAt: string | null;
   tags: string[];
 }
+
+/** Durasi auto-rotate carousel gambar kartu (ms) — senada hero slider (7.5s). */
+const CAROUSEL_INTERVAL = 7500;
 
 export default function ArtikelClient({
   articles,
@@ -118,26 +122,27 @@ export default function ArtikelClient({
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map((a) => (
+          {filtered.map((a, idx) => (
             <article
               key={a.id}
               className="group flex flex-col rounded-2xl bg-slate-900/60 border border-slate-800 overflow-hidden hover:border-brand-500/40 transition-colors"
             >
-              <div className="relative aspect-[16/9] overflow-hidden bg-slate-950">
-                {a.coverImage ? (
-                  <Image
-                    src={a.coverImage}
+              <div className="relative">
+                {a.images.length > 0 ? (
+                  <ImageCarousel
+                    images={a.images}
                     alt={a.title}
-                    fill
+                    aspect="16/9"
+                    interval={CAROUSEL_INTERVAL + (idx % 3) * 1200}
+                    slideMs={1100}
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 ) : (
-                  <div className="absolute inset-0 flex items-center justify-center text-slate-700">
+                  <div className="aspect-[16/9] bg-slate-950 flex items-center justify-center text-slate-700">
                     <BookOpen className="w-12 h-12" />
                   </div>
                 )}
-                <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
+                <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 z-20 pointer-events-none">
                   <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-900/90 text-accent-cyan border border-accent-cyan/30 backdrop-blur-md">
                     {copy.categories[a.category] || a.category}
                   </span>

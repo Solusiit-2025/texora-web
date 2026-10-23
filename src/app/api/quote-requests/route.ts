@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser } from "@/lib/auth/session";
 import { normalizeLocale } from "@/lib/content-translator";
+import { sendQuoteNotificationEmail, QUOTE_NOTIFY_EMAIL } from "@/lib/mailer";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 
@@ -14,8 +15,7 @@ const MAX_MESSAGE = 4000;
  * Menerima permintaan penawaran dari form "Minta Penawaran".
  * Data otomatis masuk ke pipeline CRM (Lead) supaya tim sales bisa lanjut.
  */
-export async function POST(req: NextRequest) {
-  try {
+export async function POST(req: NextRequest) {  try {
     const body = await req.json().catch(() => null);
     if (!body) {
       return NextResponse.json(
@@ -33,18 +33,37 @@ export async function POST(req: NextRequest) {
     const source = String(body.source || "website").trim().slice(0, 40);
     const locale = normalizeLocale(body.locale) || "id";
 
-    // File referensi dikirim sebagai data URL (base64) dari form publik.
-    const ALLOWED_FILE_TYPES = [
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-      "application/pdf",
-    ];
-    const MAX_FILE_BYTES = 2 * 1024 * 1024; // 2MB (muat sebagai data URL di JSON)
-    const fileDataUrl = String(body.fileDataUrl || "").trim();
-    const fileName = String(body.fileName || "").trim().slice(0, 255);
+    // Upload file dari form publik DINONAKTIFKAN (hardening keamanan).
+    // Seluruh jalur penulisan file referensi (base64 → public/uploads)
+    // dihapus: tidak ada penulisan file, tidak ada URL file tersimpan.
+    // ── HARDENING: Upload file referensi DINONAKTIFKAN ─────────────
+    // Form publik tidak lagi menerima file. Payload yang memuat
+    // fileDataUrl DITOLAK supaya tidak bisa dipakai menyimpan
+    // script berbahaya ke folder uploads.
+    if (
+      String(body.fileDataUrl || "").trim() ||
+      String(body.fileName || "").trim()
+    ) {
+      console.warn(
+        "[quote] Payload menyertakan file referensi — upload dinonaktifkan, request ditolak."
+      );
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Unggah file sementara tidak tersedia. Silakan lampirkan file lewat WhatsApp / email ke admin@texoraprima.com.",
+        },
+        { status: 400 }
+      );
+    }
 
-    const meters = Number(body.meters);
+    const yards = Number(body.yards);
+    let meters = Number(body.meters);
+    // Satuan kanonik database = meter. Bila client mengirim `yards`
+    // (standar trade tekstil internasional), konversi otomatis 1 yd = 0,9144 m.
+    if ((!Number.isFinite(meters) || meters <= 0) && Number.isFinite(yards) && yards > 0) {
+      meters = Math.round(yards * 0.9144 * 10) / 10;
+    }
     const productIdsRaw = Array.isArray(body.productIds)
       ? body.productIds.slice(0, 20).map((p: any) => String(p))
       : [];
@@ -71,55 +90,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Simpan file referensi (jika ada) ke folder publik uploads
-    let safeFileUrl: string | null = null;
-    let safeFileName: string | null = null;
-
-    if (fileDataUrl.startsWith("data:")) {
-      const m = fileDataUrl.match(/^data:([\w/+.-]+);base64,([\s\S]+)$/);
-      if (m) {
-        const mime = m[1].toLowerCase();
-        const b64 = m[2];
-        const approxBytes = Math.floor((b64.length * 3) / 4);
-        if (!ALLOWED_FILE_TYPES.includes(mime)) {
-          return NextResponse.json(
-            {
-              success: false,
-              error: "Tipe file tidak didukung. Gunakan JPG, PNG, WebP, atau PDF.",
-            },
-            { status: 400 }
-          );
-        }
-        if (approxBytes > MAX_FILE_BYTES) {
-          return NextResponse.json(
-            { success: false, error: "Ukuran file maksimal 2MB." },
-            { status: 400 }
-          );
-        }
-        try {
-          const buffer = Buffer.from(b64, "base64");
-          const ext =
-            mime === "application/pdf"
-              ? ".pdf"
-              : mime === "image/png"
-              ? ".png"
-              : mime === "image/webp"
-              ? ".webp"
-              : ".jpg";
-          const uploadDir = path.join(process.cwd(), "public", "uploads");
-          await mkdir(uploadDir, { recursive: true });
-          const safeName = `rfq-${Date.now()}-${Math.random()
-            .toString(36)
-            .slice(2, 8)}${ext}`;
-          await writeFile(path.join(uploadDir, safeName), buffer);
-          safeFileUrl = `/uploads/${safeName}`;
-          safeFileName = fileName || safeName;
-        } catch (fsErr) {
-          console.warn("[quote] Gagal menyimpan file referensi:", fsErr);
-        }
-      }
-    }
-
     const created = await prisma.quoteRequest.create({
       data: {
         name,
@@ -132,8 +102,8 @@ export async function POST(req: NextRequest) {
         meters: Number.isFinite(meters) && meters > 0 ? Math.min(meters, 1_000_000) : null,
         needsSample,
         message: message || null,
-        fileUrl: safeFileUrl,
-        fileName: safeFileName,
+        fileUrl: null,
+        fileName: null,
         locale,
         source,
         status: "NEW",
@@ -157,7 +127,6 @@ export async function POST(req: NextRequest) {
             `RFQ via website (${source}, locale ${locale}).`,
             message ? `Catatan: ${message}` : null,
             needsSample ? "Meminta sample swatch gratis." : null,
-            safeFileUrl ? `File referensi: ${safeFileUrl}` : null,
           ]
             .filter(Boolean)
             .join("\n"),
@@ -179,6 +148,36 @@ export async function POST(req: NextRequest) {
         },
       });
     } catch {}
+
+    // Notifikasi email ke PIC internal (QUOTE_EMAIL_TO, default
+    // parwanto0807@gmail.com). Gagal kirim tidak membatalkan RFQ.
+    try {
+      const result = await sendQuoteNotificationEmail({
+        name,
+        company: company || null,
+        email,
+        phone: phone || null,
+        meters: Number.isFinite(meters) && meters > 0 ? meters : null,
+        yards:
+          Number.isFinite(yards) && yards > 0
+            ? yards
+            : Number.isFinite(meters) && meters > 0
+            ? Math.round(meters / 0.9144)
+            : null,
+        needsSample,
+        productsText: productsText || null,
+        message: message || null,
+        source,
+        rfqId: created.id,
+      });
+      if (!result.sent && result.skipped) {
+        console.warn(
+          `[quote] Email notifikasi RFQ ${created.id} dilewati (SMTP belum dikonfigurasi). Data tetap tersimpan.`
+        );
+      }
+    } catch (mailErr) {
+      console.warn(`[quote] Notifikasi RFQ ${created.id} gagal dikirim ke ${QUOTE_NOTIFY_EMAIL}:`, mailErr);
+    }
 
     return NextResponse.json(
       {

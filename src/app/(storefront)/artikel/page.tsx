@@ -122,6 +122,7 @@ export default async function ArtikelPage() {
             title: a.title,
             excerpt: a.excerpt,
             coverImage: a.coverImage,
+            images: a.images,
             category: a.category,
             articleType: a.articleType,
             readMinutes: a.readMinutes,

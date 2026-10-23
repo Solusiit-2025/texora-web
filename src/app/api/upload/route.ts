@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth/session";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
+import sharp from "sharp";
 
 export const dynamic = "force-dynamic";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml"];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+
+/** Tipe raster yang boleh dikonversi otomatis ke WebP (SVG bukan raster). */
+const CONVERTIBLE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/bmp", "image/tiff", "image/avif"];
 
 export async function POST(req: NextRequest) {
   try {
@@ -33,6 +37,63 @@ export async function POST(req: NextRequest) {
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+
+    // ── Mode konversi: JPG/PNG/GIF/AVIF → WebP (dipakai galeri artikel) ──
+    const convert = formData.get("convert") === "webp";
+    if (convert) {
+      if (!CONVERTIBLE_TYPES.includes(file.type)) {
+        return NextResponse.json(
+          { success: false, error: "Konversi WebP mendukung JPG/PNG/WebP/GIF/AVIF — file ini tidak didukung." },
+          { status: 400 }
+        );
+      }
+      try {
+        let pipeline = sharp(buffer, { failOn: "error" }).rotate(); // ikut EXIF orientation
+        const meta = await pipeline.metadata();
+        const maxSide = 1920;
+        if ((meta.width || 0) > maxSide || (meta.height || 0) > maxSide) {
+          pipeline = pipeline.resize({
+            width: meta.width! >= meta.height! ? maxSide : undefined,
+            height: meta.height! > meta.width! ? maxSide : undefined,
+            fit: "inside",
+            withoutEnlargement: true,
+          });
+        }
+        const webpBuffer: Buffer = await pipeline
+          .webp({ quality: 82, effort: 4 })
+          .toBuffer();
+        if (webpBuffer.length > MAX_SIZE) {
+          return NextResponse.json(
+            { success: false, error: "Hasil konversi WebP melebihi 5MB — coba gambar dengan resolusi lebih kecil." },
+            { status: 400 }
+          );
+        }
+        const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.webp`;
+        try {
+          const uploadDir = path.join(process.cwd(), "public", "uploads");
+          await mkdir(uploadDir, { recursive: true });
+          await writeFile(path.join(uploadDir, safeName), webpBuffer);
+          return NextResponse.json({
+            success: true,
+            message: "Gambar berhasil dikonversi ke WebP.",
+            url: `/uploads/${safeName}`,
+          });
+        } catch {
+          // Fallback serverless (read-only fs): data URL WebP
+          return NextResponse.json({
+            success: true,
+            message: "Gambar berhasil dikonversi ke WebP (mode fallback).",
+            url: `data:image/webp;base64,${webpBuffer.toString("base64")}`,
+          });
+        }
+      } catch (convError: any) {
+        console.error("[upload] Gagal konversi WebP:", convError);
+        return NextResponse.json(
+          { success: false, error: "Gagal mengonversi gambar ke WebP." },
+          { status: 400 }
+        );
+      }
+    }
 
     const ext = path.extname(file.name) || ".bin";
     const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;

@@ -8,6 +8,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { cached, invalidateCache } from "@/lib/cache";
+import { parseGalleryImages } from "@/lib/image-gallery";
 import type { FabricProduct } from "@/types";
 
 export interface StorefrontProduct {
@@ -21,6 +22,7 @@ export interface StorefrontProduct {
   isSublimationReady: boolean;
   basePricePerMeter: number;
   thumbnailUrl: string;
+  images: string[];
   category: string;
   updatedAt?: string;
   variants: Array<{
@@ -41,6 +43,8 @@ const FALLBACK_THUMB =
   "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=800&q=80";
 
 function mapProduct(p: any): StorefrontProduct {
+  const thumb = p.thumbnailUrl || FALLBACK_THUMB;
+  const gallery = parseGalleryImages(p.galleryImages);
   return {
     id: p.id,
     name: p.name,
@@ -51,7 +55,8 @@ function mapProduct(p: any): StorefrontProduct {
     widthInch: Number(p.widthInch || 0),
     isSublimationReady: Boolean(p.isSublimationReady),
     basePricePerMeter: Number(p.basePricePerMeter || 0),
-    thumbnailUrl: p.thumbnailUrl || FALLBACK_THUMB,
+    thumbnailUrl: thumb,
+    images: gallery.length > 0 ? gallery : [thumb],
     category: p.category || "Sportswear",
     updatedAt: p.updatedAt ? new Date(p.updatedAt).toISOString() : undefined,
     variants: (p.variants || []).map((v: any) => ({
@@ -251,6 +256,7 @@ export interface StorefrontArticle {
   excerpt: string;
   body: string;
   coverImage: string | null;
+  images: string[];
   category: string;
   articleType: string;
   tags: string[];
@@ -301,13 +307,17 @@ function safeJsonArray(raw: string | null | undefined): string[] {
 }
 
 function mapArticle(a: any): StorefrontArticle {
+  const cover = a.coverImage || null;
+  const gallery = safeJsonArray(a.galleryImages);
+  const images = gallery.length > 0 ? gallery : cover ? [cover] : [];
   return {
     id: a.id,
     slug: a.slug,
     title: a.title,
     excerpt: a.excerpt,
     body: a.body,
-    coverImage: a.coverImage || null,
+    coverImage: cover,
+    images,
     category: a.category || "panduan",
     articleType: a.articleType || "panduan",
     tags: safeJsonArray(a.tags),

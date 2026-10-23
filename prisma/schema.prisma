@@ -65,6 +65,7 @@ model FabricProduct {
   isSublimationReady Boolean       @default(true)
   basePricePerMeter Decimal        @db.Decimal(12, 2)
   thumbnailUrl     String?
+  galleryImages    String          @default("[]") @db.Text // JSON array URL gambar galeri (maks 5, .webp)
   category         String          @default("Sportswear")
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
@@ -491,6 +492,7 @@ model Article {
   excerpt         String   @db.Text // ringkasan 1-2 kalimat (dipakai di card & meta description)
   body            String   @db.Text // HTML hasil RichTextEditor (disanitasi saat disimpan)
   coverImage      String?
+  galleryImages   String   @default("[]") @db.Text // JSON array URL gambar galeri (maks 5, format .webp)
   category        String   @default("panduan") // sportswear | hijab-fashion | home-living | merchandise | proses
   articleType     String   @default("panduan") // panduan | tips | case-study | news
   tags            String   @default("[]") @db.Text // JSON array tag
@@ -539,5 +541,21 @@ model SiteContent {
   updatedAt DateTime @updatedAt
 
   @@map("cms_site_content")
+}
+
+// -----------------------------------------------------------
+// 12. MASTER KATEGORI KAIN (Dikelola dari Portal Catalog)
+//     Dropdown kategori memakai tabel ini — mencegah kategori
+//     duplikat/near-identik (mis. "Sportswear" vs "Sportswears").
+// -----------------------------------------------------------
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdBy String?  // User ID admin yang menambahkan
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("master_categories")
 }
 

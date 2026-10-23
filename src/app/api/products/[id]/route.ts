@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { parseGalleryImages, serializeGalleryImages, PRODUCT_FALLBACK_THUMB } from "@/lib/image-gallery";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,8 @@ function formatFabric(p: any) {
     widthInch: Number(p.widthInch),
     isSublimationReady: Boolean(p.isSublimationReady),
     basePricePerMeter: Number(p.basePricePerMeter),
-    thumbnailUrl: p.thumbnailUrl || "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=800&q=80",
+    thumbnailUrl: p.thumbnailUrl || PRODUCT_FALLBACK_THUMB,
+    images: parseGalleryImages(p.galleryImages),
     category: p.category || "Sportswear",
     variants: (p.variants || []).map((v: any) => ({
       id: v.id,
@@ -98,6 +100,9 @@ export async function PUT(
           ? Number(body.basePricePerMeter)
           : existing.basePricePerMeter,
         thumbnailUrl: body.thumbnailUrl ?? existing.thumbnailUrl,
+        galleryImages: body.galleryImages !== undefined
+          ? serializeGalleryImages(body.galleryImages)
+          : undefined,
         category: body.category ?? existing.category,
       },
       include: {

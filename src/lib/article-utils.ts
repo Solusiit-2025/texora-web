@@ -13,6 +13,7 @@ export interface ArticleInput {
   excerpt?: string;
   body?: string;
   coverImage?: string | null;
+  galleryImages?: string[] | string;
   category?: string;
   articleType?: string;
   tags?: string[] | string;
@@ -55,6 +56,9 @@ export function slugifyArticleSlug(input: string): string {
       .slice(0, 90) || "artikel"
   );
 }
+
+/** Batas jumlah gambar galeri per artikel. */
+export const MAX_ARTICLE_IMAGES = 5;
 
 function toArray(value: string[] | string | undefined | null): string[] {
   if (Array.isArray(value)) return value.map((v) => String(v).trim()).filter(Boolean);
@@ -115,12 +119,24 @@ export function normalizeArticleInput(
     ? input.articleType
     : "panduan";
 
+  // Galeri gambar: array URL (maks 5). Gambar pertama jadi cover (backward-compat).
+  const galleryInput = Array.isArray(input.galleryImages)
+    ? input.galleryImages
+    : typeof input.galleryImages === "string"
+    ? toArray(input.galleryImages)
+    : [];
+  const images = galleryInput
+    .map((u) => String(u || "").trim())
+    .filter(Boolean)
+    .slice(0, MAX_ARTICLE_IMAGES);
+
   return {
     slug,
     title,
     excerpt: excerptSource,
     body,
-    coverImage: input.coverImage || null,
+    coverImage: images[0] || input.coverImage || null,
+    galleryImages: JSON.stringify(images),
     category,
     articleType,
     tags: JSON.stringify(toArray(input.tags)),
