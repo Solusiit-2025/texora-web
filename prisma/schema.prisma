@@ -47,6 +47,7 @@ model User {
   auditLogs     AuditLog[]
   whatsAppConversations WhatsAppConversation[]
 
+  @@index([role])
   @@map("users")
 }
 
@@ -73,6 +74,7 @@ model FabricProduct {
   variants         FabricVariant[]
   priceTiers       PriceTier[]
 
+  @@index([category, isSublimationReady])
   @@map("fabric_products")
 }
 
@@ -89,6 +91,7 @@ model FabricVariant {
   orderItems     OrderItem[]
   inventoryRolls InventoryRoll[]
 
+  @@index([productId])
   @@map("fabric_variants")
 }
 
@@ -100,6 +103,7 @@ model PriceTier {
   maxMeters  Float?        // Misal: 500 meter (null untuk unlimited tier tertinggi)
   unitPrice  Decimal       @db.Decimal(12, 2)
 
+  @@index([productId, minMeters])
   @@map("price_tiers")
 }
 
@@ -132,6 +136,7 @@ model CustomDesign {
 
   orderItems     OrderItem[]
 
+  @@index([customerId, status])
   @@map("custom_designs")
 }
 
@@ -175,6 +180,8 @@ model Order {
 
   items           OrderItem[]
 
+  @@index([customerId, createdAt])
+  @@index([status])
   @@map("orders")
 }
 
@@ -193,6 +200,9 @@ model OrderItem {
   unitPrice       Decimal        @db.Decimal(12, 2)
   subtotal        Decimal        @db.Decimal(12, 2)
 
+  @@index([orderId])
+  @@index([fabricVariantId])
+  @@index([customDesignId])
   @@map("order_items")
 }
 
@@ -230,6 +240,9 @@ model Lead {
 
   activities       ActivityLog[]
 
+  @@index([assignedSalesId, updatedAt])
+  @@index([customerId])
+  @@index([stage, createdAt])
   @@map("leads")
 }
 
@@ -254,6 +267,8 @@ model ActivityLog {
   completedAt DateTime?
   createdAt   DateTime     @default(now())
 
+  @@index([leadId])
+  @@index([userId, createdAt])
   @@map("activity_logs")
 }
 
@@ -274,6 +289,8 @@ model InventoryRoll {
   warehouseLocation String       // e.g., "Rak B-03, Gudang Utama"
   receivedDate    DateTime       @default(now())
 
+  @@index([fabricVariantId])
+  @@index([batchLot])
   @@map("inventory_rolls")
 }
 
@@ -311,6 +328,9 @@ model WhatsAppConversation {
 
   messages      WhatsAppMessage[]
 
+  @@index([customerId])
+  @@index([updatedAt])
+  @@index([contactNumber])
   @@map("whatsapp_conversations")
 }
 
@@ -325,6 +345,8 @@ model WhatsAppMessage {
   status      WhatsAppStatus   @default(SENT)
   createdAt   DateTime         @default(now())
 
+  @@index([conversationId, createdAt])
+  @@index([from])
   @@map("whatsapp_messages")
 }
 
@@ -360,6 +382,10 @@ model SocialComment {
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
+  @@index([platform, createdAt])
+  @@index([sentiment])
+  @@index([postId])
+  @@index([timestamp])
   @@map("social_comments")
 }
 
@@ -377,6 +403,8 @@ model AuditLog {
   userAgent   String?
   createdAt   DateTime   @default(now())
 
+  @@index([createdAt])
+  @@index([userId, createdAt])
   @@map("audit_logs")
 }
 

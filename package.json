@@ -27,6 +27,8 @@
     "test:articles": "node scripts/test-articles.mjs",
     "test:perf": "node scripts/bench-performance.mjs",
     "test:db": "node scripts/db-latency.mjs",
+    "audit:db": "node scripts/inspect-db.cjs",
+    "reindex:db": "node scripts/reindex-bloat.cjs",
     "test:rsc": "node scripts/bench-rsc.mjs",
     "test:nav": "node scripts/bench-navigation.mjs",
     "test:locale-switch": "node scripts/test-locale-switch.mjs",
