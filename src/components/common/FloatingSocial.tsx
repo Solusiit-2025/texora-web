@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { cachedClientFetch } from "@/lib/client-api";
 import { 
@@ -81,22 +80,14 @@ const SOCIAL_META: Record<string, SocialChannelMeta> = {
 };
 
 export function FloatingSocial() {
-  const pathname = usePathname();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [links, setLinks] = useState<SocialLink[]>(DEFAULT_SOCIAL_LINKS);
 
-  // Tombol WhatsApp bulat hanya untuk halaman publik/storefront. Portal,
-  // customer area, dan halaman auth punya konteks sendiri.
-  const showWhatsAppFab =
-    !pathname.startsWith("/portal") &&
-    !pathname.startsWith("/customer") &&
-    !pathname.startsWith("/unauthorized") &&
-    !pathname.startsWith("/login") &&
-    !pathname.startsWith("/register") &&
-    !pathname.startsWith("/forgot-password");
+  // Tombol WhatsApp bulat tampil di semua halaman (fixed), jadi selalu
+  // terlihat di viewport pertama tanpa perlu scroll.
 
   // URL sosial dibaca dari database (bukan hardcode)
   useEffect(() => {
@@ -403,7 +394,7 @@ export function FloatingSocial() {
       {/* ============================================================== */}
       {/* MOBILE QUICK ACTION (Hidden on md, visible on mobile)          */}
       {/* ============================================================== */}
-      <div className={`md:hidden fixed bottom-6 ${showWhatsAppFab ? "right-20" : "right-5"} z-40 select-none`}>
+      <div className="md:hidden fixed bottom-6 right-20 z-40 select-none">
         <AnimatePresence>
           {mobileMenuOpen && (
             <motion.div
@@ -464,24 +455,6 @@ export function FloatingSocial() {
 
         {/* Mobile Main FAB Button */}
         <div className="flex items-center gap-2">
-          {/* Quick WhatsApp Direct Button (pill fallback untuk portal/customer) */}
-          {whatsappLink && !showWhatsAppFab && (
-            <motion.a
-              href={whatsappLink.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              whileTap={{ scale: 0.92 }}
-              className="relative flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-emerald-600 text-white font-semibold text-xs shadow-lg shadow-emerald-950/60 border border-emerald-400/40"
-              aria-label="Chat WhatsApp"
-            >
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
-              </span>
-              <span>Chat Sales</span>
-            </motion.a>
-          )}
-
           {/* Socials Toggle Button */}
           <motion.button
             whileTap={{ scale: 0.92 }}
@@ -499,9 +472,9 @@ export function FloatingSocial() {
       </div>
 
       {/* ============================================================== */}
-      {/* WHATSAPP FLOATING FAB — tombol bulat khusus halaman publik     */}
+      {/* WHATSAPP FLOATING FAB — selalu tampil di semua halaman         */}
       {/* ============================================================== */}
-      {showWhatsAppFab && whatsappLink && (
+      {whatsappLink && (
         <motion.div
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}

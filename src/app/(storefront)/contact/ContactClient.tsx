@@ -184,6 +184,22 @@ export default function ContactClient() {
           )}
         </p>
 
+        {/* Primary WhatsApp CTA — sengaja di hero agar terlihat tanpa scroll */}
+        <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
+          <a
+            href="https://wa.me/6285810646157?text=Halo%20Xora%20Materia,%20saya%20ingin%20konsultasi%20pengadaan%20kain%20sublimasi."
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs sm:text-sm shadow-lg shadow-emerald-500/20 transition-all hover:-translate-y-0.5"
+          >
+            <MessageCircle className="w-4 h-4" />
+            <span>Chat WhatsApp Sekarang</span>
+          </a>
+          <span className="text-[11px] text-slate-400">
+            Respon cepat &lt; 15 menit pada jam kerja
+          </span>
+        </div>
+
         {/* Enterprise SLA & Trust Strip */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-2 max-w-4xl mx-auto text-left">
           <div className="p-3.5 rounded-2xl glass-panel border border-brand-500/20 bg-slate-900/80 flex items-center gap-3 shadow-lg">
