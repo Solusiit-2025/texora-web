@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { cachedClientFetch } from "@/lib/client-api";
 import { 
@@ -80,11 +81,22 @@ const SOCIAL_META: Record<string, SocialChannelMeta> = {
 };
 
 export function FloatingSocial() {
+  const pathname = usePathname();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [links, setLinks] = useState<SocialLink[]>(DEFAULT_SOCIAL_LINKS);
+
+  // Tombol WhatsApp bulat hanya untuk halaman publik/storefront. Portal,
+  // customer area, dan halaman auth punya konteks sendiri.
+  const showWhatsAppFab =
+    !pathname.startsWith("/portal") &&
+    !pathname.startsWith("/customer") &&
+    !pathname.startsWith("/unauthorized") &&
+    !pathname.startsWith("/login") &&
+    !pathname.startsWith("/register") &&
+    !pathname.startsWith("/forgot-password");
 
   // URL sosial dibaca dari database (bukan hardcode)
   useEffect(() => {
@@ -138,6 +150,7 @@ export function FloatingSocial() {
   };
 
   const whatsappLink = links.find((s) => s.id === "whatsapp");
+  const WhatsAppIcon = SOCIAL_ICONS.whatsapp;
 
   return (
     <>
@@ -390,7 +403,7 @@ export function FloatingSocial() {
       {/* ============================================================== */}
       {/* MOBILE QUICK ACTION (Hidden on md, visible on mobile)          */}
       {/* ============================================================== */}
-      <div className="md:hidden fixed bottom-6 right-5 z-40 select-none">
+      <div className={`md:hidden fixed bottom-6 ${showWhatsAppFab ? "right-20" : "right-5"} z-40 select-none`}>
         <AnimatePresence>
           {mobileMenuOpen && (
             <motion.div
@@ -451,8 +464,8 @@ export function FloatingSocial() {
 
         {/* Mobile Main FAB Button */}
         <div className="flex items-center gap-2">
-          {/* Quick WhatsApp Direct Button */}
-          {whatsappLink && (
+          {/* Quick WhatsApp Direct Button (pill fallback untuk portal/customer) */}
+          {whatsappLink && !showWhatsAppFab && (
             <motion.a
               href={whatsappLink.href}
               target="_blank"
@@ -484,6 +497,49 @@ export function FloatingSocial() {
           </motion.button>
         </div>
       </div>
+
+      {/* ============================================================== */}
+      {/* WHATSAPP FLOATING FAB — tombol bulat khusus halaman publik     */}
+      {/* ============================================================== */}
+      {showWhatsAppFab && whatsappLink && (
+        <motion.div
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.7, type: "spring", stiffness: 260, damping: 18 }}
+          className="fixed bottom-6 right-5 md:right-6 z-50"
+        >
+          <div className="group relative flex items-center">
+            {/* Tooltip desktop */}
+            <span className="pointer-events-none absolute right-full mr-3 hidden translate-x-1 items-center gap-1.5 whitespace-nowrap rounded-xl border border-white/10 bg-slate-950/90 px-3 py-2 text-[11px] font-semibold text-slate-100 opacity-0 shadow-2xl backdrop-blur-xl transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100 md:flex">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Chat via WhatsApp
+            </span>
+
+            <div className="relative h-14 w-14 md:h-16 md:w-16">
+              {/* Pulse ring */}
+              <span className="pointer-events-none absolute inset-0 animate-ping rounded-full bg-[#25D366]/30" />
+
+              <motion.a
+                href={whatsappLink.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Chat via WhatsApp"
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.94 }}
+                className="relative flex h-full w-full items-center justify-center rounded-full bg-[#25D366] text-white shadow-[0_12px_35px_rgba(37,211,102,0.45)] ring-4 ring-emerald-400/20 transition-colors hover:bg-[#1FBE5A]"
+              >
+                <WhatsAppIcon className="h-7 w-7 md:h-8 md:w-8" />
+
+                {/* Online badge */}
+                <span className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300 opacity-75" />
+                  <span className="relative inline-flex h-3.5 w-3.5 rounded-full border-2 border-[#25D366] bg-white" />
+                </span>
+              </motion.a>
+            </div>
+          </div>
+        </motion.div>
+      )}
     </>
   );
 }
