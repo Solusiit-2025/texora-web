@@ -1,4 +1,4 @@
-export type ThemeId = "brass" | "emerald" | "sapphire" | "crimson";
+export type ThemeId = "xora" | "brass" | "emerald" | "sapphire" | "crimson";
 
 export interface ThemeDef {
   id: ThemeId;
@@ -8,11 +8,19 @@ export interface ThemeDef {
   swatch: string;
 }
 
-export const STORAGE_KEY = "texora-theme";
+// v2: brand refresh — tema Xora Blue menjadi default. Key lama sengaja
+// tidak dipakai lagi agar pengunjung existing melihat identitas baru.
+export const STORAGE_KEY = "texora-theme-v2";
 
-export const DEFAULT_THEME: ThemeId = "brass";
+export const DEFAULT_THEME: ThemeId = "xora";
 
 export const THEMES: ThemeDef[] = [
+  {
+    id: "xora",
+    label: "Xora Blue",
+    description: "Xora Blue, Soft Blue, Sage & Warm Gold",
+    swatch: "#4F6B8D",
+  },
   {
     id: "brass",
     label: "Antique Brass",

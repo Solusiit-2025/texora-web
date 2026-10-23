@@ -146,12 +146,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html
       lang={htmlLang}
       dir={htmlDir}
+      data-theme="xora"
       className={`dark ${fontSans.variable} ${fontDisplay.variable}`}
     >
       <head>
         {/* Apply stored accent theme before first paint (avoids flash). */}
         <Script id="texora-theme" strategy="beforeInteractive">
-          {`(function(){try{var t=localStorage.getItem('texora-theme');if(t==='emerald'||t==='sapphire'||t==='crimson'){document.documentElement.dataset.theme=t;}}catch(e){}})()`}
+          {`(function(){try{var t=localStorage.getItem('texora-theme-v2');var ok=['xora','brass','emerald','sapphire','crimson'];if(ok.indexOf(t)>=0){document.documentElement.dataset.theme=t;}}catch(e){}})()`}
         </Script>
       </head>
       <body className="bg-textile-pattern text-slate-100 antialiased min-h-screen flex flex-col font-sans">

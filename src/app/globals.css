@@ -66,6 +66,29 @@ html {
   --brand-950: 33 26 11;
   --accent-cyan: 217 185 92;
   --accent-violet: 154 123 79;
+  --accent-gold: 194 155 56;
+  --surface-base: 15 23 42;
+}
+
+/* Xora Blue — palet brand resmi (Xora Blue, Soft Blue, Sage, Warm Gold).
+   Skala brand diatur agar tombol dengan teks gelap tetap kontras:
+   brand-500 = biru terang untuk CTA, brand-600 = Xora Blue asli. */
+[data-theme="xora"] {
+  --brand-50: 247 246 242;   /* Soft Off-White #F7F6F2 */
+  --brand-100: 235 240 245;
+  --brand-200: 209 221 232;
+  --brand-300: 169 192 214;
+  --brand-400: 131 166 196;  /* Soft Blue #83A6C4 */
+  --brand-500: 107 143 178;
+  --brand-600: 79 107 141;   /* Xora Blue #4F6B8D */
+  --brand-700: 64 90 121;
+  --brand-800: 52 74 101;
+  --brand-900: 40 58 80;
+  --brand-950: 26 38 52;
+  --accent-cyan: 131 166 196;  /* Soft Blue */
+  --accent-violet: 130 157 135; /* Sage Green #829D87 */
+  --accent-gold: 197 175 124;  /* Warm Gold #C5AF7C */
+  --surface-base: 18 28 40;
 }
 
 /* Emerald — deep factory green identity */
@@ -83,6 +106,8 @@ html {
   --brand-950: 2 44 34;
   --accent-cyan: 94 234 212;
   --accent-violet: 4 120 87;
+  --accent-gold: 16 185 129;
+  --surface-base: 15 23 42;
 }
 
 /* Sapphire — industrial blue identity */
@@ -100,6 +125,8 @@ html {
   --brand-950: 23 37 84;
   --accent-cyan: 125 211 252;
   --accent-violet: 29 78 216;
+  --accent-gold: 59 130 246;
+  --surface-base: 15 23 42;
 }
 
 /* Crimson — rose red identity */
@@ -117,6 +144,8 @@ html {
   --brand-950: 32 6 13;
   --accent-cyan: 253 164 175;
   --accent-violet: 159 18 57;
+  --accent-gold: 244 63 94;
+  --surface-base: 15 23 42;
 }
 
 /* Smooth cross-fade when switching themes (low specificity: Tailwind
@@ -128,7 +157,7 @@ html {
 
 body {
   font-family: var(--font-sans);
-  background-color: #0f172a;
+  background-color: rgb(var(--surface-base));
   color: #f1f5f9;
   min-height: 100vh;
   overflow-x: hidden;
@@ -161,10 +190,10 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Woven textile texture — subtle warp/weft crosshatch instead of a tech grid */
 .bg-textile-pattern {
-  background-color: #0f172a;
+  background-color: rgb(var(--surface-base));
   background-image:
     radial-gradient(ellipse at 85% 0%, rgb(var(--brand-500) / 0.10) 0px, transparent 55%),
-    radial-gradient(ellipse at 0% 100%, rgba(217, 119, 6, 0.07) 0px, transparent 50%),
+    radial-gradient(ellipse at 0% 100%, rgb(var(--accent-violet) / 0.07) 0px, transparent 50%),
     repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.012) 0 2px, transparent 2px 6px),
     repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.012) 0 2px, transparent 2px 6px);
 }

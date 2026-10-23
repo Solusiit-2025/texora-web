@@ -63,7 +63,8 @@ const config: Config = {
           amber: "#D97706",      // warning (constant)
           emerald: "#4D7C5B",    // muted factory green for success states (constant)
         },
-        brass: "rgb(var(--brand-500) / <alpha-value>)",
+        brass: "rgb(var(--accent-gold) / <alpha-value>)",
+        gold: "rgb(var(--accent-gold) / <alpha-value>)",
         terracotta: "#D97706",
         alabaster: "#F9FAFB",
         ink: {
