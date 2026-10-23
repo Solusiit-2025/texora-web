@@ -89,7 +89,7 @@ export default async function RequestQuotePage({ searchParams }: PageProps) {
       availableChannel: {
         "@type": "ServiceChannel",
         serviceUrl: `${SITE_URL}/request-quote`,
-        servicePhone: "+62-878-8985-6066",
+        servicePhone: "+62-858-1064-6157",
       },
     },
   ];

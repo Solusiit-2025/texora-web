@@ -302,7 +302,7 @@ model WhatsAppConversation {
   customerId    String?
   customer      User?           @relation(fields: [customerId], references: [id])
   contactName   String
-  contactNumber String          // international format e.g. "+6287889856066"
+  contactNumber String          // international format e.g. "+6285810646157"
   companyName   String?
   unreadCount   Int             @default(0)
   createdAt     DateTime        @default(now())

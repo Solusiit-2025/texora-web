@@ -468,7 +468,7 @@ async function buildCatalogPdf(products: any[]): Promise<Buffer> {
       .fontSize(8)
       .fillColor("#FFFFFF")
       .text(
-        "texora.co.id   •   +62 878-8985-6066   •   admin@texoraprima.com",
+        "texora.co.id   •   +62 858-1064-6157   •   admin@texoraprima.com",
         M + 8,
         PAGE_H - 46
       );
@@ -821,7 +821,7 @@ async function buildCatalogPdf(products: any[]): Promise<Buffer> {
     });
 
   const contacts: Array<[string, string]> = [
-    ["WhatsApp", "+62 878-8985-6066"],
+    ["WhatsApp", "+62 858-1064-6157"],
     ["Email", "admin@texoraprima.com"],
     ["Website", "texora.co.id"],
     ["Jam kerja", "Senin – Sabtu, 08.00 – 17.00 WIB"],

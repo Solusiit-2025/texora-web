@@ -39,9 +39,9 @@ export const COMPANY = {
     country: "ID",
   },
   contact: {
-    phone: "+62-878-8985-6066",
+    phone: "+62-858-1064-6157",
     email: "sales@texora.co.id",
-    whatsapp: "6287889856066",
+    whatsapp: "6285810646157",
   },
   foundingDate: "2019",
   vatID: "01.234.567.8-901.000",

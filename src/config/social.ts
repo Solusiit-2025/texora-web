@@ -74,8 +74,8 @@ export const DEFAULT_SOCIAL_LINKS: SocialLink[] = [
   {
     id: "whatsapp",
     label: "WhatsApp Sales",
-    href: "https://wa.me/6287889856066?text=Halo%20XoraMateria%2C%20saya%20ingin%20bertanya%20tentang%20kain%20sublimasi.",
-    handle: "+62 878-8985-6066",
+    href: "https://wa.me/6285810646157?text=Halo%20XoraMateria%2C%20saya%20ingin%20bertanya%20tentang%20kain%20sublimasi.",
+    handle: "+62 858-1064-6157",
     isActive: true,
     order: 6,
   },

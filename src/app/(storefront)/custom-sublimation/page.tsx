@@ -83,7 +83,7 @@ export default async function CustomSublimationPage() {
     availableChannel: {
       "@type": "ServiceChannel",
       serviceUrl: "https://texora.co.id/contact",
-      servicePhone: "+62-878-8985-6066",
+      servicePhone: "+62-858-1064-6157",
     },
   };
 

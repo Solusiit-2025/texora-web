@@ -52,7 +52,7 @@ export async function GET() {
   lines.push("## Contact");
   lines.push("");
   lines.push("- Address: Jl. Walang Baru VI Blok B1/2, RT 04/RW 07, Tugu Utara, Tanjung Priok, Jakarta Utara, DKI Jakarta 14140, Indonesia");
-  lines.push("- Phone/WhatsApp: +62 878-8985-6066");
+  lines.push("- Phone/WhatsApp: +62 858-1064-6157");
   lines.push("- Email: admin@texoraprima.com");
   lines.push("- Hours: Senin–Sabtu 08:00–17:00 WIB (konsultasi katalog aktif 24 jam)");
   lines.push("");

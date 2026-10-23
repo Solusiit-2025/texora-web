@@ -32,7 +32,7 @@ const SOCIAL_META: Record<string, SocialChannelMeta> = {
   whatsapp: {
     id: "whatsapp",
     title: "WhatsApp Sales",
-    handle: "+62 878-8985-6066",
+    handle: "+62 858-1064-6157",
     badge: "Online",
     description: "Konsultasi Cepat & Penawaran Sampel",
     actionText: "Chat Sekarang",

@@ -146,7 +146,7 @@ export default function ContactClient() {
         inquiryCode || "INQ-WEB"
       }] untuk bahan ${formData.fabricInterest} estimasi ${formData.estimatedMeters} meter.`
     );
-    return `https://wa.me/6287889856066?text=${text}`;
+    return `https://wa.me/6285810646157?text=${text}`;
   };
 
   const selectedFabricObj =
@@ -324,7 +324,7 @@ export default function ContactClient() {
                 {t("contact.wa.quickTopics", "Pilihan Konsultasi Cepat:")}
               </span>
               <a
-                href="https://wa.me/6287889856066?text=Halo%20Xora%20Materia,%20saya%20ingin%20cek%20stok%20roll%20kain%20dan%20penawaran%20harga%20partai%20besar."
+                href="https://wa.me/6285810646157?text=Halo%20Xora%20Materia,%20saya%20ingin%20cek%20stok%20roll%20kain%20dan%20penawaran%20harga%20partai%20besar."
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-900/80 hover:bg-emerald-950/50 border border-slate-800 hover:border-emerald-500/40 text-slate-300 hover:text-white text-xs transition-all group"
@@ -334,7 +334,7 @@ export default function ContactClient() {
               </a>
 
               <a
-                href="https://wa.me/6287889856066?text=Halo%20Xora%20Materia,%20saya%20ingin%20meminta%20Buku%20Sampel%20Swatch%20Kain%20Fisik%20Gratis."
+                href="https://wa.me/6285810646157?text=Halo%20Xora%20Materia,%20saya%20ingin%20meminta%20Buku%20Sampel%20Swatch%20Kain%20Fisik%20Gratis."
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-900/80 hover:bg-emerald-950/50 border border-slate-800 hover:border-emerald-500/40 text-slate-300 hover:text-white text-xs transition-all group"
@@ -344,7 +344,7 @@ export default function ContactClient() {
               </a>
 
               <a
-                href="https://wa.me/6287889856066?text=Halo%20Xora%20Materia,%20saya%20ingin%20konsultasi%20profil%20warna%20ICC%20dan%20proofing%20cetak%20sublimasi."
+                href="https://wa.me/6285810646157?text=Halo%20Xora%20Materia,%20saya%20ingin%20konsultasi%20profil%20warna%20ICC%20dan%20proofing%20cetak%20sublimasi."
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-900/80 hover:bg-emerald-950/50 border border-slate-800 hover:border-emerald-500/40 text-slate-300 hover:text-white text-xs transition-all group"
@@ -355,13 +355,13 @@ export default function ContactClient() {
             </div>
 
             <a
-              href="https://wa.me/6287889856066?text=Halo%20Xora%20Materia,%20saya%20ingin%20konsultasi%20pengadaan%20kain%20sublimasi%20industri."
+              href="https://wa.me/6285810646157?text=Halo%20Xora%20Materia,%20saya%20ingin%20konsultasi%20pengadaan%20kain%20sublimasi%20industri."
               target="_blank"
               rel="noopener noreferrer"
               className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 transition-all hover:-translate-y-0.5"
             >
               <Phone className="w-4 h-4" />
-              <span>{t("contact.wa.btn", "Mulai Chat WhatsApp: +62 878-8985-6066")}</span>
+              <span>{t("contact.wa.btn", "Mulai Chat WhatsApp: +62 858-1064-6157")}</span>
               <ArrowRight className="w-4 h-4 ml-1" />
             </a>
           </div>

@@ -46,7 +46,7 @@ export default function PortalSettingsPage() {
   const [waSaveMsg, setWaSaveMsg] = useState<{ ok: boolean; msg: string } | null>(null);
   const [waTesting, setWaTesting] = useState(false);
   const [waTestResult, setWaTestResult] = useState<{ ok: boolean; msg: string } | null>(null);
-  const [waTestTo, setWaTestTo] = useState("6287889856066");
+  const [waTestTo, setWaTestTo] = useState("6285810646157");
   const [waTestMessage, setWaTestMessage] = useState("Halo dari XoraMateria — ini pesan uji coba WhatsApp gateway.");
   const [copiedWebhook, setCopiedWebhook] = useState(false);
   const [waDeviceStatus, setWaDeviceStatus] = useState<{

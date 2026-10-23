@@ -65,7 +65,7 @@ export async function GET() {
   lines.push("- Uji susut heat press: < 1.5% pada suhu 210°C");
   lines.push("- Tingkat penetrasi tinta: sisi depan 100%, sisi belakang 75–85%");
   lines.push("- Lokasi: Jl. Walang Baru VI Blok B1/2, RT 04/RW 07, Tugu Utara, Tanjung Priok, Jakarta Utara 14140");
-  lines.push("- Telepon/WhatsApp: +62 878-8985-6066");
+  lines.push("- Telepon/WhatsApp: +62 858-1064-6157");
   lines.push("- Email: admin@texoraprima.com");
   lines.push("- Jam operasional: Senin–Sabtu 08:00–17:00 WIB");
   lines.push("");

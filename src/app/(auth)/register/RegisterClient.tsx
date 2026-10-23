@@ -340,7 +340,7 @@ function RegisterForm() {
 
       {/* Footer info */}
       <div className="max-w-7xl mx-auto w-full text-center text-[11px] text-slate-500">
-        © {new Date().getFullYear()} XoraMateria. CS & WhatsApp: +62 878-8985-6066 / admin@texoraprima.com
+        © {new Date().getFullYear()} XoraMateria. CS & WhatsApp: +62 858-1064-6157 / admin@texoraprima.com
       </div>
     </div>
   );

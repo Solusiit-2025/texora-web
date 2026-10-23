@@ -124,7 +124,7 @@ const SECTIONS: LegalSection[] = [
     heading: "Perubahan ketentuan dan kontak",
     paragraphs: [
       "Kami dapat memperbarui ketentuan ini dari waktu ke waktu. Versi terbaru selalu tersedia di halaman ini.",
-      "Pertanyaan: admin@texoraprima.com • WhatsApp +62 878-8985-6066 • Jl. Walang Baru VI Blok B1/2, Tugu Utara, Tanjung Priok, Jakarta Utara 14140.",
+      "Pertanyaan: admin@texoraprima.com • WhatsApp +62 858-1064-6157 • Jl. Walang Baru VI Blok B1/2, Tugu Utara, Tanjung Priok, Jakarta Utara 14140.",
     ],
   },
 ];

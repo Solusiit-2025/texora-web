@@ -111,7 +111,7 @@ const DEFAULT_SOCIAL_FORM: SocialLinkItem[] = [
   { id: "facebook", label: "Facebook Xora Materia", href: "https://www.facebook.com/profile.php?id=61595062856326", handle: "Xora Materia", isActive: true, order: 3 },
   { id: "linkedin", label: "LinkedIn Xora Materia", href: "https://www.linkedin.com/in/xora-materia-9b7517440", handle: "xora-materia", isActive: true, order: 4 },
   { id: "youtube", label: "YouTube XoraMateria", href: "https://www.youtube.com/@xoramateriavisiprima", handle: "XoraMateria Official", isActive: true, order: 5 },
-  { id: "whatsapp", label: "WhatsApp Sales", href: "https://wa.me/6287889856066?text=Halo%20XoraMateria%2C%20saya%20ingin%20bertanya%20tentang%20kain%20sublimasi.", handle: "+62 878-8985-6066", isActive: true, order: 6 },
+  { id: "whatsapp", label: "WhatsApp Sales", href: "https://wa.me/6285810646157?text=Halo%20XoraMateria%2C%20saya%20ingin%20bertanya%20tentang%20kain%20sublimasi.", handle: "+62 858-1064-6157", isActive: true, order: 6 },
 ];
 
 /**
@@ -247,7 +247,7 @@ function ContentManagementInner() {
     aboutCaption: "“Kalender rotary 210°C mengunci tinta dispersi ke dalam serat benang, menghasilkan warna yang menyatu — bukan menempel di permukaan kain.”",
     contactAddress: "Tugu Utara, Tanjung Priok, Jakarta Utara",
     contactEmail: "sales@texora.co.id",
-    contactPhone: "+62 878-8985-6066",
+    contactPhone: "+62 858-1064-6157",
     footerCopyright: "© 2026 XoraMateria. All rights reserved.",
   });
 

@@ -210,13 +210,13 @@ export async function Footer() {
             </h2>
             <div className="space-y-3 text-xs text-slate-400">
               <a
-                href="https://wa.me/6287889856066"
+                href="https://wa.me/6285810646157"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 hover:text-emerald-400 transition-colors"
               >
                 <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span className="font-semibold text-slate-300">+62 878-8985-6066 (WhatsApp)</span>
+                <span className="font-semibold text-slate-300">+62 858-1064-6157 (WhatsApp)</span>
               </a>
               <a
                 href="mailto:admin@texoraprima.com"

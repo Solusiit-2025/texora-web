@@ -114,7 +114,7 @@ const SECTIONS: LegalSection[] = [
     heading: "Kontak pengendali data",
     paragraphs: [
       "XoraMateria (PT. Texora Visi Prima) — Jl. Walang Baru VI Blok B1/2, RT 04/RW 07, Tugu Utara, Tanjung Priok, Jakarta Utara 14140.",
-      "Email: admin@texoraprima.com • WhatsApp: +62 878-8985-6066 • Jam kerja: Senin–Sabtu, 08.00–17.00 WIB.",
+      "Email: admin@texoraprima.com • WhatsApp: +62 858-1064-6157 • Jam kerja: Senin–Sabtu, 08.00–17.00 WIB.",
     ],
   },
 ];
