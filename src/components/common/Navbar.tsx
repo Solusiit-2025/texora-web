@@ -475,12 +475,19 @@ export function Navbar({ initialDisabledPaths = [] }: NavbarProps) {
 
           </div>
 
-          {/* Mobile menu button */}
-          <div className="flex md:hidden items-center gap-1.5 shrink-0">
-            <LanguageSwitcher compact />
-            <ThemeDropdown compact />
+          {/* Menu tombol: tampil sampai < lg (mobile + tablet).
+              Di tablet (md–lg) toolbar kanan tetap tampil, jadi kontrol
+              bahasa/tema versi compact disembunyikan agar tidak dobel. */}
+          <div className="flex lg:hidden items-center gap-1.5 shrink-0">
+            <div className="flex md:hidden items-center gap-1.5">
+              <LanguageSwitcher compact />
+              <ThemeDropdown compact />
+            </div>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? "Tutup menu navigasi" : "Buka menu navigasi"}
+              aria-expanded={mobileMenuOpen}
+              aria-controls="storefront-mobile-menu"
               className="p-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white transition-colors"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -494,11 +501,12 @@ export function Navbar({ initialDisabledPaths = [] }: NavbarProps) {
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
+            id="storefront-mobile-menu"
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            className="md:hidden overflow-hidden bg-slate-900/98 border-b border-slate-800 px-4 pt-3 pb-6 space-y-2 backdrop-blur-2xl"
+            className="lg:hidden overflow-hidden bg-slate-900/98 border-b border-slate-800 px-4 pt-3 pb-6 space-y-2 backdrop-blur-2xl"
           >
             {visibleNavLinks.map((item, idx) => {
               const isActive = item.href === "/" 
