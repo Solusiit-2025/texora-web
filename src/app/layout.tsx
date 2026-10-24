@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
-import { Plus_Jakarta_Sans, Urbanist } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { FloatingSocial } from "@/components/common/FloatingSocial";
@@ -28,26 +28,29 @@ export const viewport: Viewport = {
 };
 
 /**
- * Font di-self-host oleh next/font:
- *  - tidak ada request render-blocking ke fonts.googleapis.com,
- *  - file font otomatis di-preload & di-cache immutable,
+ * Font di-self-host (file .woff2 variable ada di ./fonts):
+ *  - build TIDAK lagi fetch ke fonts.googleapis.com (dulu pernah gagal di
+ *    CI: "An error occurred in next/font - Cannot read properties of null"),
+ *  - 4 file variable menutup semua weight + italic (total ~112 KB),
  *  - `display: swap` mencegah teks tak terlihat (FOIT).
  */
-const fontSans = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  display: "swap",
+const fontSans = localFont({
+  src: [
+    { path: "./fonts/PlusJakartaSans-Normal.woff2", weight: "300 800", style: "normal" },
+    { path: "./fonts/PlusJakartaSans-Italic.woff2", weight: "300 800", style: "italic" },
+  ],
   variable: "--font-plus-jakarta",
-  weight: ["300", "400", "500", "600", "700", "800"],
-  style: ["normal", "italic"],
+  display: "swap",
   fallback: ["Inter", "system-ui", "-apple-system", "sans-serif"],
 });
 
-const fontDisplay = Urbanist({
-  subsets: ["latin"],
-  display: "swap",
+const fontDisplay = localFont({
+  src: [
+    { path: "./fonts/Urbanist-Normal.woff2", weight: "400 900", style: "normal" },
+    { path: "./fonts/Urbanist-Italic.woff2", weight: "400 900", style: "italic" },
+  ],
   variable: "--font-urbanist",
-  weight: ["400", "500", "600", "700", "800", "900"],
-  style: ["normal", "italic"],
+  display: "swap",
   fallback: ["system-ui", "-apple-system", "sans-serif"],
 });
 
