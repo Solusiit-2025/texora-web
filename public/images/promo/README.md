@@ -21,8 +21,10 @@ rasio portrait 9:16, ukuran < 500 KB agar cepat).
 ## Cara pakai
 
 1. Salin file ke folder ini.
-2. Dev: otomatis terbaca (tidak perlu restart).
-3. Produksi: commit + push, lalu deploy seperti biasa.
+2. Daftarkan path-nya di `src/config/promo.ts` (urutan array = urutan slide).
+3. Jika mengganti file dengan nama sama, naikkan `PROMO_POSTER_VERSION` di
+   file config tersebut (cache-busting).
+4. Dev: otomatis terbaca. Produksi: commit + push, lalu deploy seperti biasa.
 
 ## Catatan
 

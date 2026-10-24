@@ -3,46 +3,18 @@ import { Footer } from "@/components/common/Footer";
 import { NavProgress } from "@/components/common/NavProgress";
 import { WelcomePopup } from "@/components/storefront/WelcomePopup";
 import { getSeoSettings } from "@/lib/seo";
-import fs from "node:fs";
-import path from "node:path";
+import { PROMO_POSTERS, PROMO_POSTER_VERSION } from "@/config/promo";
 
 /**
- * Cari semua poster popup di /public/images/promo (maks 4 file, urut nama).
- * Prioritas file yang namanya mengandung "grand opening" lalu "price list".
- * Bila folder kosong, popup memakai versi teks (fallback) tanpa request 404.
+ * Daftar poster popup diambil dari konfigurasi statis (src/config/promo.ts),
+ * bukan scan filesystem — agar tetap bekerja di serverless (Vercel/Netlify)
+ * yang tidak menyertakan folder `public` di runtime function.
  */
-function resolvePromoPosters(): string[] {
-  const dir = path.join(process.cwd(), "public", "images", "promo");
-  try {
-    const files = fs
-      .readdirSync(dir)
-      .filter((name) => /\.(jpe?g|png|webp)$/i.test(name));
-
-    if (files.length === 0) return [];
-
-    const rank = (name: string) => {
-      if (/grand[-_ ]?opening/i.test(name)) return 0;
-      if (/price[-_ ]?list/i.test(name)) return 1;
-      return 2;
-    };
-
-    return files
-      .sort((a, b) => rank(a) - rank(b) || a.localeCompare(b))
-      .slice(0, 4)
-      .map((name) => {
-        // Cache-busting: kalau file diganti dengan nama sama, mtime berubah
-        // sehingga next/image mengambil versi baru (bukan cache lama).
-        let v = "";
-        try {
-          v = `?v=${Math.floor(fs.statSync(path.join(dir, name)).mtimeMs).toString(36)}`;
-        } catch {
-          /* stat gagal — pakai URL tanpa versi */
-        }
-        return `/images/promo/${encodeURIComponent(name)}${v}`;
-      });
-  } catch {
-    return [];
-  }
+function resolvePromoPosters(): Array<{ src: string; alt: string }> {
+  return PROMO_POSTERS.map((poster) => ({
+    ...poster,
+    src: `${poster.src}?v=${PROMO_POSTER_VERSION}`,
+  }));
 }
 
 /**
@@ -77,7 +49,7 @@ export default async function StorefrontLayout({
       <Navbar initialDisabledPaths={disabledPaths} />
       <main className="flex-1">{children}</main>
       <Footer />
-      <WelcomePopup posterSrcs={resolvePromoPosters()} />
+      <WelcomePopup posters={resolvePromoPosters()} />
     </div>
   );
 }

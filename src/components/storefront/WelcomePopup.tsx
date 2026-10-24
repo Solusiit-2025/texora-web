@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * Popup sambutan + pengumuman (storefront).
@@ -9,7 +9,7 @@
  *  - Hanya dirender di layout storefront (tidak muncul di portal/customer/auth).
  *  - Bisa ditutup via tombol X, tombol Tutup, klik backdrop, atau Escape.
  *  - Mendukung beberapa poster (maks 4) sebagai carousel: panah, dots,
- *    keyboard (←/→), dan swipe. Urutan file diatur di layout storefront.
+ *    keyboard (â†/â†’), dan swipe. Urutan file diatur di layout storefront.
  *  - Bila belum ada poster, tampil versi teks yang tetap informatif.
  *
  * Desain: kartu ringkas (bukan full-page), animasi spring halus, dan
@@ -41,12 +41,16 @@ const SHOW_DELAY_MS = 1500;
  */
 const TRIAL_ALWAYS_SHOW = true;
 
-export function WelcomePopup({ posterSrcs = [] }: { posterSrcs?: string[] }) {
+export function WelcomePopup({
+  posters: posterList = [],
+}: {
+  posters?: Array<{ src: string; alt?: string }>;
+}) {
   const { t } = useI18n();
   const localePath = useLocalePath();
   const reduceMotion = useReducedMotion();
 
-  const posters = posterSrcs.filter(Boolean);
+  const posters = posterList.filter((p) => Boolean(p?.src));
   const count = posters.length;
 
   const [open, setOpen] = useState(false);
@@ -81,7 +85,7 @@ export function WelcomePopup({ posterSrcs = [] }: { posterSrcs?: string[] }) {
     try {
       lastShown = Number(window.localStorage.getItem(STORAGE_KEY) || 0);
     } catch {
-      /* localStorage bisa diblokir (mode privat) — tetap tampilkan. */
+      /* localStorage bisa diblokir (mode privat) â€” tetap tampilkan. */
     }
     if (
       !TRIAL_ALWAYS_SHOW &&
@@ -178,7 +182,7 @@ export function WelcomePopup({ posterSrcs = [] }: { posterSrcs?: string[] }) {
     }),
   };
 
-  const currentSrc = posters[index] ?? null;
+  const current = posters[index] ?? null;
 
   return (
     <AnimatePresence>
@@ -247,7 +251,7 @@ export function WelcomePopup({ posterSrcs = [] }: { posterSrcs?: string[] }) {
                 </motion.button>
 
                 <div className="min-h-0 overflow-y-auto overscroll-contain">
-                  {!posterFailed && currentSrc ? (
+                  {!posterFailed && current ? (
                     <div
                       className="relative select-none"
                       role={count > 1 ? "group" : undefined}
@@ -270,7 +274,7 @@ export function WelcomePopup({ posterSrcs = [] }: { posterSrcs?: string[] }) {
                           custom={direction}
                         >
                           <motion.div
-                            key={currentSrc}
+                            key={current.src}
                             custom={direction}
                             variants={reduceMotion ? undefined : slideVariants}
                             initial="enter"
@@ -282,15 +286,20 @@ export function WelcomePopup({ posterSrcs = [] }: { posterSrcs?: string[] }) {
                             }}
                           >
                             <Image
-                              src={currentSrc}
+                              src={current.src}
                               alt={
-                                count > 1
+                                current.alt ||
+                                (count > 1
                                   ? `Poster pengumuman XoraMateria ${index + 1} dari ${count}`
-                                  : "Grand Opening Showroom Tour XoraMateria"
+                                  : "Grand Opening Showroom Tour XoraMateria")
                               }
                               width={900}
                               height={1600}
                               priority
+                              // Poster promo: sajikan file asli (sudah dioptimasi
+                              // 900px) agar tidak bergantung pada image optimizer
+                              // serverless yang bisa gagal di sebagian hosting.
+                              unoptimized
                               sizes="(max-width: 480px) 92vw, 380px"
                               onError={() => setPosterFailed(true)}
                               draggable={false}
@@ -347,9 +356,9 @@ export function WelcomePopup({ posterSrcs = [] }: { posterSrcs?: string[] }) {
 
                       <ul className="mt-4 space-y-2 text-xs text-slate-300">
                         {[
-                          t("popup.point1", "Kain polosan warna — MoQ 3 roll, FREE 2 yard"),
-                          t("popup.point2", "Kain BW + jasa print — MoQ 10 roll, 1.500/yards"),
-                          t("popup.point3", "Custom jasa print — MoQ 1.500 yard, 2.000/yards"),
+                          t("popup.point1", "Kain polosan warna â€” MoQ 3 roll, FREE 2 yard"),
+                          t("popup.point2", "Kain BW + jasa print â€” MoQ 10 roll, 1.500/yards"),
+                          t("popup.point3", "Custom jasa print â€” MoQ 1.500 yard, 2.000/yards"),
                         ].map((item) => (
                           <li key={item} className="flex gap-2">
                             <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-400" />
@@ -361,7 +370,7 @@ export function WelcomePopup({ posterSrcs = [] }: { posterSrcs?: string[] }) {
                       <div className="mt-4 space-y-1.5 rounded-xl border border-slate-800 bg-slate-900/70 p-3 text-[11px] text-slate-400">
                         <p className="flex items-center gap-2">
                           <CalendarClock className="h-3.5 w-3.5 text-brand-400" />
-                          Mon – Fri, 9 AM – 5 PM
+                          Mon â€“ Fri, 9 AM â€“ 5 PM
                         </p>
                         <p className="flex items-start gap-2">
                           <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-400" />
@@ -400,9 +409,9 @@ export function WelcomePopup({ posterSrcs = [] }: { posterSrcs?: string[] }) {
 
                   {count > 1 ? (
                     <div className="flex items-center gap-1.5">
-                      {posters.map((src, i) => (
+                      {posters.map((poster, i) => (
                         <button
-                          key={src}
+                          key={poster.src}
                           type="button"
                           onClick={() => {
                             setDirection(i > index ? 1 : -1);
