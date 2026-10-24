@@ -1,7 +1,7 @@
 "use client";
 
 import { Facebook, Instagram, Linkedin, Youtube, Share2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type JSX } from "react";
 import { cachedClientFetch } from "@/lib/client-api";
 import {
   DEFAULT_SOCIAL_LINKS,

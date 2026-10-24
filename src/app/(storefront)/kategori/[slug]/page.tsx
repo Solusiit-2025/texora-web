@@ -23,7 +23,7 @@ import {
 import { formatRupiah, formatNumber } from "@/lib/utils";
 
 interface PageProps {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 // Dinamis: konten kategori ikut diterjemahkan per URL berprefik bahasa
@@ -31,7 +31,7 @@ interface PageProps {
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const category = getCategorySeo(params.slug);
+  const category = getCategorySeo((await params).slug);
 
   if (!category) {
     return { title: "Kategori Tidak Ditemukan | XoraMateria", robots: { index: false } };
@@ -50,7 +50,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function CategoryPage({ params }: PageProps) {
-  const category = getCategorySeo(params.slug);
+  const category = getCategorySeo((await params).slug);
   if (!category) notFound();
 
   // Tahap 2: localize konten kategori utk URL berprefik bahasa.

@@ -37,12 +37,12 @@ import {
 export const dynamic = "force-dynamic";
 
 interface PageProps {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const locale = await getRequestLocale();
-  const article = await getStorefrontArticleBySlug(params.slug, locale);
+  const article = await getStorefrontArticleBySlug((await params).slug, locale);
 
   if (!article) {
     return { title: "Artikel Tidak Ditemukan | XoraMateria", robots: { index: false } };
@@ -71,7 +71,7 @@ export default async function ArticleDetailPage({ params }: PageProps) {
     translate(locale as Locale, key, fallback);
   const lp = (href: string) => (locale === "id" ? href : `/${locale}${href}`);
 
-  const article = await getStorefrontArticleBySlug(params.slug, locale);
+  const article = await getStorefrontArticleBySlug((await params).slug, locale);
   if (!article) notFound();
 
   const [relatedArticles, allProducts] = await Promise.all([

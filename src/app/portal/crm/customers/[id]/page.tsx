@@ -32,9 +32,9 @@ const TYPE_ICONS: Record<string, any> = {
   SAMPLE_FABRIC_SENT: Package,
 };
 
-export default function CustomerDetailPage({ params }: { params: { id: string } | Promise<{ id: string }> }) {
+export default function CustomerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
-  const id = (params as any)?.id || (typeof (params as any)?.then === "function" ? use(params as Promise<{ id: string }>).id : "");
+  const { id } = use(params);
 
   const initialCustomer = MOCK_CUSTOMERS.find(c => c.id === id) || MOCK_CUSTOMERS[0];
   const [customer, setCustomer] = useState(initialCustomer);

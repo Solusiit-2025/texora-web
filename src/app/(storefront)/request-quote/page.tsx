@@ -19,7 +19,7 @@ import {
 export const dynamic = "force-dynamic";
 
 interface PageProps {
-  searchParams: { product?: string; source?: string };
+  searchParams: Promise<{ product?: string; source?: string }>;
 }
 
 export async function generateMetadata({
@@ -47,8 +47,9 @@ export async function generateMetadata({
 export default async function RequestQuotePage({ searchParams }: PageProps) {
   const locale = await getRequestLocale();
   const copy = QUOTE_COPY[locale] ?? QUOTE_COPY.id;
-  const source = (searchParams?.source || "website").slice(0, 40);
-  const presetProduct = searchParams?.product;
+  const params = await searchParams;
+  const source = (params?.source || "website").slice(0, 40);
+  const presetProduct = params?.product;
 
   const products = await getStorefrontProducts();
   const productOptions = products.map((p) => ({

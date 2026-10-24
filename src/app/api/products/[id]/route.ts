@@ -35,12 +35,12 @@ function formatFabric(p: any) {
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const fabric = await prisma.fabricProduct.findFirst({
       where: {
-        OR: [{ id: params.id }, { slug: params.id }],
+        OR: [{ id: (await params).id }, { slug: (await params).id }],
       },
       include: {
         variants: true,
@@ -69,13 +69,13 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const body = await request.json();
 
     const existing = await prisma.fabricProduct.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
       include: { variants: true, priceTiers: true },
     });
 
@@ -88,7 +88,7 @@ export async function PUT(
 
     // Update main product properties
     const updated = await prisma.fabricProduct.update({
-      where: { id: params.id },
+      where: { id: (await params).id },
       data: {
         name: body.name ?? existing.name,
         description: body.description ?? existing.description,
@@ -116,7 +116,7 @@ export async function PUT(
       for (const v of body.variants) {
         if (v.id) {
           await prisma.fabricVariant.updateMany({
-            where: { id: v.id, productId: params.id },
+            where: { id: v.id, productId: (await params).id },
             data: {
               gsm: Number(v.gsm),
               colorName: v.colorName,
@@ -132,7 +132,7 @@ export async function PUT(
       for (const t of body.priceTiers) {
         if (t.id) {
           await prisma.priceTier.updateMany({
-            where: { id: t.id, productId: params.id },
+            where: { id: t.id, productId: (await params).id },
             data: {
               minMeters: Number(t.minMeters),
               maxMeters: t.maxMeters ? Number(t.maxMeters) : null,
@@ -144,7 +144,7 @@ export async function PUT(
     }
 
     const finalProduct = await prisma.fabricProduct.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
       include: {
         variants: true,
         priceTiers: { orderBy: { minMeters: "asc" } },
@@ -167,11 +167,11 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const existing = await prisma.fabricProduct.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
     });
 
     if (!existing) {
@@ -182,7 +182,7 @@ export async function DELETE(
     }
 
     await prisma.fabricProduct.delete({
-      where: { id: params.id },
+      where: { id: (await params).id },
     });
 
     return NextResponse.json({

@@ -70,14 +70,12 @@ const nextConfig = {
   // 1 header di response).
   poweredByHeader: false,
   experimental: {
-    // Mengaktifkan src/instrumentation.ts untuk scheduler backup database otomatis
-    instrumentationHook: true,
-    // pdfkit membaca file metrik font standar (data/Helvetica.afm) relatif
-    // terhadap __dirname paket. Kalau di-bundle Next.js, path itu rusak
-    // (ENOENT .next/server/vendor-chunks/data/Helvetica.afm).
-    // Externalkan pdfkit agar tetap resolve dari node_modules.
-    serverComponentsExternalPackages: ["pdfkit", "sharp"],
+    // Catatan Next 15: `instrumentationHook` sudah stabil & otomatis aktif,
+    // flag-nya dihapus dari config.
   },
+  // Next 15: opsi ini pindah dari `experimental.serverComponentsExternalPackages`
+  // ke top-level `serverExternalPackages`.
+  serverExternalPackages: ["pdfkit", "sharp"],
   images: {
     // `remotePatterns` menggantikan `domains` (deprecated di Next 14) dan
     // memberi kontrol lebih ketat soal host yang boleh di-optimize.
@@ -88,6 +86,9 @@ const nextConfig = {
       { protocol: "http", hostname: "localhost" },
     ],
     formats: ["image/avif", "image/webp"],
+    // Next 16 mewajibkan daftar quality yang dipakai komponen <Image>.
+    // Nilai 80 (hero) & 90 (galeri/artikel) dipakai di kode.
+    qualities: [75, 80, 90],
     deviceSizes: [360, 480, 640, 768, 1024, 1280, 1536, 1920],
     imageSizes: [64, 96, 128, 256, 384],
     minimumCacheTTL: 60 * 60 * 24 * 30, // 30 hari
