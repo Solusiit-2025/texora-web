@@ -37,6 +37,7 @@ export function ImageCarousel({
   sizes = "(max-width: 768px) 100vw, 33vw",
   showArrows = true,
   showThumbs = false,
+  priority = false,
   className = "",
 }: {
   images: string[];
@@ -49,6 +50,8 @@ export function ImageCarousel({
   sizes?: string;
   showArrows?: boolean;
   showThumbs?: boolean;
+  /** True bila carousel berada di viewport pertama (LCP) — preload gambar utama. */
+  priority?: boolean;
   className?: string;
 }) {
   const multi = images.length > 1;
@@ -213,8 +216,8 @@ export function ImageCarousel({
                 src={src}
                 alt={i === virtualIndex ? alt : ""}
                 fill
-                priority={i === 1}
-                loading={i <= 2 ? "eager" : "lazy"}
+                priority={priority && i === (multi ? 1 : 0)}
+                loading={priority ? "eager" : "lazy"}
                 quality={90}
                 sizes={sizes}
                 className="object-cover transition-transform duration-700 ease-out group-hover/carousel:scale-[1.03]"
@@ -245,8 +248,8 @@ export function ImageCarousel({
                   src={src}
                   alt={isActive ? alt : ""}
                   fill
-                  priority={i === 0}
-                  loading={i < 2 ? "eager" : "lazy"}
+                  priority={priority && i === 0}
+                  loading={priority ? "eager" : "lazy"}
                   quality={90}
                   sizes={sizes}
                   className={`object-cover transition-transform duration-[3500ms] ease-out ${

@@ -196,6 +196,7 @@ export default function ProductDetailClient({
                 auto={false}
                 slideMs={700}
                 sizes="(max-width: 1024px) 100vw, 50vw"
+                priority
                 className="rounded-2xl border border-slate-800 shadow-2xl"
               />
             ) : (

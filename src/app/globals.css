@@ -1,4 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Urbanist:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap');
+/* Font di-self-host lewat next/font/local (lihat src/app/layout.tsx).
+   JANGAN tambahkan @import Google Fonts di sini: diblokir CSP dan bikin
+   error hydration "Loading the stylesheet violates ... style-src". */
 
 @tailwind base;
 @tailwind components;
@@ -49,7 +51,9 @@ html {
   --font-inter: var(--font-sans);
   --font-outfit: var(--font-display);
   --font-jakarta: var(--font-sans);
-  --font-urbanist: var(--font-display);
+  /* Catatan: JANGAN mendefinisikan `--font-urbanist: var(--font-display)` —
+     itu circular dengan --font-display di atas. Nilai --font-urbanist
+     disediakan oleh next/font/local pada <html>. */
 
   /* Default theme: Antique Brass (PRD V3 #C29B38). Values are bare
      RGB triplets so Tailwind opacity modifiers keep working. */

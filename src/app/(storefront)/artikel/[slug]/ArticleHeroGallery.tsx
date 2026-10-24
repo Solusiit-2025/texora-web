@@ -25,6 +25,7 @@ export default function ArticleHeroGallery({
       slideMs={1100}
       sizes="(max-width: 768px) 100vw, (max-width: 1280px) 100vw, 1280px"
       showThumbs
+      priority
       className="rounded-2xl sm:rounded-3xl border border-slate-800 shadow-2xl"
     />
   );

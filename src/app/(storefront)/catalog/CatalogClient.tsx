@@ -275,7 +275,7 @@ export default function CatalogClient({ initialFabrics, hidePrices = false }: Ca
         </div>
       ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredFabrics.map((fabric) => {
+        {filteredFabrics.map((fabric, fabricIndex) => {
           const defaultVariant = fabric.variants[0];
           // Kalau harga disembunyikan (priceTiers kosong), nilai ini tak dipakai render.
           const lowestTierPrice =
@@ -298,6 +298,7 @@ export default function CatalogClient({ initialFabrics, hidePrices = false }: Ca
                       aspect="16/10"
                       auto={false}
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      priority={fabricIndex === 0}
                       className="rounded-xl"
                     />
                   ) : (
