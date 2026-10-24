@@ -35,6 +35,12 @@ const STORAGE_KEY = "texora-welcome-popup-v1";
 const TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 hari
 const SHOW_DELAY_MS = 1500;
 
+/**
+ * MODE TRIAL: true = popup tampil SETIAP kali halaman dimuat/di-refresh.
+ * Set ke `false` untuk kembali ke aturan normal (maks. sekali per 7 hari).
+ */
+const TRIAL_ALWAYS_SHOW = true;
+
 export function WelcomePopup({ posterSrcs = [] }: { posterSrcs?: string[] }) {
   const { t } = useI18n();
   const localePath = useLocalePath();
@@ -77,7 +83,12 @@ export function WelcomePopup({ posterSrcs = [] }: { posterSrcs?: string[] }) {
     } catch {
       /* localStorage bisa diblokir (mode privat) — tetap tampilkan. */
     }
-    if (!forceShow && Number.isFinite(lastShown) && Date.now() - lastShown < TTL_MS) {
+    if (
+      !TRIAL_ALWAYS_SHOW &&
+      !forceShow &&
+      Number.isFinite(lastShown) &&
+      Date.now() - lastShown < TTL_MS
+    ) {
       return;
     }
 
