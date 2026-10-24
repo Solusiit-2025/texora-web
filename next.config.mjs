@@ -66,6 +66,8 @@ const contentSecurityPolicy = [
 const nextConfig = {
   reactStrictMode: true,
   distDir: resolveDistDir(),
+  // Next 16 membuat AGENTS.md otomatis saat dev; matikan agar repo bersih.
+  agentRules: false,
   // Jangan bocorkan versi framework di header X-Powered-By (keamanan, buang
   // 1 header di response).
   poweredByHeader: false,
@@ -93,26 +95,9 @@ const nextConfig = {
     imageSizes: [64, 96, 128, 256, 384],
     minimumCacheTTL: 60 * 60 * 24 * 30, // 30 hari
   },
-  // Abaikan folder backup dari file watcher Next.js (dev).
-  // Backup otomatis menulis file JSON ke ./backups setiap 24 jam; tanpa ini
-  // dev server melakukan hot-reload dan state job terjemahan (in-memory)
-  // ikut ter-reset => panel admin terlihat "idle" padahal job berjalan.
-  webpack: (config) => {
-    // `ignored` bisa berupa string ATAU array -> normalisasi dulu.
-    const current = config.watchOptions?.ignored;
-    const list = (Array.isArray(current) ? current : current ? [current] : [])
-      .filter((entry) => typeof entry === "string" && entry.trim().length > 0);
-    config.watchOptions = {
-      ...config.watchOptions,
-      ignored: [
-        ...list,
-        "**/backups/**",
-        "**/dev-server.log",
-        "**/build-full.log",
-      ],
-    };
-    return config;
-  },
+  // Next 16: Turbopack default. Konfigurasi `webpack` lama (watch-ignore
+  // folder backups) dihapus — Turbopack hanya mem-watch modul yang diimpor,
+  // jadi penulisan file backup di ./backups tidak memicu rebuild.
   // Header keamanan + SEO-friendly
   async headers() {
     return [
