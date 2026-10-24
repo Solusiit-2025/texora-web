@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { formatRupiah, formatNumber } from "@/lib/utils";
@@ -16,6 +16,7 @@ import {
   SlidersHorizontal, 
   Layers, 
   ChevronRight, 
+  ChevronDown,
   Check, 
   Sparkles,
   Palette,
@@ -23,6 +24,95 @@ import {
   FileText,
   Download
 } from "lucide-react";
+
+/**
+ * Dropdown sortir ringkas (pengganti <select> native).
+ *
+ * Masalah sebelumnya: label "Rekomendasi XoraMateria" membuat <select>
+ * melebar mengikuti teks terpanjang sehingga halaman catalog overflow
+ * horizontal di mobile. Dengan tombol custom ini lebar dibatasi + label
+ * di-truncate, dan menu turun rata kanan (tidak keluar viewport).
+ */
+function SortDropdown({
+  value,
+  onChange,
+  options,
+  className = "",
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options: Array<{ value: string; label: string }>;
+  className?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDocClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDocClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const current = options.find((o) => o.value === value)?.label ?? options[0]?.label ?? "";
+
+  return (
+    <div ref={ref} className={`relative min-w-0 ${className}`}>
+      <button
+        type="button"
+        data-testid="catalog-sort-trigger"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className="flex w-full min-w-0 items-center justify-between gap-2 rounded-lg border border-slate-800 bg-slate-900 px-2.5 py-1.5 text-[11px] text-white transition-colors hover:border-brand-500/50 focus:border-brand-500 focus:outline-none"
+      >
+        <span className="truncate">{current}</span>
+        <ChevronDown
+          className={`h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open && (
+        <ul
+          role="listbox"
+          data-testid="catalog-sort-menu"
+          className="absolute right-0 z-40 mt-1 w-56 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-slate-700 bg-slate-900 p-1 shadow-2xl"
+        >
+          {options.map((o) => (
+            <li key={o.value}>
+              <button
+                type="button"
+                role="option"
+                aria-selected={value === o.value}
+                onClick={() => {
+                  onChange(o.value);
+                  setOpen(false);
+                }}
+                className={`flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-[11px] transition-colors ${
+                  value === o.value
+                    ? "bg-brand-500/15 font-semibold text-brand-200"
+                    : "text-slate-300 hover:bg-slate-800"
+                }`}
+              >
+                <span className="truncate">{o.label}</span>
+                {value === o.value && <Check className="h-3.5 w-3.5 shrink-0" />}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 interface CatalogClientProps {
   /** Produk hasil SSR (sudah ada di HTML awal untuk crawler). */
@@ -197,7 +287,7 @@ export default function CatalogClient({ initialFabrics, hidePrices = false }: Ca
 
         {/* Secondary Filter & Sorting Row */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-800/60 text-xs">
-          <div className="flex items-center gap-2 text-slate-400">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 text-slate-400">
             <span>{t("catalog.showing")} <strong className="text-white">{filteredFabrics.length}</strong> {t("catalog.jenis")}</span>
             {selectedCategory !== "All" && (
               <span className="px-2 py-0.5 rounded bg-brand-500/20 text-brand-300 border border-brand-500/30 text-[10px]">
@@ -211,9 +301,9 @@ export default function CatalogClient({ initialFabrics, hidePrices = false }: Ca
             )}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap sm:gap-3">
             {/* GSM Filter */}
-            <div className="flex items-center gap-1">
+            <div className="flex flex-wrap items-center gap-1">
               <span className="text-slate-400 mr-1 hidden sm:inline text-[11px]">{t("catalog.gsm")}</span>
               {[
                 { label: "Semua", val: "All" },
@@ -236,20 +326,21 @@ export default function CatalogClient({ initialFabrics, hidePrices = false }: Ca
             </div>
 
             {/* Sorting */}
-            <div className="flex items-center gap-1.5 pl-2 border-l border-slate-800">
+            <div className="flex w-full items-center gap-2 border-t border-slate-800/60 pt-2 sm:w-auto sm:border-t-0 sm:border-l sm:pl-2 sm:pt-0">
               <span className="text-slate-400 text-[11px] hidden sm:inline">{t("catalog.sort")}</span>
-              <select
+              <SortDropdown
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-[11px] text-white focus:outline-none focus:border-brand-500"
-              >
-                <option value="default">{t("catalog.sortRec")}</option>
-                <option value="price-asc">{t("catalog.sortAsc")}</option>
-                <option value="price-desc">{t("catalog.sortDesc")}</option>
-                <option value="stock-desc">{t("catalog.sortStock")}</option>
-                <option value="gsm-asc">{t("catalog.sortLight")}</option>
-                <option value="gsm-desc">{t("catalog.sortHeavy")}</option>
-              </select>
+                onChange={setSortBy}
+                className="w-full sm:w-[190px]"
+                options={[
+                  { value: "default", label: t("catalog.sortRec") },
+                  { value: "price-asc", label: t("catalog.sortAsc") },
+                  { value: "price-desc", label: t("catalog.sortDesc") },
+                  { value: "stock-desc", label: t("catalog.sortStock") },
+                  { value: "gsm-asc", label: t("catalog.sortLight") },
+                  { value: "gsm-desc", label: t("catalog.sortHeavy") },
+                ]}
+              />
             </div>
           </div>
         </div>
