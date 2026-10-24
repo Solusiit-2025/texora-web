@@ -5,13 +5,13 @@ export const dynamic = "force-dynamic";
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const body = await request.json();
 
     const existing = await prisma.lead.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
     });
 
     if (!existing) {
@@ -28,7 +28,7 @@ export async function PATCH(
     dataToUpdate.updatedAt = new Date();
 
     const updated = await prisma.lead.update({
-      where: { id: params.id },
+      where: { id: (await params).id },
       data: dataToUpdate,
       include: {
         assignedSales: true,

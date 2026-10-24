@@ -34,12 +34,12 @@ function formatOrder(o: any) {
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const order = await prisma.order.findFirst({
       where: {
-        OR: [{ id: params.id }, { orderNumber: params.id }],
+        OR: [{ id: (await params).id }, { orderNumber: (await params).id }],
       },
       include: {
         customer: true,
@@ -68,14 +68,14 @@ export async function GET(
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const body = await request.json();
 
     const existing = await prisma.order.findFirst({
       where: {
-        OR: [{ id: params.id }, { orderNumber: params.id }],
+        OR: [{ id: (await params).id }, { orderNumber: (await params).id }],
       },
     });
 

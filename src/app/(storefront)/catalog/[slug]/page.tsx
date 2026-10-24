@@ -17,7 +17,7 @@ import {
 import { htmlToPlainText } from "@/lib/sanitize";
 
 interface PageProps {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 /**
@@ -29,7 +29,7 @@ interface PageProps {
  *  - JSON-LD Product + BreadcrumbList tersedia untuk Google Rich Results.
  */
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const product = await getStorefrontProductBySlug(params.slug);
+  const product = await getStorefrontProductBySlug((await params).slug);
 
   if (!product) {
     return {
@@ -68,7 +68,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function FabricDetailPage({ params }: PageProps) {
   const lang = await getContentLocale();
-  const productRaw = await getStorefrontProductBySlug(params.slug);
+  const productRaw = await getStorefrontProductBySlug((await params).slug);
   const product =
     productRaw && lang
       ? (await localizeRows("product", [productRaw], (p: any) => p.slug, ["description"], lang))[0]
@@ -139,7 +139,7 @@ export default async function FabricDetailPage({ params }: PageProps) {
       <JsonLd schema={[productSchema, breadcrumbSchema, webPageSchema]} id="ld-product" />
       <ProductDetailClient
         initialFabric={visibleProduct}
-        slug={params.slug}
+        slug={(await params).slug}
         relatedProducts={hidePrices ? related.map((r) => stripProductPrices([r])[0]) : related}
       />
     </>
