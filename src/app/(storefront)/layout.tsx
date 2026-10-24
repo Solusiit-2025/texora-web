@@ -29,7 +29,17 @@ function resolvePromoPosters(): string[] {
     return files
       .sort((a, b) => rank(a) - rank(b) || a.localeCompare(b))
       .slice(0, 4)
-      .map((name) => `/images/promo/${encodeURIComponent(name)}`);
+      .map((name) => {
+        // Cache-busting: kalau file diganti dengan nama sama, mtime berubah
+        // sehingga next/image mengambil versi baru (bukan cache lama).
+        let v = "";
+        try {
+          v = `?v=${Math.floor(fs.statSync(path.join(dir, name)).mtimeMs).toString(36)}`;
+        } catch {
+          /* stat gagal — pakai URL tanpa versi */
+        }
+        return `/images/promo/${encodeURIComponent(name)}${v}`;
+      });
   } catch {
     return [];
   }

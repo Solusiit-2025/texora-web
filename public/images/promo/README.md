@@ -30,3 +30,5 @@ rasio portrait 9:16, ukuran < 500 KB agar cepat).
 - Untuk mengetes paksa: buka `/?popup=1` (tanpa mengubah data pengunjung).
 - Mode `?preview=1` / `?fresh=1` tidak menampilkan popup.
 - Jika folder ini kosong, popup memakai versi teks (fallback) yang tetap rapi.
+- Mengganti file dengan **nama sama** aman: URL gambar diberi versi dari
+  `mtime` sehingga cache optimizer Next.js otomatis diperbarui.
