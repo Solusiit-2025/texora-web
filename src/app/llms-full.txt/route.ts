@@ -14,7 +14,8 @@ import { getStorefrontProducts, getStorefrontFaqs } from "@/lib/storefront-data"
 import { getSeoSettings } from "@/lib/seo";
 import { htmlToPlainText } from "@/lib/sanitize";
 
-export const dynamic = "force-dynamic";
+// Dokumen panjang & di-request jarang oleh AI crawler; cache 1 jam.
+export const revalidate = 3600;
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://texora.co.id";
 

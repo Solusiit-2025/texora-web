@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import {
   Mail,
@@ -27,7 +28,16 @@ import {
   Award,
 } from "lucide-react";
 import { Breadcrumb } from "@/components/common/Breadcrumb";
-import { CompanyLocationMap } from "@/components/common/CompanyLocationMap";
+// Peta interaktif ada di bawah fold: defer JS + iframe-nya.
+const CompanyLocationMap = dynamic(
+  () => import("@/components/common/CompanyLocationMap").then((m) => m.CompanyLocationMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[480px] w-full animate-pulse rounded-3xl bg-slate-900/60" />
+    ),
+  }
+);
 import { useI18n } from "@/lib/i18n/LanguageContext";
 
 interface FabricOption {

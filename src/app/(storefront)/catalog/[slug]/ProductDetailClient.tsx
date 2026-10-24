@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import { cachedClientFetch } from "@/lib/client-api";
 import Image from "next/image";
 import Link from "next/link";
 import { formatRupiah, formatNumber } from "@/lib/utils";
@@ -65,10 +66,9 @@ export default function ProductDetailClient({
   const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.authenticated && data.user) {
+    cachedClientFetch("/api/auth/me")
+      .then((data: any) => {
+        if (data?.authenticated && data.user) {
           setCurrentUser(data.user);
         } else {
           setCurrentUser(null);

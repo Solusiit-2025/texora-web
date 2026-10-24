@@ -4,19 +4,12 @@ import { useMemo, useState } from 'react';
 import { formatRupiah } from '@/lib/utils';
 import {
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  Legend,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  AreaChart,
-  Area,
-} from 'recharts';
+  AreaChart, Area,
+  BarChart, Bar,
+  PieChart, Pie, Cell,
+  XAxis, YAxis,
+  CartesianGrid, Tooltip, Legend,
+} from "@/components/portal/RechartsLazy";
 import {
   ShoppingCart,
   Plus,
@@ -97,11 +90,11 @@ const INITIAL_POS: PO[] = [
     { name: 'Greige Brazil Wave 130 GSM', spec: 'Lebar 60", pure white', qty: 4000, unit: 'meter', price: 27200 },
   ]},
   { id: 'PO-2', number: 'PO-2026-10-0141', supplier: 'CV Tinta Warna Abadi', category: 'Tinta Sublimasi', date: '5 Okt 2026', eta: '8 Okt 2026', term: 'COD', requester: 'Rian P. (Produksi)', status: 'SEBAGIAN', progress: 50, notes: 'Tinta magenta datang duluan, sisanya menyusul.', items: [
-    { name: 'Tinta Sublim Epson i3200 – Magenta', spec: 'Kemasan 5L, ori', qty: 20, unit: 'jerigen', price: 1850000 },
-    { name: 'Tinta Sublim Epson i3200 – Cyan', spec: 'Kemasan 5L, ori', qty: 20, unit: 'jerigen', price: 1850000 },
+    { name: 'Tinta Sublim Epson i3200 â€“ Magenta', spec: 'Kemasan 5L, ori', qty: 20, unit: 'jerigen', price: 1850000 },
+    { name: 'Tinta Sublim Epson i3200 â€“ Cyan', spec: 'Kemasan 5L, ori', qty: 20, unit: 'jerigen', price: 1850000 },
     { name: 'Cleaning Solution Head', spec: '1L / botol', qty: 12, unit: 'botol', price: 325000 },
   ]},
-  { id: 'PO-3', number: 'PO-2026-10-0140', supplier: 'PT Kertas Transferindo', category: 'Transfer Paper', date: '3 Okt 2026', eta: '9 Okt 2026', term: 'NET 14', requester: 'Bambang S. (Gudang)', status: 'DIAJUKAN', progress: 15, notes: 'Menunggu approval Finance — pagu masih tersedia.', items: [
+  { id: 'PO-3', number: 'PO-2026-10-0140', supplier: 'PT Kertas Transferindo', category: 'Transfer Paper', date: '3 Okt 2026', eta: '9 Okt 2026', term: 'NET 14', requester: 'Bambang S. (Gudang)', status: 'DIAJUKAN', progress: 15, notes: 'Menunggu approval Finance â€” pagu masih tersedia.', items: [
     { name: 'Transfer Paper 100 GSM Jumbo', spec: 'Roll 1.62m x 200m', qty: 120, unit: 'roll', price: 385000 },
   ]},
   { id: 'PO-4', number: 'PO-2026-09-0139', supplier: 'PT Sinar Polytex', category: 'Greige Polyester', date: '28 Sep 2026', eta: '5 Okt 2026', term: 'NET 30', requester: 'Hendra W. (PPIC)', status: 'DITERIMA', progress: 100, notes: 'QC lolos 100%, selisih susut 0,4% masih toleransi.', items: [
@@ -115,14 +108,14 @@ const INITIAL_POS: PO[] = [
     { name: 'Kardus Double Wall 120x20x20', spec: 'Cetak logo XoraMateria', qty: 3000, unit: 'pcs', price: 12500 },
     { name: 'Paper Core 3" x 1.7m', spec: 'Tebal 8mm', qty: 500, unit: 'pcs', price: 18000 },
   ]},
-  { id: 'PO-7', number: 'PO-2026-09-0136', supplier: 'PT Kimia Tekstilindo', category: 'Chemical Coating', date: '20 Sep 2026', eta: '28 Sep 2026', term: 'NET 30', requester: 'Rian P. (Produksi)', status: 'DRAFT', progress: 5, notes: 'Draft — masih negosiasi diskon 5% untuk volume 2 ton.', items: [
+  { id: 'PO-7', number: 'PO-2026-09-0136', supplier: 'PT Kimia Tekstilindo', category: 'Chemical Coating', date: '20 Sep 2026', eta: '28 Sep 2026', term: 'NET 30', requester: 'Rian P. (Produksi)', status: 'DRAFT', progress: 5, notes: 'Draft â€” masih negosiasi diskon 5% untuk volume 2 ton.', items: [
     { name: 'Anti-UV Coating Agent', spec: 'Drum 200L', qty: 10, unit: 'drum', price: 6800000 },
   ]},
   { id: 'PO-8', number: 'PO-2026-09-0135', supplier: 'CV Benang Rajut Sejahtera', category: 'Benang & Aksesoris', date: '18 Sep 2026', eta: '23 Sep 2026', term: 'COD', requester: 'Hendra W. (PPIC)', status: 'DITERIMA', progress: 100, notes: 'Diterima penuh, nota sudah masuk Finance.', items: [
     { name: 'Benang Overdeck Poly 150D', spec: 'Cone 5kg, putih', qty: 200, unit: 'cone', price: 185000 },
   ]},
-  { id: 'PO-9', number: 'PO-2026-09-0134', supplier: 'CV Tinta Warna Abadi', category: 'Tinta Sublimasi', date: '15 Sep 2026', eta: '18 Sep 2026', term: 'COD', requester: 'Rian P. (Produksi)', status: 'BATAL', progress: 0, notes: 'Dibatalkan — duplikat dengan PO-0131, supplier sudah dihubungi.', items: [
-    { name: 'Tinta Sublim Epson i3200 – Black', spec: 'Kemasan 5L', qty: 10, unit: 'jerigen', price: 1850000 },
+  { id: 'PO-9', number: 'PO-2026-09-0134', supplier: 'CV Tinta Warna Abadi', category: 'Tinta Sublimasi', date: '15 Sep 2026', eta: '18 Sep 2026', term: 'COD', requester: 'Rian P. (Produksi)', status: 'BATAL', progress: 0, notes: 'Dibatalkan â€” duplikat dengan PO-0131, supplier sudah dihubungi.', items: [
+    { name: 'Tinta Sublim Epson i3200 â€“ Black', spec: 'Kemasan 5L', qty: 10, unit: 'jerigen', price: 1850000 },
   ]},
   { id: 'PO-10', number: 'PO-2026-10-0143', supplier: 'PT Sinar Polytex', category: 'Greige Polyester', date: '8 Okt 2026', eta: '15 Okt 2026', term: 'NET 30', requester: 'Hendra W. (PPIC)', status: 'DIAJUKAN', progress: 10, notes: 'Pengajuan pagi ini untuk buffer stok November.', items: [
     { name: 'Greige Dryfit Milano 135 GSM', spec: 'Lebar 60", optic white', qty: 10000, unit: 'meter', price: 26200 },
@@ -135,7 +128,7 @@ const INITIAL_PRS: PR[] = [
   { id: 'PR-3', number: 'PR-2026-087', requester: 'Dedi Kurniawan', dept: 'Maintenance', date: '4 Okt 2026', needed: '20 Okt 2026', urgency: 'NORMAL', status: 'DIPROSES', summary: 'Roller bearing + silicon oil + kabel heater mesin calendar #2 (preventive Q4)', estValue: 22400000 },
   { id: 'PR-4', number: 'PR-2026-086', requester: 'Hendra Wijaya', dept: 'PPIC', date: '2 Okt 2026', needed: '12 Okt 2026', urgency: 'TINGGI', status: 'SELESAI', summary: 'Greige Milano 10.000 m (sudah jadi PO-0143, menunggu approval)', estValue: 262000000 },
   { id: 'PR-5', number: 'PR-2026-085', requester: 'Sinta Maharani', dept: 'QC & Packing', date: '29 Sep 2026', needed: '6 Okt 2026', urgency: 'NORMAL', status: 'SELESAI', summary: 'Stiker QC lolos + plastik OPP + silica gel (packing 40.000 pcs jersey)', estValue: 18900000 },
-  { id: 'PR-6', number: 'PR-2026-084', requester: 'Rian Pratama', dept: 'Produksi', date: '27 Sep 2026', needed: '4 Okt 2026', urgency: 'RENDAH', status: 'DITOLAK', summary: 'Ditolak: pengajuan cutter manual — sudah ada budget cutter otomatis Q1 2027', estValue: 45000000 },
+  { id: 'PR-6', number: 'PR-2026-084', requester: 'Rian Pratama', dept: 'Produksi', date: '27 Sep 2026', needed: '4 Okt 2026', urgency: 'RENDAH', status: 'DITOLAK', summary: 'Ditolak: pengajuan cutter manual â€” sudah ada budget cutter otomatis Q1 2027', estValue: 45000000 },
 ];
 
 const INITIAL_GRNS: GRN[] = [
@@ -147,16 +140,16 @@ const INITIAL_GRNS: GRN[] = [
 ];
 
 const INITIAL_TRX: PurchaseTrx[] = [
-  { id: 'T-01', number: 'TRX-2026-10-0091', date: '8 Okt 2026', due: '7 Nov 2026', supplier: 'PT Sinar Polytex', poRef: 'PO-2026-10-0142', item: 'Greige Milano 135 GSM — 8.000 m', qty: '8.000 m', total: 212000000, paid: 0, method: 'Transfer', status: 'BELUM BAYAR' },
-  { id: 'T-02', number: 'TRX-2026-10-0090', date: '7 Okt 2026', due: '7 Okt 2026', supplier: 'CV Tinta Warna Abadi', poRef: 'PO-2026-10-0141', item: 'Tinta Magenta/Cyan — 40 jrgn', qty: '40 jrgn', total: 77900000, paid: 38950000, method: 'Transfer', status: 'SEBAGIAN' },
-  { id: 'T-03', number: 'TRX-2026-10-0089', date: '5 Okt 2026', due: '4 Nov 2026', supplier: 'PT Sinar Polytex', poRef: 'PO-2026-09-0139', item: 'Greige Milano 155 GSM — 6.000 m', qty: '6.000 m', total: 173400000, paid: 0, method: 'Transfer', status: 'BELUM BAYAR' },
+  { id: 'T-01', number: 'TRX-2026-10-0091', date: '8 Okt 2026', due: '7 Nov 2026', supplier: 'PT Sinar Polytex', poRef: 'PO-2026-10-0142', item: 'Greige Milano 135 GSM â€” 8.000 m', qty: '8.000 m', total: 212000000, paid: 0, method: 'Transfer', status: 'BELUM BAYAR' },
+  { id: 'T-02', number: 'TRX-2026-10-0090', date: '7 Okt 2026', due: '7 Okt 2026', supplier: 'CV Tinta Warna Abadi', poRef: 'PO-2026-10-0141', item: 'Tinta Magenta/Cyan â€” 40 jrgn', qty: '40 jrgn', total: 77900000, paid: 38950000, method: 'Transfer', status: 'SEBAGIAN' },
+  { id: 'T-03', number: 'TRX-2026-10-0089', date: '5 Okt 2026', due: '4 Nov 2026', supplier: 'PT Sinar Polytex', poRef: 'PO-2026-09-0139', item: 'Greige Milano 155 GSM â€” 6.000 m', qty: '6.000 m', total: 173400000, paid: 0, method: 'Transfer', status: 'BELUM BAYAR' },
   { id: 'T-04', number: 'TRX-2026-10-0088', date: '3 Okt 2026', due: '17 Okt 2026', supplier: 'PT Kemasan Nusantara', poRef: 'PO-2026-09-0137', item: 'Kardus + paper core', qty: '3.500 pcs', total: 46500000, paid: 46500000, method: 'Transfer', status: 'LUNAS' },
   { id: 'T-05', number: 'TRX-2026-09-0087', date: '28 Sep 2026', due: '28 Sep 2026', supplier: 'UD Sparepart Mesin Jaya', poRef: 'PO-2026-09-0138', item: 'Felt belt + teflon sheet', qty: '8 pcs', total: 34100000, paid: 34100000, method: 'COD', status: 'LUNAS' },
-  { id: 'T-06', number: 'TRX-2026-09-0086', date: '24 Sep 2026', due: '8 Okt 2026', supplier: 'PT Kertas Transferindo', poRef: 'PO-2026-08-0129', item: 'Transfer paper — 150 roll', qty: '150 roll', total: 57750000, paid: 0, method: 'Transfer', status: 'JATUH TEMPO' },
-  { id: 'T-07', number: 'TRX-2026-09-0085', date: '23 Sep 2026', due: '23 Sep 2026', supplier: 'CV Benang Rajut Sejahtera', poRef: 'PO-2026-09-0135', item: 'Benang Overdeck — 200 cone', qty: '200 cone', total: 37000000, paid: 37000000, method: 'COD', status: 'LUNAS' },
-  { id: 'T-08', number: 'TRX-2026-09-0084', date: '18 Sep 2026', due: '18 Okt 2026', supplier: 'PT Kimia Tekstilindo', poRef: 'PO-2026-08-0124', item: 'Coating agent — 10 drum', qty: '10 drum', total: 68000000, paid: 20000000, method: 'Giro', status: 'SEBAGIAN' },
-  { id: 'T-09', number: 'TRX-2026-09-0083', date: '12 Sep 2026', due: '12 Sep 2026', supplier: 'CV Tinta Warna Abadi', poRef: 'PO-2026-09-0131', item: 'Tinta Black/Yellow — 30 jrgn', qty: '30 jrgn', total: 55500000, paid: 55500000, method: 'Transfer', status: 'LUNAS' },
-  { id: 'T-10', number: 'TRX-2026-09-0082', date: '5 Sep 2026', due: '5 Okt 2026', supplier: 'PT Sinar Polytex', poRef: 'PO-2026-08-0120', item: 'Greige Brazil Wave — 5.000 m', qty: '5.000 m', total: 136000000, paid: 136000000, method: 'Transfer', status: 'LUNAS' },
+  { id: 'T-06', number: 'TRX-2026-09-0086', date: '24 Sep 2026', due: '8 Okt 2026', supplier: 'PT Kertas Transferindo', poRef: 'PO-2026-08-0129', item: 'Transfer paper â€” 150 roll', qty: '150 roll', total: 57750000, paid: 0, method: 'Transfer', status: 'JATUH TEMPO' },
+  { id: 'T-07', number: 'TRX-2026-09-0085', date: '23 Sep 2026', due: '23 Sep 2026', supplier: 'CV Benang Rajut Sejahtera', poRef: 'PO-2026-09-0135', item: 'Benang Overdeck â€” 200 cone', qty: '200 cone', total: 37000000, paid: 37000000, method: 'COD', status: 'LUNAS' },
+  { id: 'T-08', number: 'TRX-2026-09-0084', date: '18 Sep 2026', due: '18 Okt 2026', supplier: 'PT Kimia Tekstilindo', poRef: 'PO-2026-08-0124', item: 'Coating agent â€” 10 drum', qty: '10 drum', total: 68000000, paid: 20000000, method: 'Giro', status: 'SEBAGIAN' },
+  { id: 'T-09', number: 'TRX-2026-09-0083', date: '12 Sep 2026', due: '12 Sep 2026', supplier: 'CV Tinta Warna Abadi', poRef: 'PO-2026-09-0131', item: 'Tinta Black/Yellow â€” 30 jrgn', qty: '30 jrgn', total: 55500000, paid: 55500000, method: 'Transfer', status: 'LUNAS' },
+  { id: 'T-10', number: 'TRX-2026-09-0082', date: '5 Sep 2026', due: '5 Okt 2026', supplier: 'PT Sinar Polytex', poRef: 'PO-2026-08-0120', item: 'Greige Brazil Wave â€” 5.000 m', qty: '5.000 m', total: 136000000, paid: 136000000, method: 'Transfer', status: 'LUNAS' },
 ];
 
 const SPEND_TREND = [
@@ -255,7 +248,7 @@ export default function PurchasingPage() {
     });
   }, [trxs, trxStatus, trxq]);
 
-  // Rekap pembelian per supplier — murni tabel, dihitung dari data transaksi sample
+  // Rekap pembelian per supplier â€” murni tabel, dihitung dari data transaksi sample
   const supplierSummary = useMemo(() => {
     return SUPPLIERS.map((s) => {
       const rows = trxs.filter((t) => t.supplier === s.name);
@@ -267,7 +260,7 @@ export default function PurchasingPage() {
   const approvePO = (id: string, ok: boolean) => {
     setPos((prev) => prev.map((p) => (p.id === id ? { ...p, status: ok ? 'DISETUJUI' : 'BATAL', progress: ok ? 25 : 0 } : p)));
     setDetail((d) => (d && d.id === id ? { ...d, status: ok ? 'DISETUJUI' : 'BATAL', progress: ok ? 25 : 0 } : d));
-    flash(ok ? 'PO disetujui — diteruskan ke supplier' : 'PO dibatalkan');
+    flash(ok ? 'PO disetujui â€” diteruskan ke supplier' : 'PO dibatalkan');
   };
 
   const createPO = () => {
@@ -276,18 +269,18 @@ export default function PurchasingPage() {
       id: `PO-${Date.now()}`, number: `PO-2026-10-0${n}`, supplier: newPO.supplier,
       category: newPO.category, date: '8 Okt 2026', eta: newPO.eta, term: newPO.term,
       requester: 'Purchasing (Demo)', status: 'DIAJUKAN', progress: 10,
-      notes: 'Dibuat dari mockup meeting — menunggu approval.',
+      notes: 'Dibuat dari mockup meeting â€” menunggu approval.',
       items: [{ name: newPO.item, spec: 'Sesuai spesifikasi standar', qty: newPO.qty, unit: 'meter', price: newPO.price }],
     };
     setPos((prev) => [po, ...prev]);
     setShowCreate(false);
     setTab('po');
-    flash(`Draf ${po.number} dibuat — masuk antrean approval`);
+    flash(`Draf ${po.number} dibuat â€” masuk antrean approval`);
   };
 
   const prToPO = (pr: PR) => {
     const po: PO = {
-      id: `PO-${Date.now()}`, number: `PO-2026-10-0${pos.length + 144}`, supplier: '— Pilih Supplier —',
+      id: `PO-${Date.now()}`, number: `PO-2026-10-0${pos.length + 144}`, supplier: 'â€” Pilih Supplier â€”',
       category: pr.summary.slice(0, 28), date: '8 Okt 2026', eta: pr.needed, term: 'NET 14',
       requester: `${pr.requester} (${pr.dept})`, status: 'DRAFT', progress: 5,
       notes: `Konversi dari ${pr.number}: ${pr.summary}`,
@@ -321,14 +314,14 @@ export default function PurchasingPage() {
         <div>
           <div className="flex flex-wrap items-center gap-2 mb-2">
             <span className="px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-amber-500/15 text-amber-300 border border-amber-500/40 flex items-center gap-1.5">
-              <ShoppingCart className="w-3 h-3" /> Purchasing • Pengadaan & Supplier
+              <ShoppingCart className="w-3 h-3" /> Purchasing â€¢ Pengadaan & Supplier
             </span>
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700 font-mono">Data Sample</span>
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-500/10 text-sky-300 border border-sky-500/40 font-mono">Tanpa Database</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-white font-display tracking-tight">Purchasing & Pengadaan Bahan Baku</h1>
           <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
-            Kelola permintaan pembelian (PR), purchase order (PO), evaluasi supplier, dan penerimaan barang (GRN) — dari pengajuan sampai barang masuk gudang &amp; tagihan finance.
+            Kelola permintaan pembelian (PR), purchase order (PO), evaluasi supplier, dan penerimaan barang (GRN) â€” dari pengajuan sampai barang masuk gudang &amp; tagihan finance.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
@@ -372,7 +365,7 @@ export default function PurchasingPage() {
             <div className="p-2 rounded-xl bg-rose-500/10 text-rose-400"><FileText className="w-4 h-4" /></div>
           </div>
           <div className="text-2xl font-black font-mono text-rose-300">{formatRupiah(kpi.outstanding)}</div>
-          <div className="mt-2 text-[11px] text-slate-400">Jatuh tempo ≤ 14 hari: <b className="text-white font-mono">Rp 210 jt</b> (3 invoice)</div>
+          <div className="mt-2 text-[11px] text-slate-400">Jatuh tempo â‰¤ 14 hari: <b className="text-white font-mono">Rp 210 jt</b> (3 invoice)</div>
           <div className="mt-3 w-full bg-slate-800 h-1.5 rounded-full overflow-hidden"><div className="bg-rose-500 h-full rounded-full" style={{ width: '34%' }} /></div>
         </div>
         <div className="p-5 rounded-2xl glass-panel border border-slate-800 shadow-xl">
@@ -391,11 +384,11 @@ export default function PurchasingPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           <div className="p-4 rounded-xl bg-slate-950/50 border border-slate-800/60">
             <div className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2 mb-1.5"><BadgeCheck className="w-4 h-4" /> 1. Alur Approval Terkendali</div>
-            <p className="text-xs text-slate-300 leading-relaxed">Setiap PO di atas <b className="text-white">Rp 50 jt</b> wajib approval Manager + Finance. {kpi.needApproval} PO sedang antre — tertua <b className="text-white">PO-0140</b> (5 hari, kertas transfer).</p>
+            <p className="text-xs text-slate-300 leading-relaxed">Setiap PO di atas <b className="text-white">Rp 50 jt</b> wajib approval Manager + Finance. {kpi.needApproval} PO sedang antre â€” tertua <b className="text-white">PO-0140</b> (5 hari, kertas transfer).</p>
           </div>
           <div className="p-4 rounded-xl bg-slate-950/50 border border-slate-800/60">
             <div className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2 mb-1.5"><Factory className="w-4 h-4" /> 2. Fokus Produksi Minggu Ini</div>
-            <p className="text-xs text-slate-300 leading-relaxed">Greige <b className="text-white">12.000 m</b> (PO-0142) progres 65% — cukup untuk 3 shift sampai 18 Okt. Kritis: tinta Yellow tinggal <b className="text-white">2 hari</b> (PR-089).</p>
+            <p className="text-xs text-slate-300 leading-relaxed">Greige <b className="text-white">12.000 m</b> (PO-0142) progres 65% â€” cukup untuk 3 shift sampai 18 Okt. Kritis: tinta Yellow tinggal <b className="text-white">2 hari</b> (PR-089).</p>
           </div>
           <div className="p-4 rounded-xl bg-slate-950/50 border border-slate-800/60">
             <div className="text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center gap-2 mb-1.5"><Users className="w-4 h-4" /> 3. Supplier Terbaik Q3</div>
@@ -444,7 +437,7 @@ export default function PurchasingPage() {
             </div>
             <div className="lg:col-span-8 p-6 rounded-2xl glass-panel border border-slate-800">
               <h3 className="text-sm font-extrabold text-white uppercase tracking-wider">Belanja per Kategori (Rp jt)</h3>
-              <p className="text-xs text-slate-400 mt-0.5">Greige mendominasi 45% — wajar untuk pabrik sublimasi</p>
+              <p className="text-xs text-slate-400 mt-0.5">Greige mendominasi 45% â€” wajar untuk pabrik sublimasi</p>
               <div className="h-[240px] mt-2">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={SPEND_KATEGORI} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
@@ -462,9 +455,9 @@ export default function PurchasingPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-extrabold text-white uppercase tracking-wider">Tren Belanja vs Budget (Rp jt)</h3>
-                <p className="text-xs text-slate-400 mt-0.5">Oktober berjalan 76% dari budget — masih on-track</p>
+                <p className="text-xs text-slate-400 mt-0.5">Oktober berjalan 76% dari budget â€” masih on-track</p>
               </div>
-              <span className="text-[11px] font-mono text-slate-400">Mei — Okt 2026</span>
+              <span className="text-[11px] font-mono text-slate-400">Mei â€” Okt 2026</span>
             </div>
             <div className="h-[260px] mt-3">
               <ResponsiveContainer width="100%" height="100%">
@@ -517,7 +510,7 @@ export default function PurchasingPage() {
           <div className="rounded-2xl glass-panel border border-slate-800 overflow-hidden shadow-2xl">
             <div className="px-5 py-4 border-b border-slate-800/80 bg-slate-900/60 flex items-center justify-between">
               <span className="text-xs font-extrabold text-white uppercase tracking-wider flex items-center gap-2"><ShoppingCart className="w-4 h-4 text-amber-400" /> Daftar Purchase Order</span>
-              <span className="text-xs text-slate-400 font-mono">{filteredPO.length} dokumen • Total {formatRupiah(filteredPO.reduce((s, p) => s + poTotal(p), 0))}</span>
+              <span className="text-xs text-slate-400 font-mono">{filteredPO.length} dokumen â€¢ Total {formatRupiah(filteredPO.reduce((s, p) => s + poTotal(p), 0))}</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs border-collapse">
@@ -538,10 +531,10 @@ export default function PurchasingPage() {
                       <td className="p-4 align-top">
                         <div className="font-mono font-bold text-white">{p.number}</div>
                         <div className="text-slate-300 font-semibold mt-0.5">{p.supplier}</div>
-                        <div className="text-[10px] text-slate-500">{p.category} • {p.requester}</div>
+                        <div className="text-[10px] text-slate-500">{p.category} â€¢ {p.requester}</div>
                       </td>
                       <td className="p-4 align-top">
-                        <div className="text-slate-300">{p.items.length} item • {p.items[0]?.name}</div>
+                        <div className="text-slate-300">{p.items.length} item â€¢ {p.items[0]?.name}</div>
                         <div className="font-mono font-bold text-amber-300 mt-0.5">{formatRupiah(poTotal(p))}</div>
                         <div className="text-[10px] text-slate-500 font-mono">{p.term}</div>
                       </td>
@@ -589,7 +582,7 @@ export default function PurchasingPage() {
           <div className="rounded-2xl glass-panel border border-slate-800 overflow-hidden shadow-2xl">
             <div className="px-5 py-4 border-b border-slate-800/80 bg-slate-900/60 flex items-center justify-between">
               <span className="text-xs font-extrabold text-white uppercase tracking-wider flex items-center gap-2"><ReceiptText className="w-4 h-4 text-emerald-400" /> Transaksi Pembelian (Invoice Supplier)</span>
-              <span className="text-xs text-slate-400 font-mono">{filteredTrx.length} transaksi • Total {formatRupiah(filteredTrx.reduce((s, t) => s + t.total, 0))}</span>
+              <span className="text-xs text-slate-400 font-mono">{filteredTrx.length} transaksi â€¢ Total {formatRupiah(filteredTrx.reduce((s, t) => s + t.total, 0))}</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs border-collapse">
@@ -611,7 +604,7 @@ export default function PurchasingPage() {
                       <tr key={t.id} className="hover:bg-slate-800/40 transition-colors">
                         <td className="p-4 align-top">
                           <div className="font-mono font-bold text-white">{t.number}</div>
-                          <div className="text-[11px] text-slate-500 mt-0.5">Tgl: {t.date} • J.tempo: {t.due}</div>
+                          <div className="text-[11px] text-slate-500 mt-0.5">Tgl: {t.date} â€¢ J.tempo: {t.due}</div>
                           <div className="text-[10px] text-slate-500 font-mono">{t.method}</div>
                         </td>
                         <td className="p-4 align-top">
@@ -647,7 +640,7 @@ export default function PurchasingPage() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="font-mono font-bold text-white">{r.number}</div>
-                  <div className="text-[11px] text-slate-400 mt-0.5">{r.requester} • {r.dept} • {r.date} → butuh {r.needed}</div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">{r.requester} â€¢ {r.dept} â€¢ {r.date} â†’ butuh {r.needed}</div>
                 </div>
                 <div className="flex flex-col items-end gap-1.5">
                   <span className={statusBadge(r.status)}>{r.status}</span>
@@ -668,12 +661,12 @@ export default function PurchasingPage() {
         </div>
       )}
 
-      {/* PEMBELIAN PER SUPPLIER — TABEL SAJA */}
+      {/* PEMBELIAN PER SUPPLIER â€” TABEL SAJA */}
       {tab === 'supplier' && (
         <div className="rounded-2xl glass-panel border border-slate-800 overflow-hidden shadow-2xl">
           <div className="px-5 py-4 border-b border-slate-800/80 bg-slate-900/60 flex items-center justify-between">
             <span className="text-xs font-extrabold text-white uppercase tracking-wider flex items-center gap-2"><Users className="w-4 h-4 text-amber-400" /> Rekap Pembelian per Supplier</span>
-            <span className="text-xs text-slate-400 font-mono">{supplierSummary.length} supplier • Total {formatRupiah(supplierSummary.reduce((s, x) => s + x.totalValue, 0))}</span>
+            <span className="text-xs text-slate-400 font-mono">{supplierSummary.length} supplier â€¢ Total {formatRupiah(supplierSummary.reduce((s, x) => s + x.totalValue, 0))}</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-xs border-collapse">
@@ -694,15 +687,15 @@ export default function PurchasingPage() {
                   <tr key={s.id} className="hover:bg-slate-800/40 transition-colors">
                     <td className="p-4">
                       <div className="font-bold text-white">{s.name}</div>
-                      <div className="text-[11px] text-slate-500 mt-0.5">{s.pic} • <span className="font-mono">{s.phone}</span></div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">{s.pic} â€¢ <span className="font-mono">{s.phone}</span></div>
                     </td>
-                    <td className="p-4 text-slate-300 whitespace-nowrap">{s.category}<div className="text-[11px] text-slate-500">{s.city} • Lead {s.leadTime} hr • ★ {s.rating.toFixed(1)}</div></td>
+                    <td className="p-4 text-slate-300 whitespace-nowrap">{s.category}<div className="text-[11px] text-slate-500">{s.city} â€¢ Lead {s.leadTime} hr â€¢ â˜… {s.rating.toFixed(1)}</div></td>
                     <td className="p-4 text-center font-mono font-bold text-white">{s.totalPO}</td>
                     <td className="p-4 text-center font-mono font-bold text-white">{s.trxCount}</td>
                     <td className="p-4 text-right font-mono font-bold text-white whitespace-nowrap">{formatRupiah(s.totalValue)}</td>
                     <td className="p-4 text-right font-mono font-bold text-emerald-300 whitespace-nowrap">{formatRupiah(s.paid)}</td>
                     <td className="p-4 text-right font-mono font-bold whitespace-nowrap">
-                      <span className={s.outstanding > 0 ? 'text-rose-300' : 'text-slate-500'}>{s.outstanding > 0 ? formatRupiah(s.outstanding) : '—'}</span>
+                      <span className={s.outstanding > 0 ? 'text-rose-300' : 'text-slate-500'}>{s.outstanding > 0 ? formatRupiah(s.outstanding) : 'â€”'}</span>
                     </td>
                     <td className="p-4"><span className={statusBadge(s.status)}>{s.status}</span></td>
                   </tr>
@@ -739,7 +732,7 @@ export default function PurchasingPage() {
               <tbody className="divide-y divide-slate-800/70">
                 {grns.map((g) => (
                   <tr key={g.id} className="hover:bg-slate-800/40">
-                    <td className="p-4"><div className="font-mono font-bold text-white">{g.number}</div><div className="text-[11px] text-slate-400 font-mono">{g.po}</div><div className="text-[11px] text-slate-500">{g.supplier} • {g.date}</div></td>
+                    <td className="p-4"><div className="font-mono font-bold text-white">{g.number}</div><div className="text-[11px] text-slate-400 font-mono">{g.po}</div><div className="text-[11px] text-slate-500">{g.supplier} â€¢ {g.date}</div></td>
                     <td className="p-4 text-slate-200">{g.item}<div className="text-[11px] text-slate-500">Penerima: {g.receiver}</div></td>
                     <td className="p-4">
                       <div className="font-mono font-bold text-white">{g.received.toLocaleString('id-ID')} / {g.ordered.toLocaleString('id-ID')} {g.unit}</div>
@@ -770,7 +763,7 @@ export default function PurchasingPage() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="font-mono font-black text-white text-lg">{detail.number}</div>
-                <div className="text-xs text-slate-400 mt-0.5">{detail.supplier} • {detail.category} • {detail.term}</div>
+                <div className="text-xs text-slate-400 mt-0.5">{detail.supplier} â€¢ {detail.category} â€¢ {detail.term}</div>
               </div>
               <div className="flex items-center gap-2">
                 <span className={statusBadge(detail.status)}>{detail.status}</span>
@@ -839,7 +832,7 @@ export default function PurchasingPage() {
             <label className="block text-xs text-slate-300">Supplier
               <select value={newPO.supplier} onChange={(e) => { const s = SUPPLIERS.find((x) => x.name === e.target.value)!; setNewPO({ ...newPO, supplier: s.name, category: s.category }); }}
                 className="mt-1 w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-500 focus:outline-none">
-                {SUPPLIERS.map((s) => (<option key={s.id} value={s.name}>{s.name} — {s.category}</option>))}
+                {SUPPLIERS.map((s) => (<option key={s.id} value={s.name}>{s.name} â€” {s.category}</option>))}
               </select>
             </label>
             <label className="block text-xs text-slate-300">Nama Barang
@@ -877,7 +870,7 @@ export default function PurchasingPage() {
 
       {/* FOOTNOTE */}
       <div className="rounded-2xl border border-dashed border-slate-700 p-4 text-[11px] text-slate-500 leading-relaxed">
-        <b className="text-slate-300">Catatan mockup meeting:</b> seluruh angka supplier, PO, PR & GRN di halaman ini adalah <b className="text-slate-300">data sample statis</b> (tanpa database) untuk kebutuhan demo alur <i>PR → Approval → PO → Transaksi → GRN → Hutang</i>. Alur yang bisa diklik live: filter & cari PO, buka detail, setujui/tolak PO, buat PO baru, konversi PR→PO, dan catat kedatangan GRN.
+        <b className="text-slate-300">Catatan mockup meeting:</b> seluruh angka supplier, PO, PR & GRN di halaman ini adalah <b className="text-slate-300">data sample statis</b> (tanpa database) untuk kebutuhan demo alur <i>PR â†’ Approval â†’ PO â†’ Transaksi â†’ GRN â†’ Hutang</i>. Alur yang bisa diklik live: filter & cari PO, buka detail, setujui/tolak PO, buat PO baru, konversi PRâ†’PO, dan catat kedatangan GRN.
       </div>
     </div>
   );

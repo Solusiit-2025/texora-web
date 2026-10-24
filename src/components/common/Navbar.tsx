@@ -104,11 +104,14 @@ export function Navbar({ initialDisabledPaths = [] }: NavbarProps) {
   }, [userMenuOpen]);
 
   useEffect(() => {
-    // Ambil sesi autentikasi pengguna
-    fetch("/api/auth/me")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.authenticated && data.user) {
+    // Ambil sesi autentikasi pengguna.
+    // cachedClientFetch: Navbar + komponen lain (track-order, product detail,
+    // custom-sublimation, dsb.) memanggil API yang sama — jadikan 1 request.
+    cachedClientFetch<{ authenticated?: boolean; user?: any; menuIds?: string[] }>(
+      "/api/auth/me"
+    )
+      .then((data: any) => {
+        if (data?.authenticated && data.user) {
           setCurrentUser(data.user);
           const menuIds = Array.isArray(data.menuIds) ? data.menuIds : [];
           setCanManageCms(

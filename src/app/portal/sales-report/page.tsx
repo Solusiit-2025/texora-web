@@ -4,19 +4,12 @@ import { useMemo, useState, useEffect } from "react";
 import { formatRupiah, formatNumber } from "@/lib/utils";
 import {
   ResponsiveContainer,
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-} from "recharts";
+  AreaChart, Area,
+  BarChart, Bar,
+  PieChart, Pie, Cell,
+  XAxis, YAxis,
+  CartesianGrid, Tooltip, Legend,
+} from "@/components/portal/RechartsLazy";
 import {
   TrendingUp,
   ShoppingCart,
@@ -139,7 +132,7 @@ export default function SalesReportPage() {
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
             <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
-              CRM & Penjualan — Rekap Penjualan
+              CRM & Penjualan â€” Rekap Penjualan
             </span>
           </div>
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-white font-display mt-1">
@@ -194,7 +187,7 @@ export default function SalesReportPage() {
             <h3 className="text-sm font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-emerald-400" /> Tren Omzet 6 Bulan Terakhir
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">Pertumbuhan omzet bulanan (Mei – Oktober)</p>
+            <p className="text-xs text-slate-400 mt-0.5">Pertumbuhan omzet bulanan (Mei â€“ Oktober)</p>
           </div>
           <div className="h-[260px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -278,7 +271,7 @@ export default function SalesReportPage() {
             </span>
           </div>
           <span className="text-xs text-slate-400 font-mono hidden sm:block">
-            Total: {orders.length} SO · {formatNumber(totalMeterSample)} m
+            Total: {orders.length} SO Â· {formatNumber(totalMeterSample)} m
           </span>
         </div>
 
@@ -310,7 +303,7 @@ export default function SalesReportPage() {
                     <td className="p-4 align-top">
                       {(order.items || []).map((item: any) => (
                         <div key={item.id} className="text-slate-300">
-                          {item.fabricName} · <span className="text-white font-mono">{item.lengthMeters} m</span>
+                          {item.fabricName} Â· <span className="text-white font-mono">{item.lengthMeters} m</span>
                         </div>
                       ))}
                     </td>

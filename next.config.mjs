@@ -66,6 +66,9 @@ const contentSecurityPolicy = [
 const nextConfig = {
   reactStrictMode: true,
   distDir: resolveDistDir(),
+  // Jangan bocorkan versi framework di header X-Powered-By (keamanan, buang
+  // 1 header di response).
+  poweredByHeader: false,
   experimental: {
     // Mengaktifkan src/instrumentation.ts untuk scheduler backup database otomatis
     instrumentationHook: true,

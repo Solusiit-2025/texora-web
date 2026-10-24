@@ -1,4 +1,5 @@
 "use client";
+import { cachedClientFetch } from "@/lib/client-api";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -43,10 +44,9 @@ function CustomSublimationContent() {
 
   // Verifikasi otentikasi pengguna
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then((res) => res.json())
+    cachedClientFetch("/api/auth/me")
       .then((data) => {
-        if (!data.authenticated || !data.user) {
+        if (!data?.authenticated || !data.user) {
           const currentUrl = typeof window !== "undefined" 
             ? window.location.pathname + window.location.search 
             : "/custom-sublimation";
@@ -137,7 +137,7 @@ function CustomSublimationContent() {
   }, [locale]);
 
   // Active fabric tier price
-  // (priceTiers bisa kosong saat admin menyembunyikan harga — setting terpusat)
+  // (priceTiers bisa kosong saat admin menyembunyikan harga â€” setting terpusat)
   const activeTier = activeFabric.priceTiers?.length
     ? activeFabric.priceTiers.find((tier) => {
         if (tier.maxMeters) {
@@ -244,7 +244,7 @@ function CustomSublimationContent() {
         <div className="flex items-center gap-2">
           <span className="text-xs text-slate-400">DPI Minimal Industri:</span>
           <span className="px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-300 font-mono text-xs font-bold border border-emerald-500/30">
-            ≥ 150 - 300 DPI
+            â‰¥ 150 - 300 DPI
           </span>
         </div>
       </div>
@@ -263,7 +263,7 @@ function CustomSublimationContent() {
           {
             icon: Repeat,
             title: "Simulasi Seamless Pattern",
-            body: "Lihat pengulangan motif pada lebar kain fisik (40–60 inci) sebelum menyetujui proofing produksi.",
+            body: "Lihat pengulangan motif pada lebar kain fisik (40â€“60 inci) sebelum menyetujui proofing produksi.",
           },
           {
             icon: Sparkles,
@@ -633,7 +633,7 @@ function StudioArea(props: any) {
                   <div>
                     <div className="font-bold text-white">{artworkFile.name}</div>
                     <div className="text-slate-400 mt-0.5">
-                      Ukuran: {artworkFile.sizeMb} MB • Dimensi Desain: {artworkFile.widthCm} × {artworkFile.heightCm} cm
+                      Ukuran: {artworkFile.sizeMb} MB â€¢ Dimensi Desain: {artworkFile.widthCm} Ã— {artworkFile.heightCm} cm
                     </div>
                   </div>
                 </div>
@@ -684,7 +684,7 @@ function StudioArea(props: any) {
               >
                 {fabrics.map((fabric: any) => (
                   <option key={fabric.id} value={fabric.id}>
-                    {fabric.name} ({fabric.variants[0]?.gsm} GSM) — {fabric.category}
+                    {fabric.name} ({fabric.variants[0]?.gsm} GSM) â€” {fabric.category}
                   </option>
                 ))}
               </select>
@@ -737,17 +737,17 @@ function StudioArea(props: any) {
               
               <div className="flex justify-between text-slate-300">
                 {priceHidden ? (
-                  <span className="italic text-slate-400">Biaya kain mengikuti penawaran privée.</span>
+                  <span className="italic text-slate-400">Biaya kain mengikuti penawaran privÃ©e.</span>
                 ) : (
                   <>
-                    <span>Biaya Kain (≈ {formatRupiah(pricePerYard(activeTier!.unitPrice))}/yd × {requiredYards} yd):</span>
+                    <span>Biaya Kain (â‰ˆ {formatRupiah(pricePerYard(activeTier!.unitPrice))}/yd Ã— {requiredYards} yd):</span>
                     <span className="font-mono text-white">{formatRupiah(fabricCostTotal)}</span>
                   </>
                 )}
               </div>
 
               <div className="flex justify-between text-slate-300">
-                <span>Jasa Cetak &amp; Heatpress (≈ {formatRupiah(pricePerYard(pricingConfig.sublimationPrintFee))}/yd × {requiredYards} yd):</span>
+                <span>Jasa Cetak &amp; Heatpress (â‰ˆ {formatRupiah(pricePerYard(pricingConfig.sublimationPrintFee))}/yd Ã— {requiredYards} yd):</span>
                 <span className="font-mono text-white">{formatRupiah(printingCostTotal)}</span>
               </div>
 

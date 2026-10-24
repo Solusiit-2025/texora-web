@@ -3,6 +3,7 @@
 import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { invalidateClientFetch } from "@/lib/client-api";
 import { 
   Building2, 
   Mail, 
@@ -65,6 +66,7 @@ function RegisterForm() {
       }
 
       setIsSuccess(true);
+      invalidateClientFetch("/api/auth/me");
 
       const targetUrl = redirectQuery || data.redirectTo || "/customer/dashboard";
       setTimeout(() => {

@@ -5,19 +5,12 @@ import { useRouter } from 'next/navigation';
 import { type SocialComment } from '@prisma/client';
 import {
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  Legend,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  AreaChart,
-  Area,
-} from 'recharts';
+  AreaChart, Area,
+  BarChart, Bar,
+  PieChart, Pie, Cell,
+  XAxis, YAxis,
+  CartesianGrid, Tooltip, Legend,
+} from "@/components/portal/RechartsLazy";
 import {
   MessagesSquare,
   RefreshCw,
@@ -287,7 +280,7 @@ export default function SocialMediaDashboard() {
         <div>
           <div className="flex items-center gap-2 mb-2">
             <span className="px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-brand-500/20 text-brand-300 border border-brand-500/40 flex items-center gap-1.5 shadow-sm shadow-brand-500/10">
-              <Sparkles className="w-3 h-3 text-brand-400 animate-pulse" /> CRM · Social Listening & Prospek
+              <Sparkles className="w-3 h-3 text-brand-400 animate-pulse" /> CRM Â· Social Listening & Prospek
             </span>
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700 font-mono">
               Live AI Sentiment Engine v2.4
@@ -299,9 +292,9 @@ export default function SocialMediaDashboard() {
                     ? 'bg-amber-500/10 text-amber-400 border-amber-500/40'
                     : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/40'
                 }`}
-                title={data.mock ? 'Database tidak reachable — memakai dataset statis identik seed' : 'Data live dari database'}
+                title={data.mock ? 'Database tidak reachable â€” memakai dataset statis identik seed' : 'Data live dari database'}
               >
-                {data.mock ? '● DATA STATIS — DB offline' : '● DB LIVE'}
+                {data.mock ? 'â— DATA STATIS â€” DB offline' : 'â— DB LIVE'}
               </span>
             )}
           </div>
@@ -309,7 +302,7 @@ export default function SocialMediaDashboard() {
             Social Listening & Intelijen Penjualan
           </h1>
           <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
-            Pantau komentar TikTok, Instagram & Facebook untuk menangkap prospek, keluhan, dan tren pembelian — lalu ubah komentar ber-intensi beli menjadi lead di pipeline CRM.
+            Pantau komentar TikTok, Instagram & Facebook untuk menangkap prospek, keluhan, dan tren pembelian â€” lalu ubah komentar ber-intensi beli menjadi lead di pipeline CRM.
           </p>
         </div>
 
@@ -812,7 +805,7 @@ export default function SocialMediaDashboard() {
           >
             {SENTIMENTS.map((s) => (
               <option key={s} value={s}>
-                {s === 'ALL' ? 'Semua Sentimen' : s === 'POSITIVE' ? '🟢 Positif (Puas)' : s === 'NEUTRAL' ? '🟡 Netral (Tanya)' : '🔴 Negatif (Keluhan)'}
+                {s === 'ALL' ? 'Semua Sentimen' : s === 'POSITIVE' ? 'ðŸŸ¢ Positif (Puas)' : s === 'NEUTRAL' ? 'ðŸŸ¡ Netral (Tanya)' : 'ðŸ”´ Negatif (Keluhan)'}
               </option>
             ))}
           </select>
@@ -871,7 +864,7 @@ export default function SocialMediaDashboard() {
                 : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-rose-400'
             }`}
           >
-            ⚠️ Hanya Komplain (Negative)
+            âš ï¸ Hanya Komplain (Negative)
           </button>
           <button
             onClick={() => { setSentiment('POSITIVE'); setActiveTab('comments'); }}
@@ -881,12 +874,12 @@ export default function SocialMediaDashboard() {
                 : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-emerald-400'
             }`}
           >
-            ⭐ Hanya Testimoni (Positive)
+            â­ Hanya Testimoni (Positive)
           </button>
           {selectedTopicFilter && (
             <span className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-brand-500/20 text-brand-300 border border-brand-500/40 flex items-center gap-1">
               Topik: {topicClusters.find((t) => t.id === selectedTopicFilter)?.name}
-              <button onClick={() => setSelectedTopicFilter(null)} className="hover:text-white ml-1">✕</button>
+              <button onClick={() => setSelectedTopicFilter(null)} className="hover:text-white ml-1">âœ•</button>
             </span>
           )}
         </div>
@@ -1075,7 +1068,7 @@ export default function SocialMediaDashboard() {
         </div>
       </div>
 
-      {/* MODAL: Balas Komentar — edit AI reply sebelum kirim */}
+      {/* MODAL: Balas Komentar â€” edit AI reply sebelum kirim */}
       {replyModal && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-lg rounded-2xl glass-panel border border-brand-500/40 p-6 shadow-2xl bg-slate-900 space-y-4 max-h-[90vh] overflow-y-auto">
@@ -1085,7 +1078,7 @@ export default function SocialMediaDashboard() {
                   <Send className="w-4 h-4 text-brand-400" /> Balas Komentar
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  @{replyModal.username} · Platform: {replyModal.platform}
+                  @{replyModal.username} Â· Platform: {replyModal.platform}
                 </p>
               </div>
               <button
@@ -1103,7 +1096,7 @@ export default function SocialMediaDashboard() {
 
             <div>
               <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5 mb-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-brand-400" /> Balasan (Rekomendasi AI — boleh diedit)
+                <Sparkles className="w-3.5 h-3.5 text-brand-400" /> Balasan (Rekomendasi AI â€” boleh diedit)
               </label>
               <textarea
                 rows={4}
@@ -1144,10 +1137,10 @@ function InsightBadge({ data }: { data: ApiResponse | null }) {
   const spikeNeg = last.NEGATIVE > prev.NEGATIVE + 2;
   const spikePos = last.POSITIVE > prev.POSITIVE + 2;
   const msg = spikeNeg
-    ? '⚠️ Peringatan: Ada lonjakan komplain negatif hari ini'
+    ? 'âš ï¸ Peringatan: Ada lonjakan komplain negatif hari ini'
     : spikePos
-    ? '🚀 Tren Positif: Terjadi peningkatan persepsi baik netizen'
-    : '✅ Tren Stabil: Volatilitas sentimen dalam batas aman';
+    ? 'ðŸš€ Tren Positif: Terjadi peningkatan persepsi baik netizen'
+    : 'âœ… Tren Stabil: Volatilitas sentimen dalam batas aman';
   const cls = spikeNeg
     ? 'bg-rose-500/15 text-rose-400 border-rose-500/30'
     : spikePos

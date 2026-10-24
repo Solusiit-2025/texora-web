@@ -15,7 +15,10 @@
 import { prisma } from "@/lib/prisma";
 import { getSeoSettings } from "@/lib/seo";
 
-export const dynamic = "force-dynamic";
+// Sitemap di-cache 1 jam per render: kontennya hanya berubah saat CMS diubah,
+// dan crawler tidak butuh data real-time. Ini menghemat query DB remote di
+// setiap crawl/scan bot.
+export const revalidate = 3600;
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://texora.co.id";
 

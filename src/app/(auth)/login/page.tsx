@@ -3,12 +3,12 @@
 import { useState, Suspense, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { 
-  Lock, 
-  Mail, 
-  ArrowRight, 
-  Eye, 
-  EyeOff, 
+import {
+  Lock,
+  Mail,
+  ArrowRight,
+  Eye,
+  EyeOff,
   ChevronRight,
   ChevronLeft,
   AlertCircle,
@@ -18,6 +18,7 @@ import {
   KeyRound,
   Smartphone
 } from "lucide-react";
+import { invalidateClientFetch } from "@/lib/client-api";
 
 function LoginForm() {
   const router = useRouter();
@@ -76,6 +77,7 @@ function LoginForm() {
       }
 
       setSuccessMessage("Autentikasi berhasil! Mengarahkan ke dashboard...");
+      invalidateClientFetch("/api/auth/me");
 
       // Determine redirect URL
       const targetUrl = redirectQuery || data.redirectTo || "/portal/dashboard";
@@ -117,6 +119,7 @@ function LoginForm() {
       }
 
       setSuccessMessage("Autentikasi berhasil! Mengarahkan ke dashboard...");
+      invalidateClientFetch("/api/auth/me");
       const targetUrl = redirectQuery || data.redirectTo || "/portal/dashboard";
 
       setTimeout(() => {

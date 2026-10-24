@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
+import Image from "next/image";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MOCK_FABRICS } from "@/lib/mock-data";
@@ -9,7 +11,16 @@ import { yardsToMeters, metersToYards, pricePerYard } from "@/lib/units";
 import { FabricSpecCard } from "@/components/storefront/FabricSpecCard";
 import { RichContent } from "@/components/common/RichContent";
 import { Breadcrumb } from "@/components/common/Breadcrumb";
-import { CompanyLocationMap } from "@/components/common/CompanyLocationMap";
+// Peta interaktif ada jauh di bawah fold: muat JS-nya hanya saat dibutuhkan.
+const CompanyLocationMap = dynamic(
+  () => import("@/components/common/CompanyLocationMap").then((m) => m.CompanyLocationMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[480px] w-full animate-pulse rounded-3xl bg-slate-900/60" />
+    ),
+  }
+);
 import { useI18n, useLocalePath } from "@/lib/i18n/LanguageContext";
 import { HERO_TEXT_KEY, type HeroText } from "@/config/hero-text";
 import {
@@ -491,30 +502,20 @@ export default function HomePage({ initialData }: HomeClientProps) {
                     const isActive = idx === currentHeroIndex;
                     const isFirst = idx === 0;
                     return (
-                      <motion.img
+                      <Image
                         key={slide.id || idx}
                         src={slide.mainImage}
                         alt={slide.alt}
-                        // Slide pertama = elemen LCP. Muat eager + prioritas tinggi
-                        // agar tidak menghambat Largest Contentful Paint.
-                        loading={isFirst ? "eager" : "lazy"}
-                        fetchPriority={isFirst ? "high" : "auto"}
-                        decoding={isFirst ? "sync" : "async"}
-                        width={1200}
-                        height={1500}
-                        initial={false}
-                        animate={{
-                          opacity: isActive ? 1 : 0,
-                          scale: isActive ? 1 : 1.06,
-                          filter: isActive ? "blur(0px)" : "blur(6px)",
-                        }}
-                        transition={{
-                          opacity: { duration: 1.4, ease: [0.25, 1, 0.5, 1] },
-                          scale: { duration: 1.4, ease: [0.25, 1, 0.5, 1] },
-                          filter: { duration: 1.2, ease: "easeOut" },
-                        }}
-                        className={`absolute inset-0 h-full w-full object-cover ${
-                          isActive ? "pointer-events-auto z-10" : "pointer-events-none z-0"
+                        // Slide pertama = elemen LCP. `priority` membuat Next
+                        // mempreload versi teroptimasi (AVIF/WebP, ukuran layar).
+                        fill
+                        priority={isFirst}
+                        sizes="(min-width: 1280px) 33vw, (min-width: 1024px) 36vw, 55vw"
+                        quality={80}
+                        className={`absolute inset-0 h-full w-full object-cover transition-[opacity,transform,filter] duration-[1400ms] ease-out ${
+                          isActive
+                            ? "pointer-events-auto z-10 scale-100 opacity-100 blur-0"
+                            : "pointer-events-none z-0 scale-105 opacity-0 blur-[6px]"
                         }`}
                       />
                     );
@@ -584,23 +585,17 @@ export default function HomePage({ initialData }: HomeClientProps) {
                     {heroSlides.map((slide, idx) => {
                       const isActive = idx === currentHeroIndex;
                       return (
-                        <motion.img
+                        <Image
                           key={slide.id || idx}
                           src={slide.secondaryImage}
                           alt="Detail anyaman & tekstur kain"
-                          initial={false}
-                          animate={{
-                            opacity: isActive ? 1 : 0,
-                            scale: isActive ? 1 : 1.06,
-                            filter: isActive ? "blur(0px)" : "blur(6px)",
-                          }}
-                          transition={{
-                            opacity: { duration: 1.4, delay: 0.12, ease: [0.25, 1, 0.5, 1] },
-                            scale: { duration: 1.4, delay: 0.12, ease: [0.25, 1, 0.5, 1] },
-                            filter: { duration: 1.2, delay: 0.12, ease: "easeOut" },
-                          }}
-                          className={`absolute inset-0 h-full w-full object-cover ${
-                            isActive ? "pointer-events-auto z-10" : "pointer-events-none z-0"
+                          fill
+                          sizes="(min-width: 1024px) 17vw, 36vw"
+                          quality={75}
+                          className={`absolute inset-0 h-full w-full object-cover transition-[opacity,transform,filter] duration-[1400ms] ease-out ${
+                            isActive
+                              ? "pointer-events-auto z-10 scale-100 opacity-100 blur-0"
+                              : "pointer-events-none z-0 scale-105 opacity-0 blur-[6px]"
                           }`}
                         />
                       );

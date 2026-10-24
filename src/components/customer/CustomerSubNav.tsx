@@ -1,4 +1,5 @@
 "use client";
+import { cachedClientFetch } from "@/lib/client-api";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -29,10 +30,9 @@ export function CustomerSubNav() {
   const [cartCount, setCartCount] = useState(0);
 
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then((res) => res.json())
+    cachedClientFetch("/api/auth/me")
       .then((data) => {
-        if (data.authenticated && data.user) {
+        if (data?.authenticated && data.user) {
           setCurrentUser(data.user);
         }
       })
@@ -110,7 +110,7 @@ export function CustomerSubNav() {
 
             {currentUser && (
               <div className="hidden xl:flex items-center gap-2 text-xs text-slate-300">
-                <span className="text-slate-500">•</span>
+                <span className="text-slate-500">â€¢</span>
                 <span className="font-semibold text-white">{currentUser.name}</span>
                 {currentUser.companyName && (
                   <span className="text-slate-400 font-mono text-[11px]">({currentUser.companyName})</span>

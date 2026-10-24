@@ -1,4 +1,5 @@
 "use client";
+import { cachedClientFetch } from "@/lib/client-api";
 
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -42,10 +43,9 @@ function TrackOrderContent() {
 
   // Verifikasi status login sebelum akses
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then((res) => res.json())
+    cachedClientFetch("/api/auth/me")
       .then((data) => {
-        if (!data.authenticated || !data.user) {
+        if (!data?.authenticated || !data.user) {
           const currentUrl = typeof window !== "undefined"
             ? window.location.pathname + window.location.search
             : "/track-order";
@@ -262,7 +262,7 @@ function TrackOrderContent() {
                   const statusLabel = (o.status || "").replace("_", " ");
                   return (
                     <option key={o.orderNumber} value={o.orderNumber} className="bg-slate-900 text-white font-sans py-2">
-                      {o.orderNumber} • {mainFabric} {meters} [{statusLabel}]
+                      {o.orderNumber} â€¢ {mainFabric} {meters} [{statusLabel}]
                     </option>
                   );
                 })
@@ -350,7 +350,7 @@ function TrackOrderContent() {
                       {st.label}
                     </div>
                     <div className="text-[9px] font-mono mt-1">
-                      {isCurrent ? "Sedang Berjalan" : isPast ? "Selesai ✓" : "Menunggu"}
+                      {isCurrent ? "Sedang Berjalan" : isPast ? "Selesai âœ“" : "Menunggu"}
                     </div>
                   </div>
                 );
@@ -373,7 +373,7 @@ function TrackOrderContent() {
                   <div>
                     <div className="font-bold text-white text-sm">{item.fabricName}</div>
                     <div className="text-slate-400 mt-0.5">
-                      Gramatur: <span className="text-slate-200">{item.gsm} GSM</span> • Panjang: <span className="text-white font-mono font-bold">{item.lengthMeters} Meter</span>
+                      Gramatur: <span className="text-slate-200">{item.gsm} GSM</span> â€¢ Panjang: <span className="text-white font-mono font-bold">{item.lengthMeters} Meter</span>
                     </div>
                     {item.customDesignTitle && (
                       <div className="flex items-center gap-1.5 mt-1.5 text-accent-cyan font-mono text-[11px]">

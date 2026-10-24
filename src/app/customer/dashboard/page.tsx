@@ -1,4 +1,5 @@
 "use client";
+import { cachedClientFetch } from "@/lib/client-api";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -58,10 +59,9 @@ export default function CustomerDashboardPage() {
 
   // Fetch live user and orders from database API
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then((res) => res.json())
+    cachedClientFetch("/api/auth/me")
       .then((data) => {
-        if (data.authenticated && data.user) {
+        if (data?.authenticated && data.user) {
           setCurrentUser(data.user);
         }
       })
@@ -181,7 +181,7 @@ export default function CustomerDashboardPage() {
                 Tier Gold Prioritas
               </span>
               <span className="text-xs text-slate-400 hidden sm:inline">
-                • Plafon TOP 30 Hari Aktif (Limit Rp 50.000.000)
+                â€¢ Plafon TOP 30 Hari Aktif (Limit Rp 50.000.000)
               </span>
             </div>
 
@@ -191,7 +191,7 @@ export default function CustomerDashboardPage() {
 
             <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
               {currentUser?.companyName ? (
-                <>Perusahaan: <strong className="text-white">{currentUser.companyName}</strong> • </>
+                <>Perusahaan: <strong className="text-white">{currentUser.companyName}</strong> â€¢ </>
               ) : null}
               Akses cepat seluruh layanan produksi sublimasi kain roll, verifikasi pra-cetak digital, lacak antrean mesin rotary heatpress, dan unduh dokumen faktur pajak DJP CoreTax.
             </p>
@@ -461,7 +461,7 @@ export default function CustomerDashboardPage() {
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
-                Layout motif cetak pada bahan <strong className="text-white font-semibold">{pendingProofOrder.items[0]?.fabricName}</strong> telah siap diverifikasi. Harap setujui proofing sebelum operator menjalankan mesin heatpress rotary 205°C.
+                Layout motif cetak pada bahan <strong className="text-white font-semibold">{pendingProofOrder.items[0]?.fabricName}</strong> telah siap diverifikasi. Harap setujui proofing sebelum operator menjalankan mesin heatpress rotary 205Â°C.
               </p>
             </div>
           </div>
@@ -525,7 +525,7 @@ export default function CustomerDashboardPage() {
                 </span>
               </div>
               <h3 className="text-lg font-bold text-white mt-1">
-                SPK {orders[0].orderNumber} — {orders[0].items[0]?.fabricName} ({metersToYards(orders[0].items[0]?.lengthMeters || 0)} Yard)
+                SPK {orders[0].orderNumber} â€” {orders[0].items[0]?.fabricName} ({metersToYards(orders[0].items[0]?.lengthMeters || 0)} Yard)
               </h3>
             </div>
 
@@ -547,7 +547,7 @@ export default function CustomerDashboardPage() {
               { title: "Pembayaran / TOP", desc: "Terms 30 Hari", done: true, current: false, icon: CheckCircle2 },
               { title: "Proofing Digital", desc: orders[0].status === "PENDING_PAYMENT" ? "Menunggu Approval" : "Disetujui", done: orders[0].status !== "PENDING_PAYMENT", current: orders[0].status === "PENDING_PAYMENT", icon: Eye },
               { title: "Cetak RIP Sublim", desc: "Mesin High-Speed", done: orders[0].status === "IN_PRODUCTION" || orders[0].status === "QUALITY_CONTROL" || orders[0].status === "SHIPPED", current: orders[0].status === "IN_PRODUCTION", icon: Printer },
-              { title: "Rotary Heatpress", desc: "Suhu 205°C Fix", done: orders[0].status === "QUALITY_CONTROL" || orders[0].status === "SHIPPED", current: false, icon: Flame },
+              { title: "Rotary Heatpress", desc: "Suhu 205Â°C Fix", done: orders[0].status === "QUALITY_CONTROL" || orders[0].status === "SHIPPED", current: false, icon: Flame },
               { title: "QC & Pengiriman", desc: "Roll Packing", done: orders[0].status === "SHIPPED", current: false, icon: Truck },
             ].map((step, idx) => {
               const StepIcon = step.icon;
@@ -690,10 +690,10 @@ export default function CustomerDashboardPage() {
                       <td className="py-4 px-4 space-y-1">
                         {(ord.items || []).map((item: any) => (
                           <div key={item.id} className="text-slate-300">
-                            <span className="font-semibold text-white">{item.fabricName}</span> • <span className="font-mono text-accent-cyan font-bold">{metersToYards(item.lengthMeters)} yd</span>
+                            <span className="font-semibold text-white">{item.fabricName}</span> â€¢ <span className="font-mono text-accent-cyan font-bold">{metersToYards(item.lengthMeters)} yd</span>
                             {item.customDesignTitle && (
                               <span className="block font-mono text-[10px] text-slate-400 truncate max-w-xs mt-0.5">
-                                ↳ Motif: {item.customDesignTitle}
+                                â†³ Motif: {item.customDesignTitle}
                               </span>
                             )}
                           </div>
@@ -703,7 +703,7 @@ export default function CustomerDashboardPage() {
                       <td className="py-4 px-4 font-mono">
                         <div className="font-bold text-accent-cyan text-sm">{formatRupiah(ord.totalAmount)}</div>
                         <div className="text-[10px] text-slate-400 mt-0.5">
-                          {ord.paymentMethod || "Bank Transfer"} • {ord.paymentStatus === "PAID" ? "Lunas" : "TOP 30 Hari"}
+                          {ord.paymentMethod || "Bank Transfer"} â€¢ {ord.paymentStatus === "PAID" ? "Lunas" : "TOP 30 Hari"}
                         </div>
                       </td>
 
@@ -788,7 +788,7 @@ export default function CustomerDashboardPage() {
             <div className="text-[11px] font-bold text-accent-cyan uppercase tracking-wider">
               Assigned Technical Account Executive
             </div>
-            <h4 className="text-base font-bold text-white">Budi Santoso — PIC Senior XoraMateria</h4>
+            <h4 className="text-base font-bold text-white">Budi Santoso â€” PIC Senior XoraMateria</h4>
             <p className="text-xs text-slate-400">
               Siap melayani konsultasi profil warna ICC, permintaan sample swatch kain, dan pemesanan partai besar (&gt; 1.100 yard).
             </p>
@@ -849,7 +849,7 @@ export default function CustomerDashboardPage() {
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-90" />
               <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-xs">
                 <div className="bg-slate-900/90 border border-slate-700 px-3 py-1.5 rounded-lg text-slate-200 backdrop-blur-sm">
-                  Kain: <strong className="text-white">{proofingModalOrder.items[0]?.fabricName}</strong> • Lebar: 152 cm (60")
+                  Kain: <strong className="text-white">{proofingModalOrder.items[0]?.fabricName}</strong> â€¢ Lebar: 152 cm (60")
                 </div>
                 <div className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-3 py-1.5 rounded-lg font-mono font-bold">
                   CMYK Japan Color 2001
