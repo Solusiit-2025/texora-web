@@ -29,8 +29,17 @@ import {
   ChevronLeft,
   ChevronRight,
   ExternalLink,
+  MessageCircle,
 } from "lucide-react";
 import { useI18n, useLocalePath } from "@/lib/i18n/LanguageContext";
+import { DEFAULT_SOCIAL_LINKS } from "@/config/social";
+
+const WA_BASE =
+  DEFAULT_SOCIAL_LINKS.find((l) => l.id === "whatsapp")?.href ||
+  "https://wa.me/6285810646157";
+const WA_HREF = `${WA_BASE.split("?")[0]}?text=${encodeURIComponent(
+  "Halo XoraMateria, saya melihat promo Grand Opening / Raya Ready Deals. Saya ingin bertanya."
+)}`;
 
 const STORAGE_KEY = "texora-welcome-popup-v1";
 const TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 hari
@@ -62,6 +71,7 @@ export function WelcomePopup({
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const lastFocusRef = useRef<HTMLElement | null>(null);
+  const draggedRef = useRef(false);
 
   const go = useCallback(
     (dir: 1 | -1) => {
@@ -263,9 +273,16 @@ export function WelcomePopup({
                         drag={count > 1 ? "x" : false}
                         dragConstraints={{ left: 0, right: 0 }}
                         dragElastic={0.12}
+                        onDrag={() => {
+                          draggedRef.current = true;
+                        }}
                         onDragEnd={(_e, info) => {
                           if (info.offset.x < -48) go(1);
                           else if (info.offset.x > 48) go(-1);
+                          // Hindari klik-navigasi tak sengaja setelah swipe.
+                          window.setTimeout(() => {
+                            draggedRef.current = false;
+                          }, 120);
                         }}
                         className={count > 1 ? "cursor-grab active:cursor-grabbing" : ""}
                       >
@@ -286,26 +303,43 @@ export function WelcomePopup({
                               ease: [0.16, 1, 0.3, 1],
                             }}
                           >
-                            <Image
-                              src={current.src}
-                              alt={
-                                current.alt ||
-                                (count > 1
-                                  ? `Poster pengumuman XoraMateria ${index + 1} dari ${count}`
-                                  : "Grand Opening Showroom Tour XoraMateria")
-                              }
-                              width={900}
-                              height={1600}
-                              priority
-                              // Poster promo: sajikan file asli (sudah dioptimasi
-                              // 900px) agar tidak bergantung pada image optimizer
-                              // serverless yang bisa gagal di sebagian hosting.
-                              unoptimized
-                              sizes="(max-width: 640px) 92vw, (max-width: 1280px) 440px, 520px"
-                              onError={() => setPosterFailed(true)}
-                              draggable={false}
-                              className="pointer-events-none block h-auto max-h-[64vh] w-auto max-w-full select-none sm:max-h-[72vh] lg:max-h-[82vh] xl:max-h-[84vh]"
-                            />
+                            <a
+                              href={WA_HREF}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label="Chat via WhatsApp"
+                              onClick={(e) => {
+                                if (draggedRef.current) e.preventDefault();
+                              }}
+                              className="group/poster relative block cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+                            >
+                              <Image
+                                src={current.src}
+                                alt={
+                                  current.alt ||
+                                  (count > 1
+                                    ? `Poster pengumuman XoraMateria ${index + 1} dari ${count}`
+                                    : "Grand Opening Showroom Tour XoraMateria")
+                                }
+                                width={900}
+                                height={1600}
+                                priority
+                                // Poster promo: sajikan file asli (sudah dioptimasi
+                                // 900px) agar tidak bergantung pada image optimizer
+                                // serverless yang bisa gagal di sebagian hosting.
+                                unoptimized
+                                sizes="(max-width: 640px) 92vw, (max-width: 1280px) 440px, 520px"
+                                onError={() => setPosterFailed(true)}
+                                draggable={false}
+                                className="pointer-events-none block h-auto max-h-[64vh] w-auto max-w-full select-none sm:max-h-[72vh] lg:max-h-[82vh] xl:max-h-[84vh]"
+                              />
+
+                              {/* Hint di desktop: klik poster untuk WhatsApp */}
+                              <span className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-center gap-1.5 bg-gradient-to-t from-black/75 via-black/35 to-transparent px-3 pb-3 pt-10 text-[11px] font-semibold text-white opacity-0 transition-opacity duration-300 group-hover/poster:opacity-100">
+                                <MessageCircle className="h-3.5 w-3.5" />
+                                Klik untuk chat WhatsApp
+                              </span>
+                            </a>
                           </motion.div>
                         </AnimatePresence>
                       </motion.div>
