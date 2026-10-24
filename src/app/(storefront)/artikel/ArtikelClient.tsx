@@ -136,6 +136,7 @@ export default function ArtikelClient({
                     interval={CAROUSEL_INTERVAL + (idx % 3) * 1200}
                     slideMs={1100}
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    priority={idx === 0}
                   />
                 ) : (
                   <div className="aspect-[16/9] bg-slate-950 flex items-center justify-center text-slate-700">
