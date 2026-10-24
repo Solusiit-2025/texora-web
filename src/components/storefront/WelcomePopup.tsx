@@ -28,6 +28,7 @@ import {
   ArrowRight,
   ChevronLeft,
   ChevronRight,
+  ExternalLink,
 } from "lucide-react";
 import { useI18n, useLocalePath } from "@/lib/i18n/LanguageContext";
 
@@ -231,7 +232,7 @@ export function WelcomePopup({
             }
             transition={cardTransition}
             style={{ transformPerspective: 1200 }}
-            className="relative z-10 flex max-h-[86vh] w-fit max-w-[92vw] flex-col will-change-transform"
+            className="relative z-10 flex max-h-[90vh] w-fit max-w-[92vw] flex-col will-change-transform sm:max-w-[440px] xl:max-w-[540px]"
           >
             <div className="flex min-h-0 flex-col rounded-[30px] bg-gradient-to-b from-brand-400/45 via-white/10 to-brand-500/25 p-px shadow-[0_24px_80px_-18px_rgba(0,0,0,0.95)]">
               <div className="relative flex min-h-0 flex-col overflow-hidden rounded-[29px] bg-slate-950">
@@ -300,10 +301,10 @@ export function WelcomePopup({
                               // 900px) agar tidak bergantung pada image optimizer
                               // serverless yang bisa gagal di sebagian hosting.
                               unoptimized
-                              sizes="(max-width: 480px) 92vw, 380px"
+                              sizes="(max-width: 640px) 92vw, (max-width: 1280px) 440px, 520px"
                               onError={() => setPosterFailed(true)}
                               draggable={false}
-                              className="pointer-events-none block h-auto max-h-[64vh] w-auto max-w-full select-none"
+                              className="pointer-events-none block h-auto max-h-[64vh] w-auto max-w-full select-none sm:max-h-[72vh] lg:max-h-[82vh] xl:max-h-[84vh]"
                             />
                           </motion.div>
                         </AnimatePresence>
@@ -429,16 +430,33 @@ export function WelcomePopup({
                     </div>
                   ) : null}
 
-                  <motion.button
-                    type="button"
-                    onClick={dismiss}
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.96 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 24 }}
-                    className="rounded-lg bg-white/10 px-3 py-1.5 text-[11px] font-semibold text-slate-100 transition-colors hover:bg-white/15"
-                  >
-                    {t("popup.close", "Tutup")}
-                  </motion.button>
+                  <div className="flex items-center gap-2">
+                    {current && (
+                      <a
+                        href={current.src}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={t("popup.fullsize", "Buka ukuran penuh")}
+                        className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] text-slate-300 transition-colors hover:bg-white/10 hover:text-white"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        <span className="hidden sm:inline">
+                          {t("popup.fullsize", "Ukuran penuh")}
+                        </span>
+                      </a>
+                    )}
+
+                    <motion.button
+                      type="button"
+                      onClick={dismiss}
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.96 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 24 }}
+                      className="rounded-lg bg-white/10 px-3 py-1.5 text-[11px] font-semibold text-slate-100 transition-colors hover:bg-white/15"
+                    >
+                      {t("popup.close", "Tutup")}
+                    </motion.button>
+                  </div>
                 </motion.div>
               </div>
             </div>
