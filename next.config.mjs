@@ -43,6 +43,7 @@ const isProduction = process.env.NODE_ENV === "production";
  *  - `'unsafe-eval'` hanya di development (React Refresh).
  *  - Domain Google Tag Manager/Analytics diizinkan bila env diisi.
  *  - `upgrade-insecure-requests` hanya di produksi agar dev http tetap jalan.
+ *    (Dihapus: memblokir aset saat akses via http://IP sebelum SSL siap.)
  */
 const contentSecurityPolicy = [
   "default-src 'self'",
@@ -58,7 +59,6 @@ const contentSecurityPolicy = [
   "frame-src 'self' https://www.googletagmanager.com https://maps.google.com https://www.google.com",
   "media-src 'self' https:",
   "worker-src 'self' blob:",
-  isProduction ? "upgrade-insecure-requests" : "",
 ]
   .filter(Boolean)
   .join("; ");
