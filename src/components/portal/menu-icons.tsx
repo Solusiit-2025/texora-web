@@ -18,6 +18,7 @@ import {
   ShieldAlert,
   ShieldCheck,
   Settings,
+  DatabaseBackup,
   type LucideIcon,
 } from "lucide-react";
 import type { MenuIconName } from "@/config/portal-menu";
@@ -42,6 +43,7 @@ export const MENU_ICONS: Record<MenuIconName, LucideIcon> = {
   "shield-alert": ShieldAlert,
   "shield-check": ShieldCheck,
   settings: Settings,
+  "database-backup": DatabaseBackup,
 };
 
 export function getMenuIcon(icon: MenuIconName): LucideIcon {
