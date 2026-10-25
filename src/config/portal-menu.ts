@@ -33,7 +33,8 @@ export type MenuIconName =
   | "layout-template"
   | "shield-alert"
   | "shield-check"
-  | "settings";
+  | "settings"
+  | "database-backup";
 
 export interface PortalMenuItem {
   /** ID stabil, dipakai sebagai kunci penyimpanan hak akses. */
@@ -261,6 +262,14 @@ export const PORTAL_MENU_GROUPS: PortalMenuGroup[] = [
         icon: "shield-alert",
         module: "Katalog & Pengaturan",
         description: "Jejak audit aktivitas sistem dan status 2FA.",
+      },
+      {
+        id: "backup",
+        name: "Backup & Restore Database",
+        href: "/portal/backup",
+        icon: "database-backup",
+        module: "Katalog & Pengaturan",
+        description: "Backup dan pemulihan database sistem.",
       },
       {
         id: "settings",

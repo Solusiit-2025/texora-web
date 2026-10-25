@@ -13,6 +13,9 @@ import {
   ShieldCheck,
   FileJson,
   RefreshCw,
+  Upload,
+  Database,
+  X,
 } from "lucide-react";
 
 interface BackupFile {
@@ -47,6 +50,11 @@ export function BackupPanel() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [pruning, setPruning] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const [restoreTarget, setRestoreTarget] = useState<string | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [confirmText, setConfirmText] = useState("");
+  const [showRestoreModal, setShowRestoreModal] = useState(false);
   const [message, setMessage] = useState<{
     ok: boolean;
     text: string;
@@ -118,6 +126,67 @@ export function BackupPanel() {
       setMessage({ ok: false, text: "Terjadi kesalahan jaringan." });
     } finally {
       setPruning(false);
+    }
+  };
+
+  const openRestoreForFile = (filename: string) => {
+    setRestoreTarget(filename);
+    setPendingFile(null);
+    setConfirmText("");
+    setShowRestoreModal(true);
+  };
+
+  const openRestoreForUpload = (file: File) => {
+    setRestoreTarget(null);
+    setPendingFile(file);
+    setConfirmText("");
+    setShowRestoreModal(true);
+  };
+
+  const handleRestoreConfirm = async () => {
+    if (confirmText.trim().toUpperCase() !== "RESTORE") {
+      setMessage({ ok: false, text: "Ketik RESTORE untuk konfirmasi." });
+      return;
+    }
+    setRestoring(true);
+    setMessage(null);
+    try {
+      let res: Response;
+      if (pendingFile) {
+        const form = new FormData();
+        form.append("file", pendingFile);
+        form.append("action", "restore");
+        res = await fetch("/api/backup", { method: "POST", body: form });
+      } else if (restoreTarget) {
+        res = await fetch("/api/backup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "restore", filename: restoreTarget }),
+        });
+      } else {
+        setMessage({ ok: false, text: "Tidak ada target restore." });
+        setRestoring(false);
+        return;
+      }
+
+      const data = await res.json();
+      if (data?.success) {
+        setMessage({
+          ok: true,
+          text: `Restore berhasil! ${data.data?.recordCount ?? 0} record dipulihkan.`,
+        });
+        setShowRestoreModal(false);
+        setRestoreTarget(null);
+        setPendingFile(null);
+        setConfirmText("");
+        await loadData();
+      } else {
+        setMessage({ ok: false, text: data?.error || "Gagal melakukan restore." });
+      }
+    } catch {
+      setMessage({ ok: false, text: "Terjadi kesalahan jaringan saat restore." });
+    } finally {
+      setRestoring(false);
     }
   };
 
@@ -210,6 +279,34 @@ export function BackupPanel() {
         </div>
       )}
 
+      {/* Restore dari file upload */}
+      <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
+        <h4 className="text-xs font-bold text-white flex items-center gap-2">
+          <Upload className="w-4 h-4 text-amber-400" />
+          <span>Pulihkan dari File Backup (Upload)</span>
+        </h4>
+        <p className="text-[11px] text-slate-400">
+          Unggah file backup JSON (.json) untuk memulihkan database. Tindakan ini
+          akan menimpa seluruh data yang ada.
+        </p>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) openRestoreForUpload(f);
+              e.target.value = "";
+            }}
+          />
+          <span className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center gap-2 transition-colors">
+            <FileJson className="w-3.5 h-3.5" />
+            <span>Pilih File &amp; Pulihkan</span>
+          </span>
+        </label>
+      </div>
+
       {/* Daftar File */}
       <div>
         <h4 className="text-xs font-bold text-white mb-2 flex items-center gap-2">
@@ -244,13 +341,24 @@ export function BackupPanel() {
                     <span>{formatBytes(f.sizeBytes)}</span>
                   </p>
                 </div>
-                <a
-                  href={`/api/backup?download=${encodeURIComponent(f.filename)}`}
-                  className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold flex items-center gap-1.5 shrink-0 transition-colors"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Unduh</span>
-                </a>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => openRestoreForFile(f.filename)}
+                    className="px-3 py-1.5 rounded-lg bg-amber-600/80 hover:bg-amber-500 text-white text-[11px] font-bold flex items-center gap-1.5 transition-colors"
+                    title="Pulihkan database dari file ini"
+                  >
+                    <Database className="w-3.5 h-3.5" />
+                    <span>Pulihkan</span>
+                  </button>
+                  <a
+                    href={`/api/backup?download=${encodeURIComponent(f.filename)}`}
+                    className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold flex items-center gap-1.5 transition-colors"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Unduh</span>
+                  </a>
+                </div>
               </div>
             ))}
           </div>
@@ -292,6 +400,69 @@ export function BackupPanel() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Modal Konfirmasi Restore */}
+      {showRestoreModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-amber-400" />
+                Konfirmasi Restore Database
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowRestoreModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs text-rose-300">
+              Tindakan ini akan <strong>MENIMPA SELURUH DATA</strong> database dengan
+              isi backup. Pastikan Anda sudah menyimpan backup terbaru. Tindakan
+              tidak dapat dibatalkan.
+            </div>
+            <div className="text-xs text-slate-300">
+              Target:{" "}
+              <span className="font-mono text-amber-300">
+                {pendingFile ? pendingFile.name : restoreTarget}
+              </span>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-slate-400">
+                Ketik <span className="font-mono text-white">RESTORE</span> untuk
+                konfirmasi
+              </label>
+              <input
+                type="text"
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-slate-200 text-sm font-mono focus:outline-none focus:border-amber-500"
+                placeholder="RESTORE"
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => setShowRestoreModal(false)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleRestoreConfirm}
+                disabled={restoring || confirmText.trim().toUpperCase() !== "RESTORE"}
+                className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-2"
+              >
+                {restoring && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                <span>{restoring ? "Memulihkan..." : "Pulihkan Sekarang"}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

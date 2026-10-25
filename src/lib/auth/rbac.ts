@@ -13,6 +13,7 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { pathPrefix: "/portal/audit-logs", allowedRoles: ["ADMINISTRATOR"] },
   { pathPrefix: "/portal/catalog-management", allowedRoles: ["ADMINISTRATOR"] },
   { pathPrefix: "/portal/content-management", allowedRoles: ["ADMINISTRATOR"] },
+  { pathPrefix: "/portal/backup", allowedRoles: ["ADMINISTRATOR"] },
   { pathPrefix: "/portal/finance", allowedRoles: ["ADMINISTRATOR"] },
 
   // Purchasing & Procurement

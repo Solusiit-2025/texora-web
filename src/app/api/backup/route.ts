@@ -7,8 +7,10 @@ import {
   createBackup,
   listBackupFiles,
   pruneOldBackups,
+  restoreBackup,
   BACKUP_DIR,
 } from "@/lib/backup";
+import { handleBackupPost } from "@/lib/backup-http";
 
 export const dynamic = "force-dynamic";
 
@@ -97,57 +99,5 @@ export async function GET(req: NextRequest) {
  * POST /api/backup -> buat backup baru secara manual
  */
 export async function POST(req: NextRequest) {
-  try {
-    const user = await getAuthenticatedUser(req);
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: "Sesi tidak valid. Silakan login kembali." },
-        { status: 401 }
-      );
-    }
-
-    if (user.role !== "ADMINISTRATOR") {
-      return NextResponse.json(
-        { success: false, error: "Hanya Administrator yang dapat membuat backup." },
-        { status: 403 }
-      );
-    }
-
-    const body = await req.json().catch(() => null);
-    const action = body?.action || "create";
-
-    if (action === "prune") {
-      const removed = await pruneOldBackups(Number(body?.keep) || 7);
-      return NextResponse.json({
-        success: true,
-        message: `${removed} file backup lama berhasil dihapus.`,
-      });
-    }
-
-    const result = await createBackup({ trigger: "MANUAL", createdBy: user.id });
-
-    if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: result.message },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: result.message,
-      data: {
-        filename: result.filename,
-        sizeBytes: result.sizeBytes,
-        recordCount: result.recordCount,
-        tables: result.tables,
-      },
-    });
-  } catch (error: any) {
-    console.error("[backup] Gagal membuat backup:", error);
-    return NextResponse.json(
-      { success: false, error: error?.message || "Gagal membuat backup." },
-      { status: 500 }
-    );
-  }
+  return handleBackupPost(req, "create");
 }
