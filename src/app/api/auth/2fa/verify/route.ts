@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { comparePassword, hashPassword, signAccessToken, signRefreshToken, setAuthCookies } from "@/lib/auth";
 import { verifyTwoFactorChallenge } from "@/lib/auth/2fa-challenge";
 import { verifyTotpCode, normalizeBackupCode } from "@/lib/totp";
+import { getClientIp } from "@/lib/client-ip";
 
 export const dynamic = "force-dynamic";
 
@@ -30,10 +31,8 @@ function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
  * Verifikasi kode TOTP (6 digit) atau kode cadangan (10 digit) lalu terbitkan sesi.
  */
 export async function POST(req: NextRequest) {
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    req.headers.get("x-real-ip") ||
-    "unknown";
+  // IP dari header yang tidak bisa dipalsukan klien (lihat src/lib/client-ip.ts).
+  const ip = getClientIp(req);
 
   const rl = checkRateLimit(ip);
   if (!rl.allowed) {

@@ -13,6 +13,12 @@ git reset --hard origin/main
 echo "==> install"
 npm ci
 
+# Terapkan migrasi database SEBELUM build. Tanpa ini, kolom/tabel baru di
+# prisma/schema.prisma hanya ada di Prisma Client (hasil `prisma generate`)
+# tetapi belum ada di database produksi — gejalanya query 500 saat login.
+echo "==> prisma migrate deploy"
+npx prisma migrate deploy
+
 echo "==> build"
 npm run build
 

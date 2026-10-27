@@ -1,8 +1,6 @@
 import { jwtVerify } from "jose";
 import type { TokenPayload } from "./jwt";
-
-const ACCESS_SECRET = process.env.JWT_SECRET || "texora_jwt_access_secret_super_secure_key_2026_x89";
-const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "texora_jwt_refresh_secret_ultra_secure_key_2026_r92";
+import { getAccessSecret, getRefreshSecret } from "./secrets";
 
 /**
  * Pure Edge Runtime-compatible JWT verification using 'jose' only.
@@ -10,7 +8,7 @@ const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "texora_jwt_refresh_sec
  */
 export async function verifyAccessTokenEdge(token: string): Promise<TokenPayload | null> {
   try {
-    const secret = new TextEncoder().encode(ACCESS_SECRET);
+    const secret = new TextEncoder().encode(getAccessSecret());
     const { payload } = await jwtVerify(token, secret);
     return {
       sub: (payload.sub || payload.id) as string,
@@ -28,7 +26,7 @@ export async function verifyAccessTokenEdge(token: string): Promise<TokenPayload
 
 export async function verifyRefreshTokenEdge(token: string): Promise<TokenPayload | null> {
   try {
-    const secret = new TextEncoder().encode(REFRESH_SECRET);
+    const secret = new TextEncoder().encode(getRefreshSecret());
     const { payload } = await jwtVerify(token, secret);
     return {
       sub: (payload.sub || payload.id) as string,

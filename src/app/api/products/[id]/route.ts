@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { parseGalleryImages, serializeGalleryImages, PRODUCT_FALLBACK_THUMB } from "@/lib/image-gallery";
+import { getAuthenticatedUser } from "@/lib/auth/session";
+import { canManageCatalog } from "@/lib/rbac/authorize";
+import { writeAuditLog } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -72,6 +75,20 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getAuthenticatedUser();
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Sesi tidak valid. Silakan login." },
+        { status: 401 }
+      );
+    }
+    if (!(await canManageCatalog(user.role))) {
+      return NextResponse.json(
+        { success: false, error: "Anda tidak memiliki akses mengubah katalog." },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
 
     const existing = await prisma.fabricProduct.findUnique({
@@ -151,6 +168,38 @@ export async function PUT(
       },
     });
 
+    // Ringkasan field yang berubah untuk audit log ("apa yang diubah").
+    const fieldLabels: Record<string, string> = {
+      name: "nama",
+      category: "kategori",
+      composition: "komposisi",
+      weaveType: "anyaman",
+      widthInch: "lebar",
+      basePricePerMeter: "harga/meter",
+      description: "deskripsi",
+      thumbnailUrl: "thumbnail",
+      isSublimationReady: "status sublimasi",
+    };
+    const changed: string[] = [];
+    for (const key of Object.keys(fieldLabels)) {
+      if (body[key] === undefined) continue;
+      const before = String((existing as any)[key] ?? "");
+      const after = String(body[key] ?? "");
+      if (before !== after) changed.push(fieldLabels[key]);
+    }
+    if (body.galleryImages !== undefined) changed.push("galeri gambar");
+    if (Array.isArray(body.variants)) changed.push("varian/stok");
+    if (Array.isArray(body.priceTiers)) changed.push("tier harga");
+
+    await writeAuditLog({
+      action: "PRODUCT_UPDATE",
+      userId: user.id,
+      description: `Mengubah kain "${existing.name}"${
+        changed.length ? `: ${changed.join(", ")}` : " (tanpa perubahan field utama)"
+      }.`,
+      request,
+    });
+
     return NextResponse.json({
       success: true,
       message: "Data kain berhasil diperbarui.",
@@ -170,6 +219,20 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getAuthenticatedUser();
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Sesi tidak valid. Silakan login." },
+        { status: 401 }
+      );
+    }
+    if (!(await canManageCatalog(user.role))) {
+      return NextResponse.json(
+        { success: false, error: "Anda tidak memiliki akses mengubah katalog." },
+        { status: 403 }
+      );
+    }
+
     const existing = await prisma.fabricProduct.findUnique({
       where: { id: (await params).id },
     });
@@ -183,6 +246,13 @@ export async function DELETE(
 
     await prisma.fabricProduct.delete({
       where: { id: (await params).id },
+    });
+
+    await writeAuditLog({
+      action: "PRODUCT_DELETE",
+      userId: user.id,
+      description: `Menghapus kain "${existing.name}" (${existing.slug}) dari katalog.`,
+      request,
     });
 
     return NextResponse.json({

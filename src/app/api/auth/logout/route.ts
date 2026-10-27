@@ -5,6 +5,7 @@ import {
   verifyRefreshToken,
   clearAuthCookies,
 } from "@/lib/auth";
+import { writeAuditLog } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,13 @@ export async function POST(req: NextRequest) {
           where: { id: decoded.sub },
           data: { refreshToken: null },
         }).catch(() => {});
+
+        await writeAuditLog({
+          action: "LOGOUT",
+          userId: decoded.sub,
+          description: `Logout dari portal (${decoded.email || "tanpa email"}).`,
+          request: req,
+        });
       }
     }
 

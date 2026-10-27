@@ -7,9 +7,8 @@
  */
 
 import jwt from "jsonwebtoken";
+import { getTwoFactorSecret } from "./secrets";
 
-const CHALLENGE_SECRET =
-  process.env.JWT_2FA_SECRET || "texora_jwt_2fa_challenge_secret_secure_key_2026_z77";
 const CHALLENGE_EXPIRES_IN = process.env.JWT_2FA_EXPIRES_IN || "5m";
 
 export interface TwoFactorChallengePayload {
@@ -25,7 +24,7 @@ export interface TwoFactorChallengePayload {
 }
 
 export function signTwoFactorChallenge(payload: TwoFactorChallengePayload): string {
-  return jwt.sign(payload, CHALLENGE_SECRET, {
+  return jwt.sign(payload, getTwoFactorSecret(), {
     expiresIn: CHALLENGE_EXPIRES_IN as any,
   });
 }
@@ -34,7 +33,7 @@ export function verifyTwoFactorChallenge(
   token: string
 ): TwoFactorChallengePayload | null {
   try {
-    const decoded = jwt.verify(token, CHALLENGE_SECRET) as TwoFactorChallengePayload;
+    const decoded = jwt.verify(token, getTwoFactorSecret()) as TwoFactorChallengePayload;
     if (decoded?.purpose !== "2fa" || !decoded.sub) return null;
     return decoded;
   } catch {

@@ -26,6 +26,7 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
             npm ci
+            npx prisma migrate deploy
             npm run build
             pm2 restart texora-web
             pm2 save

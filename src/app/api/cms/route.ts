@@ -8,6 +8,7 @@ import {
 } from "@/config/social";
 import { HERO_TEXT_KEY, HERO_TEXT_FIELDS } from "@/config/hero-text";
 import { canManageContent } from "@/lib/rbac/authorize";
+import { writeAuditLog } from "@/lib/audit";
 import {
   normalizeLocale,
   localizeRows,
@@ -259,6 +260,27 @@ function invalidateContentCaches() {
   invalidateCache("api.");
 }
 
+/** Label manusiawi untuk log audit konten CMS ("apa yang diubah"). */
+function cmsAuditLabel(type: string, item: any): string {
+  if (!item) return `konten tipe ${type}`;
+  switch (type) {
+    case "article":
+      return `artikel "${item.title || item.slug || item.id}"`;
+    case "heroSlide":
+      return `hero slide "${item.title || item.heading || item.badge || item.id}"`;
+    case "testimonial":
+      return `testimoni "${item.author || item.name || item.id}"`;
+    case "faq":
+      return `FAQ "${item.question || item.id}"`;
+    case "siteContent":
+      return `konten situs "${item.key || item.id}"`;
+    case "socialLinks":
+      return "tautan media sosial";
+    default:
+      return `konten tipe ${type}`;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const user = await getAuthenticatedUser(request);
@@ -320,15 +342,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    try {
-      await prisma.auditLog.create({
-        data: {
-          action: "CMS_CREATE",
-          userId: user.id,
-          description: `Administrator menambah konten CMS tipe ${type}.`,
-        },
-      });
-    } catch {}
+    await writeAuditLog({
+      action: "CMS_CREATE",
+      userId: user.id,
+      description: `Menambah ${cmsAuditLabel(type, created)}.`,
+      request,
+    });
 
     // Pre-translate (fire-and-forget) agar konten baru langsung tersedia
     // dalam bahasa asing tanpa menunggu pengunjung asing datang.
@@ -442,15 +461,12 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    try {
-      await prisma.auditLog.create({
-        data: {
-          action: "CMS_UPDATE",
-          userId: user.id,
-          description: `Administrator memperbarui konten CMS tipe ${type}.`,
-        },
-      });
-    } catch {}
+    await writeAuditLog({
+      action: "CMS_UPDATE",
+      userId: user.id,
+      description: `Memperbarui ${cmsAuditLabel(type, updated)}.`,
+      request,
+    });
 
     // Pre-translate (fire-and-forget) — cache lama otomatis dianggap basi
     // karena source teks berubah, lalu dibuat ulang.
@@ -501,10 +517,11 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
+    let deleted: any = null;
     if (type === "heroSlide") {
-      await prisma.heroSlide.delete({ where: { id } });
+      deleted = await prisma.heroSlide.delete({ where: { id } });
     } else if (type === "testimonial") {
-      await prisma.testimonial.delete({ where: { id } });
+      deleted = await prisma.testimonial.delete({ where: { id } });
     } else if (type === "faq") {
       // FAQ bawaan (id "default-N") tidak ada di database -> tidak bisa dihapus.
       if (String(id).startsWith("default-")) {
@@ -517,11 +534,11 @@ export async function DELETE(request: NextRequest) {
           { status: 404 }
         );
       }
-      await prisma.faqItem.delete({ where: { id } });
+      deleted = await prisma.faqItem.delete({ where: { id } });
     } else if (type === "siteContent") {
-      await prisma.siteContent.delete({ where: { id } });
+      deleted = await prisma.siteContent.delete({ where: { id } });
     } else if (type === "article") {
-      await prisma.article.delete({ where: { id } });
+      deleted = await prisma.article.delete({ where: { id } });
     } else {
       return NextResponse.json(
         { success: false, error: "Tipe konten tidak valid." },
@@ -529,15 +546,12 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    try {
-      await prisma.auditLog.create({
-        data: {
-          action: "CMS_DELETE",
-          userId: user.id,
-          description: `Administrator menghapus konten CMS tipe ${type}.`,
-        },
-      });
-    } catch {}
+    await writeAuditLog({
+      action: "CMS_DELETE",
+      userId: user.id,
+      description: `Menghapus ${cmsAuditLabel(type, deleted)}.`,
+      request,
+    });
     // Konten berubah -> buang cache
     invalidateContentCaches();
     return NextResponse.json({

@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import { jwtVerify } from "jose";
+import { getAccessSecret, getRefreshSecret } from "./secrets";
 
 export interface TokenPayload {
   sub: string; // User ID
@@ -24,20 +25,18 @@ export interface TokenPayload {
   menu?: string[];
 }
 
-const ACCESS_SECRET = process.env.JWT_SECRET || "texora_jwt_access_secret_super_secure_key_2026_x89";
-const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "texora_jwt_refresh_secret_ultra_secure_key_2026_r92";
 const ACCESS_EXPIRES_IN = process.env.JWT_ACCESS_EXPIRES_IN || "15m";
 const REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || "7d";
 
 // Standard Node.js signing
 export function signAccessToken(payload: TokenPayload): string {
-  return jwt.sign(payload, ACCESS_SECRET, {
+  return jwt.sign(payload, getAccessSecret(), {
     expiresIn: ACCESS_EXPIRES_IN as any,
   });
 }
 
 export function signRefreshToken(payload: TokenPayload): string {
-  return jwt.sign(payload, REFRESH_SECRET, {
+  return jwt.sign(payload, getRefreshSecret(), {
     expiresIn: REFRESH_EXPIRES_IN as any,
   });
 }
@@ -45,7 +44,7 @@ export function signRefreshToken(payload: TokenPayload): string {
 // Standard Node.js verification
 export function verifyAccessToken(token: string): TokenPayload | null {
   try {
-    const decoded = jwt.verify(token, ACCESS_SECRET) as TokenPayload;
+    const decoded = jwt.verify(token, getAccessSecret()) as TokenPayload;
     return decoded;
   } catch {
     return null;
@@ -54,7 +53,7 @@ export function verifyAccessToken(token: string): TokenPayload | null {
 
 export function verifyRefreshToken(token: string): TokenPayload | null {
   try {
-    const decoded = jwt.verify(token, REFRESH_SECRET) as TokenPayload;
+    const decoded = jwt.verify(token, getRefreshSecret()) as TokenPayload;
     return decoded;
   } catch {
     return null;
@@ -64,7 +63,7 @@ export function verifyRefreshToken(token: string): TokenPayload | null {
 // Edge Runtime-compatible verification for Next.js middleware (uses 'jose')
 export async function verifyAccessTokenEdge(token: string): Promise<TokenPayload | null> {
   try {
-    const secret = new TextEncoder().encode(ACCESS_SECRET);
+    const secret = new TextEncoder().encode(getAccessSecret());
     const { payload } = await jwtVerify(token, secret);
     return {
       sub: (payload.sub || payload.id) as string,
@@ -82,7 +81,7 @@ export async function verifyAccessTokenEdge(token: string): Promise<TokenPayload
 
 export async function verifyRefreshTokenEdge(token: string): Promise<TokenPayload | null> {
   try {
-    const secret = new TextEncoder().encode(REFRESH_SECRET);
+    const secret = new TextEncoder().encode(getRefreshSecret());
     const { payload } = await jwtVerify(token, secret);
     return {
       sub: (payload.sub || payload.id) as string,

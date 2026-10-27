@@ -12,6 +12,8 @@ import {
   TokenPayload,
 } from "@/lib/auth";
 import { signTwoFactorChallenge } from "@/lib/auth/2fa-challenge";
+import { getClientIp } from "@/lib/client-ip";
+import { writeAuditLog } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -59,10 +61,8 @@ function resetFailedAttempts(ip: string): void {
 }
 
 export async function POST(req: NextRequest) {
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    req.headers.get("x-real-ip") ||
-    "unknown";
+  // IP dari header yang tidak bisa dipalsukan klien (lihat src/lib/client-ip.ts).
+  const ip = getClientIp(req);
 
   const rl = checkRateLimit(ip);
   if (!rl.allowed) {
@@ -93,17 +93,15 @@ export async function POST(req: NextRequest) {
     });
 
     if (!user) {
-      try {
-        await prisma.auditLog.create({
-          data: {
-            action: "LOGIN_FAILED",
-            description: `Percobaan login gagal: email ${cleanEmail} tidak ditemukan.`,
-          },
-        });
-      } catch {}
+      await writeAuditLog({
+        action: "LOGIN_FAILED",
+        description: `Percobaan login gagal: email ${cleanEmail} tidak ditemukan.`,
+        request: req,
+      });
       recordFailedAttempt(ip);
+      // Pesan generik: jangan bocorkan apakah email terdaftar (anti-enumeration).
       return NextResponse.json(
-        { success: false, error: "Akun dengan email tersebut tidak ditemukan." },
+        { success: false, error: "Email atau password salah." },
         { status: 401 }
       );
     }
@@ -113,32 +111,47 @@ export async function POST(req: NextRequest) {
     if (user.passwordHash) {
       passwordMatches = await comparePassword(password, user.passwordHash);
     } else {
-      // Default fallback password for initial seeded demo accounts
-      const isDefaultMatch = password === "XoraMateria2026!" || password === "Admin@XoraMateria2026!" || password === "Sales@XoraMateria2026!" || password === "Gudang@XoraMateria2026!" || password === "Customer@XoraMateria2026!";
-      if (isDefaultMatch) {
-        passwordMatches = true;
-        // Auto-hash and save to DB
-        const newHash = await hashPassword(password);
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { passwordHash: newHash },
-        });
+      // Backdoor password default HANYA boleh aktif untuk dev/demo lokal atau
+      // bila admin sengaja menyalakannya. Di produksi default-nya MATI, supaya
+      // password yang tertanam di kode tidak bisa dipakai siapa pun.
+      const allowDemoDefaults =
+        process.env.NODE_ENV !== "production" ||
+        process.env.ALLOW_DEFAULT_DEMO_PASSWORDS === "true";
+
+      if (allowDemoDefaults) {
+        const defaults = [
+          "XoraMateria2026!",
+          "Admin@XoraMateria2026!",
+          "Sales@XoraMateria2026!",
+          "Gudang@XoraMateria2026!",
+          "Customer@XoraMateria2026!",
+        ];
+        if (defaults.includes(password)) {
+          passwordMatches = true;
+          // Auto-hash and save to DB
+          const newHash = await hashPassword(password);
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { passwordHash: newHash },
+          });
+        }
+      } else {
+        console.warn(
+          `[auth] Login ditolak: akun ${cleanEmail} belum memiliki password. Setel password via scripts/reset-password.mjs.`
+        );
       }
     }
 
     if (!passwordMatches) {
-      try {
-        await prisma.auditLog.create({
-          data: {
-            action: "LOGIN_FAILED",
-            userId: user.id,
-            description: `Percobaan login gagal: password salah untuk ${cleanEmail}.`,
-          },
-        });
-      } catch {}
+      await writeAuditLog({
+        action: "LOGIN_FAILED",
+        description: `Percobaan login gagal untuk ${cleanEmail} (password tidak cocok / akun belum punya password).`,
+        userId: user.id,
+        request: req,
+      });
       recordFailedAttempt(ip);
       return NextResponse.json(
-        { success: false, error: "Password yang Anda masukkan salah." },
+        { success: false, error: "Email atau password salah." },
         { status: 401 }
       );
     }
@@ -166,12 +179,11 @@ export async function POST(req: NextRequest) {
         purpose: "2fa",
       });
 
-      await prisma.auditLog.create({
-        data: {
-          action: "LOGIN_2FA_CHALLENGE",
-          userId: user.id,
-          description: `Password benar untuk ${cleanEmail}, menunggu verifikasi 2FA.`,
-        },
+      await writeAuditLog({
+        action: "LOGIN_2FA_CHALLENGE",
+        userId: user.id,
+        description: `Password benar untuk ${cleanEmail}, menunggu verifikasi 2FA.`,
+        request: req,
       });
 
       return NextResponse.json({
@@ -220,6 +232,14 @@ export async function POST(req: NextRequest) {
 
     // Set HttpOnly Secure Cookies
     setAuthCookies(response, accessToken, refreshToken);
+
+    // Jejak audit: siapa masuk, kapan, dari IP/perangkat apa.
+    await writeAuditLog({
+      action: "LOGIN_SUCCESS",
+      userId: user.id,
+      description: `Login berhasil sebagai ${effectiveRole} (${user.email}).`,
+      request: req,
+    });
 
     return response;
   } catch (error: any) {

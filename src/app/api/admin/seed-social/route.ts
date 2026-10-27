@@ -1,26 +1,39 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { generateStaticMockComments, STATIC_COUNT, STATIC_SEED } from '@/lib/mock/social-seed-data';
+import { getAuthenticatedUser } from '@/lib/auth/session';
+import { SYSTEM_ADMIN_ROLE } from '@/lib/rbac/authorize';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 const prisma = new PrismaClient();
 
-function getExpectedSecret() {
-  return process.env.SEED_SECRET || process.env.NEXTAUTH_SECRET || 'texora-seed-2026';
+/**
+ * Seed data demo komentar sosial.
+ *
+ * SEBELUMNYA: `GET ?secret=<NEXTAUTH_SECRET>` dengan fallback hardcoded
+ * ('texora-seed-2026') — secret yang bocor lewat repo bisa dipakai siapa pun
+ * untuk menimpa data produksi, dan secret di URL tercatat di access log.
+ *
+ * SEKARANG:
+ *  - hanya POST (bukan GET yang mengubah data),
+ *  - wajib sesi ADMINISTRATOR, ATAU header `x-seed-secret` yang sama dengan
+ *    `SEED_SECRET` di env (tanpa nilai default).
+ */
+async function isAuthorized(req: Request): Promise<boolean> {
+  const seedSecret = process.env.SEED_SECRET?.trim();
+  const headerSecret = req.headers.get('x-seed-secret')?.trim();
+  if (seedSecret && headerSecret && headerSecret === seedSecret) return true;
+
+  const user = await getAuthenticatedUser();
+  return user?.role === SYSTEM_ADMIN_ROLE;
 }
 
-export async function GET(req: Request) {
-  const url = new URL(req.url);
-  const secret = url.searchParams.get('secret') || url.searchParams.get('key') || '';
-
-  if (secret !== getExpectedSecret()) {
+export async function POST(req: Request) {
+  if (!(await isAuthorized(req))) {
     return NextResponse.json(
-      {
-        error: 'Unauthorized. Tambahkan ?secret= yang benar.',
-        hint: 'Set SEED_SECRET di Vercel Env, atau pakai NEXTAUTH_SECRET. Default saat env kosong: texora-seed-2026',
-      },
+      { error: 'Unauthorized. Login sebagai Administrator atau kirim header x-seed-secret.' },
       { status: 401 },
     );
   }

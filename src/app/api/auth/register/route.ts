@@ -7,10 +7,56 @@ import {
   setAuthCookies,
   TokenPayload,
 } from "@/lib/auth";
+import { getClientIp } from "@/lib/client-ip";
 
 export const dynamic = "force-dynamic";
 
+// Rate limit registrasi (per IP) — mencegah bot membuat akun massal.
+const REGISTER_WINDOW_MS =
+  Number(process.env.REGISTER_RATE_LIMIT_WINDOW_MS) || 60 * 60 * 1000; // 1 jam
+const REGISTER_MAX = Number(process.env.REGISTER_RATE_LIMIT_MAX) || 5;
+const registerRateLimit = new Map<string, { count: number; resetAt: number }>();
+
+function tooManyRegistrations(ip: string): { blocked: boolean; retryAfter?: number } {
+  const now = Date.now();
+  const entry = registerRateLimit.get(ip);
+  if (!entry || now > entry.resetAt) return { blocked: false };
+  if (entry.count >= REGISTER_MAX) {
+    return { blocked: true, retryAfter: Math.ceil((entry.resetAt - now) / 1000) };
+  }
+  return { blocked: false };
+}
+
+function recordRegistration(ip: string): void {
+  const now = Date.now();
+  const entry = registerRateLimit.get(ip);
+  if (!entry || now > entry.resetAt) {
+    // Bersihkan entri kedaluwarsa sesekali agar map tidak tumbuh tanpa batas.
+    if (registerRateLimit.size > 5000) {
+      for (const key of Array.from(registerRateLimit.keys())) {
+        const value = registerRateLimit.get(key);
+        if (value && now > value.resetAt) registerRateLimit.delete(key);
+      }
+    }
+    registerRateLimit.set(ip, { count: 1, resetAt: now + REGISTER_WINDOW_MS });
+    return;
+  }
+  entry.count += 1;
+}
+
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+  const limit = tooManyRegistrations(ip);
+  if (limit.blocked) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: `Terlalu banyak pendaftaran dari jaringan ini. Coba lagi dalam ${limit.retryAfter} detik.`,
+      },
+      { status: 429 }
+    );
+  }
+
   try {
     const body = await req.json();
     const {
@@ -83,6 +129,9 @@ export async function POST(req: NextRequest) {
 
     // 5. Enkripsi Kata Sandi (Bcrypt)
     const passwordHash = await hashPassword(password);
+
+    // Catat percobaan registrasi yang valid (dihitung untuk rate limit).
+    recordRegistration(ip);
 
     // 6. Buat Akun Pengguna Baru di PostgreSQL
     const newUser = await prisma.user.create({

@@ -4,6 +4,9 @@ import { cached, invalidateCache } from "@/lib/cache";
 import { normalizeLocale, localizeRows } from "@/lib/content-translator";
 import { isPriceHidden, stripProductPrices } from "@/lib/catalog-visibility";
 import { parseGalleryImages, serializeGalleryImages, PRODUCT_FALLBACK_THUMB } from "@/lib/image-gallery";
+import { getAuthenticatedUser } from "@/lib/auth/session";
+import { canManageCatalog } from "@/lib/rbac/authorize";
+import { writeAuditLog } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -150,6 +153,22 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    // WAJIB login + punya akses menu katalog (ADMINISTRATOR / role custom
+    // yang diberi menu "catalog"). Sebelumnya endpoint ini terbuka.
+    const user = await getAuthenticatedUser();
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Sesi tidak valid. Silakan login." },
+        { status: 401 }
+      );
+    }
+    if (!(await canManageCatalog(user.role))) {
+      return NextResponse.json(
+        { success: false, error: "Anda tidak memiliki akses mengubah katalog." },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     if (!body.name || !body.basePricePerMeter) {
       return NextResponse.json(
@@ -224,6 +243,13 @@ export async function POST(request: Request) {
     // Katalog berubah -> buang cache produk
     invalidateCache("storefront.products");
     invalidateCache("api.products");
+
+    await writeAuditLog({
+      action: "PRODUCT_CREATE",
+      userId: user.id,
+      description: `Menambah kain baru "${created.name}" (kategori ${created.category}, harga ${Number(created.basePricePerMeter)}/meter).`,
+      request,
+    });
 
     return NextResponse.json(
       {
