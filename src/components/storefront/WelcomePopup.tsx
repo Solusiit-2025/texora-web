@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 /**
  * Popup sambutan + pengumuman (storefront).
@@ -409,7 +409,7 @@ export function WelcomePopup({
                         </p>
                         <p className="flex items-start gap-2">
                           <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-400" />
-                          Jl. Walang Baru VI No.3, RT.7/RW.7, Tugu Utara, Koja, Jakarta Utara 14260
+                          Jl. Walang Baru VI Blok B1/2, RT 04 / RW 07, Tugu Utara, Tanjung Priok, Jakarta Utara
                         </p>
                       </div>
 

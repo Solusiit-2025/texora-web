@@ -368,7 +368,7 @@ export default function ContactClient() {
               <div>
                 <div className="font-display font-bold text-white text-base">Xora Materia</div>
                 <p className="text-slate-300 mt-1 leading-relaxed text-xs">
-                  Jl. Walang Baru VI No.3, RT.7/RW.7, Tugu Utara, Kec. Koja, Jkt Utara, Daerah Khusus Ibukota Jakarta 14260
+                  Jl. Walang Baru VI Blok B1/2, RT 04 / RW 07, Tugu Utara, Tanjung Priok, Jakarta Utara
                 </p>
               </div>
 
@@ -377,7 +377,7 @@ export default function ContactClient() {
                   type="button"
                   onClick={() =>
                     handleCopy(
-                      "Xora Materia - Jl. Walang Baru VI No.3, RT.7/RW.7, Tugu Utara, Kec. Koja, Jkt Utara, 14260",
+                      "Xora Materia - Jl. Walang Baru VI Blok B1/2, RT 04 / RW 07, Tugu Utara, Tanjung Priok, Jakarta Utara",
                       "address"
                     )
                   }

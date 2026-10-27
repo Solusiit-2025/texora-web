@@ -32,17 +32,18 @@ export const DEFAULT_LOCATIONS: LocationData[] = [
     tag: "Main Office",
     company: "Xora Materia",
     addressLines: [
-      "Jl. Walang Baru VI No.3, RT.7/RW.7",
-      "Tugu Utara, Kec. Koja, Jkt Utara,",
-      "Daerah Khusus Ibukota Jakarta 14260",
+      "Jl. Walang Baru VI Blok B1/2, RT 04 / RW 07",
+      "Tugu Utara, Tanjung Priok,",
+      "Jakarta Utara",
     ],
     googleMapsUrl:
-      "https://www.google.com/maps/search/?api=1&query=-6.125302964527022,106.90543002829139",
-    embedQuery: "-6.125302964527022,106.90543002829139",
+      "https://www.google.com/maps/search/?api=1&query=Jl.+Walang+Baru+VI+Blok+B1%2F2%2C+RT+04+%2F+RW+07%2C+Tugu+Utara%2C+Tanjung+Priok%2C+Jakarta+Utara",
+    embedQuery:
+      "Jl. Walang Baru VI Blok B1/2, RT 04 / RW 07, Tugu Utara, Tanjung Priok, Jakarta Utara",
     badgeLabel: "OUR LOCATION",
     coordinates: {
-      lat: -6.125302964527022,
-      lng: 106.90543002829139,
+      lat: -6.1255693,
+      lng: 106.90506825,
     },
   },
 ];
