@@ -42,6 +42,9 @@ const isProduction = process.env.NODE_ENV === "production";
  *    nonce via middleware (perubahan lebih besar).
  *  - `'unsafe-eval'` hanya di development (React Refresh).
  *  - Domain Google Tag Manager/Analytics diizinkan bila env diisi.
+ *  - `static.cloudflareinsights.com` diizinkan karena Cloudflare Web
+ *    Analytics menyuntikkan beacon otomatis di edge (tanpa kode di aplikasi).
+ *  - `connect-src` sudah memuat `https:` sehingga POST data beacon tetap lolos.
  *  - `upgrade-insecure-requests` hanya di produksi agar dev http tetap jalan.
  *    (Dihapus: memblokir aset saat akses via http://IP sebelum SSL siap.)
  */
@@ -51,7 +54,7 @@ const contentSecurityPolicy = [
   "object-src 'none'",
   "frame-ancestors 'self'",
   "form-action 'self'",
-  `script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com${isProduction ? "" : " 'unsafe-eval'"}`,
+  `script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com https://www.googletagmanager.com https://www.google-analytics.com${isProduction ? "" : " 'unsafe-eval'"}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",

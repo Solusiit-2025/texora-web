@@ -22,14 +22,14 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ["business", "shopping", "productivity"],
     icons: [
       {
-        src: "/icons/xoramateria-mark.png",
-        sizes: "512x512",
+        src: "/icons/favicon-192.png",
+        sizes: "192x192",
         type: "image/png",
         purpose: "any",
       },
       {
-        src: "/icons/xoramateria-mark.png",
-        sizes: "192x192",
+        src: "/icons/favicon-512.png",
+        sizes: "512x512",
         type: "image/png",
         purpose: "any",
       },
