@@ -45,12 +45,6 @@ const STORAGE_KEY = "texora-welcome-popup-v1";
 const TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 hari
 const SHOW_DELAY_MS = 1500;
 
-/**
- * MODE TRIAL: true = popup tampil SETIAP kali halaman dimuat/di-refresh.
- * Set ke `false` untuk kembali ke aturan normal (maks. sekali per 7 hari).
- */
-const TRIAL_ALWAYS_SHOW = true;
-
 export function WelcomePopup({
   posters: posterList = [],
 }: {
@@ -98,8 +92,8 @@ export function WelcomePopup({
     } catch {
       /* localStorage bisa diblokir (mode privat) â€” tetap tampilkan. */
     }
+    // Aturan normal: maksimal sekali per 7 hari per browser.
     if (
-      !TRIAL_ALWAYS_SHOW &&
       !forceShow &&
       Number.isFinite(lastShown) &&
       Date.now() - lastShown < TTL_MS
@@ -309,7 +303,13 @@ export function WelcomePopup({
                               rel="noopener noreferrer"
                               aria-label="Chat via WhatsApp"
                               onClick={(e) => {
-                                if (draggedRef.current) e.preventDefault();
+                                if (draggedRef.current) {
+                                  e.preventDefault();
+                                  return;
+                                }
+                                // Kunjungan dianggap sudah melihat promo:
+                                // jangan munculkan lagi dalam 7 hari.
+                                dismiss();
                               }}
                               className="group/poster relative block cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
                             >
