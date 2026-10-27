@@ -96,11 +96,11 @@ export async function GET(request: Request) {
             },
           },
           orderBy: { createdAt: "asc" },
-        }),
+        }).catch(() => []),
       { ttl: 60_000, stale: 600_000, bypass: fresh }
     );
 
-    if (dbFabrics.length > 0) {
+    if (Array.isArray(dbFabrics) && dbFabrics.length > 0) {
       let formatted = dbFabrics.map(formatFabric);
       // ?lang=xx -> deskripsi produk diterjemahkan on-demand (di-cache DB).
       const lang = normalizeLocale(searchParams.get("lang"));

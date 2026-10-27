@@ -6,16 +6,53 @@ import QRCode from "qrcode";
 import { prisma } from "@/lib/prisma";
 import { formatRupiah, formatNumber } from "@/lib/utils";
 import { getCatalogPdfMeta } from "@/lib/catalog-pdf";
+import {
+  getObjectFromStorage,
+  isStorageConfigured,
+  storageKeyFromPublicUrl,
+} from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+
+/** Response unduhan PDF dengan header yang konsisten (lokal, R2, atau otomatis). */
+function catalogPdfResponse(
+  body: BodyInit,
+  safeName: string,
+  meta: {
+    status?: number;
+    contentLength?: number;
+    contentRange?: string;
+    etag?: string;
+    lastModified?: Date;
+  } = {}
+): NextResponse {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/pdf",
+    "Content-Disposition": `attachment; filename="${safeName}"`,
+    "Cache-Control": "public, max-age=300",
+    "Accept-Ranges": "bytes",
+  };
+  if (meta.contentLength && meta.contentLength > 0) {
+    headers["Content-Length"] = String(meta.contentLength);
+  }
+  if (meta.contentRange) headers["Content-Range"] = meta.contentRange;
+  if (meta.etag) headers["ETag"] = meta.etag;
+  if (meta.lastModified) headers["Last-Modified"] = meta.lastModified.toUTCString();
+
+  return new NextResponse(body, { status: meta.status ?? 200, headers });
+}
 
 /**
  * GET /api/catalog/pdf
  *
  * Urutan perilaku:
- *  1. Jika admin sudah mengunggah katalog PDF lewat CMS -> redirect ke file itu.
- *  2. Jika belum -> buat katalog otomatis dari data produk (A4, profesional).
+ *  1. Jika admin sudah mengunggah katalog PDF lewat CMS -> kirim file itu
+ *     lewat domain sendiri (bukan redirect). Redirect ke `*.r2.dev` sering
+ *     gagal di Indonesia karena domain r2.dev diblokir DNS ISP, sehingga
+ *     tombol "Unduh Katalog PDF" berakhir "This site can't be reached".
+ *  2. Jika belum (atau file unggahan tidak bisa diambil) -> buat katalog
+ *     otomatis dari data produk (A4, profesional).
  *
  * Desain katalog otomatis:
  *  - Cover gelap dengan logo, ringkasan kapasitas, dan identitas brand.
@@ -28,36 +65,77 @@ export async function GET(req: NextRequest) {
     // 1) Katalog hasil unggahan manual (CMS) — selalu diprioritaskan.
     const uploaded = await getCatalogPdfMeta();
     if (uploaded?.url) {
-      // File lokal: stream langsung supaya tombol "Unduh" menghasilkan file
-      // dengan nama yang benar (redirect tidak selalu memicu download).
+      const safeName = (uploaded.filename || "Katalog-XoraMateria.pdf").replace(
+        /[^a-zA-Z0-9._-]/g,
+        "-"
+      );
+
+      // 1a) File lokal di public/uploads: stream langsung dari disk supaya
+      // tombol "Unduh" menghasilkan file dengan nama yang benar.
       if (uploaded.url.startsWith("/")) {
         try {
           const abs = path.join(process.cwd(), "public", uploaded.url.replace(/^\//, ""));
           if (fs.existsSync(abs)) {
             const buf = fs.readFileSync(abs);
-            const safeName = (uploaded.filename || "Katalog-XoraMateria.pdf").replace(
-              /[^a-zA-Z0-9._-]/g,
-              "-"
-            );
-            return new NextResponse(buf as unknown as BodyInit, {
-              headers: {
-                "Content-Type": "application/pdf",
-                "Content-Disposition": `attachment; filename="${safeName}"`,
-                "Content-Length": String(buf.length),
-                "Cache-Control": "public, max-age=300",
-              },
-            });
+            return catalogPdfResponse(buf, safeName, { contentLength: buf.length });
           }
         } catch {
-          /* jatuh ke redirect di bawah */
+          /* lanjut ke katalog otomatis di bawah */
         }
-      }
+      } else if (/^https?:\/\//i.test(uploaded.url)) {
+        // 1b) File di R2/S3: sajikan lewat domain sendiri (proxy), bukan
+        // redirect. Redirect 302 ke `https://pub-xxx.r2.dev/...` memaksa
+        // browser menghubungi r2.dev langsung — domain itu diblokir DNS
+        // sebagian ISP Indonesia (resolv ke IP halaman blokir), jadi unduhan
+        // gagal: "This site can't be reached".
+        const range = req.headers.get("range") || undefined;
 
-      // File di R2/S3 (atau lokal yang sudah hilang) -> redirect ke URL publik.
-      const target = /^https?:\/\//i.test(uploaded.url)
-        ? uploaded.url
-        : new URL(uploaded.url, req.nextUrl.origin).toString();
-      return NextResponse.redirect(target, 302);
+        // Prioritas: ambil via S3 API (host sama dengan upload), sehingga
+        // tidak bergantung sama sekali pada DNS domain r2.dev.
+        const storageKey = storageKeyFromPublicUrl(uploaded.url);
+        if (storageKey && isStorageConfigured()) {
+          try {
+            const obj = await getObjectFromStorage(storageKey, range);
+            if (obj.body) {
+              return catalogPdfResponse(obj.body, safeName, {
+                status: obj.contentRange ? 206 : 200,
+                contentLength: obj.contentLength,
+                contentRange: obj.contentRange,
+                etag: obj.etag,
+                lastModified: obj.lastModified,
+              });
+            }
+          } catch (error) {
+            console.error("[catalog-pdf] Gagal ambil objek via S3:", error);
+          }
+        }
+
+        // Fallback: ambil lewat HTTP biasa (URL milik host/CDN lain).
+        try {
+          const upstream = await fetch(uploaded.url, {
+            cache: "no-store",
+            headers: range ? { Range: range } : undefined,
+          });
+
+          if (upstream.ok && upstream.body) {
+            const length = Number(upstream.headers.get("content-length")) || undefined;
+            return catalogPdfResponse(upstream.body, safeName, {
+              status: upstream.status === 206 ? 206 : 200,
+              contentLength: length,
+              contentRange: upstream.headers.get("content-range") || undefined,
+              etag: upstream.headers.get("etag") || undefined,
+            });
+          }
+          console.error(
+            "[catalog-pdf] Gagal mengambil katalog dari storage:",
+            upstream.status,
+            uploaded.url
+          );
+        } catch (error) {
+          console.error("[catalog-pdf] Gagal mengambil katalog dari storage:", error);
+        }
+        // Gagal ambil file unggahan -> lanjut ke katalog otomatis di bawah.
+      }
     }
 
     // 2) Katalog otomatis dari database.

@@ -27,6 +27,7 @@ import {
 import { RichTextEditor } from "@/components/common/RichTextEditor";
 import { RichContent } from "@/components/common/RichContent";
 import { getImageFileDimensions, isLowResolutionImage } from "@/lib/image-gallery";
+import { shrinkImageForUpload, uploadImageFile } from "@/lib/upload-client";
 
 interface ArticleRow {
   id: string;
@@ -190,22 +191,19 @@ export default function ArticleManager() {
         );
         continue; // jangan upload gambar yang pasti pecah
       }
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("convert", "webp"); // server mengonversi JPG/PNG/GIF → .webp
       setUploadingImages(true);
       try {
-        const res = await fetch("/api/upload", { method: "POST", body: fd });
-        const json = await res.json();
-        if (json?.success) {
+        // Kompres dulu di browser kalau besar — menghindari 413 dari Nginx/proxy.
+        const upload = await shrinkImageForUpload(file);
+        const outcome = await uploadImageFile(upload, { convertToWebp: true });
+        if (outcome.success) {
+          const url = outcome.url;
           setForm((f) =>
-            f && f.images.length < MAX_IMAGES ? { ...f, images: [...f.images, json.url] } : f
+            f && f.images.length < MAX_IMAGES ? { ...f, images: [...f.images, url] } : f
           );
         } else {
-          notify("error", json?.error || `Gagal mengunggah "${file.name}".`);
+          notify("error", outcome.error);
         }
-      } catch {
-        notify("error", `Gagal mengunggah "${file.name}" (periksa koneksi/sesi).`);
       } finally {
         setUploadingImages(false);
       }

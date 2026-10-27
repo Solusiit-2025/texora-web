@@ -108,6 +108,28 @@ Content-Disposition: attachment; filename="Texora-Katalog-Produk-YYYY-MM-DD.pdf"
 Cache-Control: public, max-age=3600
 ```
 
+### Katalog unggahan (R2/S3) — disajikan lewat domain sendiri
+
+Kalau admin mengunggah katalog sendiri, file disimpan di Cloudflare R2 dan
+`/api/catalog/pdf` **tidak** me-redirect ke `*.r2.dev` lagi. Alasannya: domain
+`r2.dev` diblokir DNS sebagian ISP Indonesia (resolv ke IP halaman blokir),
+sehingga tombol "Unduh Katalog PDF" berakhir **"This site can't be reached"**.
+
+Sekarang endpoint tersebut mengambil file di server lalu meneruskannya ke
+pengunjung:
+
+1. **Utama** — `GetObjectCommand` (S3 API) memakai `STORAGE_ENDPOINT`,
+   `STORAGE_BUCKET_NAME`, dan kredensial yang sama dengan proses upload. Host-nya
+   `*.r2.cloudflarestorage.com` yang tidak terkena blokir DNS.
+2. **Fallback** — `fetch()` biasa ke URL publik, kalau URL bukan milik bucket
+   kita (mis. CDN lain).
+3. Kalau keduanya gagal — pengunjung tetap mendapat katalog otomatis yang
+   dibuat dari data produk (bukan halaman error).
+
+Range request diteruskan (`Accept-Ranges: bytes`), dan file dikirim sebagai
+stream sehingga PDF besar (puluhan MB) tidak dibuffer penuh di memori.
+
+
 > **Catatan font**: PDF memakai font standar (WinAnsi) → mendukung Latin/Indonesia
 > (é, ñ). Glyph Mandarin/Japanese tidak tersedia di font standar, jadi katalog
 > PDF sengaja dibuat dalam Bahasa Indonesia.

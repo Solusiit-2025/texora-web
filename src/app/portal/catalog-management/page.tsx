@@ -30,6 +30,7 @@ import { FabricProduct } from "@/types";
 import { RichTextEditor } from "@/components/common/RichTextEditor";
 import { htmlToPlainText } from "@/lib/sanitize";
 import { getImageFileDimensions, isLowResolutionImage } from "@/lib/image-gallery";
+import { shrinkImageForUpload, uploadImageFile } from "@/lib/upload-client";
 
 /** Batas galeri gambar kain (sinkron lib/image-gallery). */
 const MAX_PRODUCT_IMAGES = 5;
@@ -119,22 +120,19 @@ export default function CatalogManagementPage() {
         );
         continue; // jangan upload gambar yang pasti pecah
       }
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("convert", "webp");
       setImageBusy(true);
       try {
-        const res = await fetch("/api/upload", { method: "POST", body: fd });
-        const json = await res.json();
-        if (json?.success) {
+        // Kompres dulu di browser kalau besar — menghindari 413 dari Nginx/proxy.
+        const upload = await shrinkImageForUpload(file);
+        const outcome = await uploadImageFile(upload, { convertToWebp: true });
+        if (outcome.success) {
+          const url = outcome.url;
           setFormData((f) =>
-            f.images.length < MAX_PRODUCT_IMAGES ? { ...f, images: [...f.images, json.url] } : f
+            f.images.length < MAX_PRODUCT_IMAGES ? { ...f, images: [...f.images, url] } : f
           );
         } else {
-          showNotice("error", json?.error || `Gagal mengunggah "${file.name}".`);
+          showNotice("error", outcome.error);
         }
-      } catch {
-        showNotice("error", `Gagal mengunggah "${file.name}" (periksa koneksi/sesi).`);
       } finally {
         setImageBusy(false);
       }
@@ -331,6 +329,11 @@ export default function CatalogManagementPage() {
       fd.append("file", file);
 
       const res = await fetch("/api/catalog/upload", { method: "POST", body: fd });
+      if (res.status === 413) {
+        throw new Error(
+          "PDF ditolak server (413 Payload Too Large) — batas upload Nginx/proxy masih kecil. Naikkan client_max_body_size di Nginx."
+        );
+      }
       const json = await res.json().catch(() => null);
       if (!json?.success) {
         throw new Error(json?.error || "Gagal mengunggah katalog.");
@@ -634,18 +637,22 @@ export default function CatalogManagementPage() {
                     timeStyle: "short",
                   })}
                 </div>
-                <div className="text-[10px] text-slate-400 mt-1 break-all">{catalogPdf.url}</div>
+                <div className="text-[10px] text-slate-400 mt-1 break-all">
+                  {catalogPdf.url.startsWith("http")
+                    ? "Disimpan di Cloudflare R2 — diunduh lewat xoramateria.com (r2.dev diblokir sebagian ISP)"
+                    : catalogPdf.url}
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <a
-                href={catalogPdf.url}
+                href="/api/catalog/pdf"
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 hover:border-brand-500/50 text-xs font-semibold text-slate-200 hover:text-white transition-colors"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
-                Buka
+                Unduh
               </a>
               <button
                 type="button"

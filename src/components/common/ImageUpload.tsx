@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Upload, Loader2, X } from "lucide-react";
+import { shrinkImageForUpload, uploadImageFile } from "@/lib/upload-client";
 
 interface ImageUploadProps {
   value: string;
@@ -17,19 +18,16 @@ export function ImageUpload({ value, onChange, label, onError }: ImageUploadProp
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const fd = new FormData();
-    fd.append("file", file);
     setUploading(true);
     try {
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
-      const json = await res.json();
-      if (json?.success) {
-        onChange(json.url);
+      // Kompres dulu di browser kalau besar — menghindari 413 dari Nginx/proxy.
+      const upload = await shrinkImageForUpload(file);
+      const outcome = await uploadImageFile(upload);
+      if (outcome.success) {
+        onChange(outcome.url);
       } else {
-        onError?.(json?.error || "Gagal mengunggah gambar.");
+        onError?.(outcome.error);
       }
-    } catch {
-      onError?.("Gagal mengunggah gambar (periksa koneksi/sesi).");
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = "";
