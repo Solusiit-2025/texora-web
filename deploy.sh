@@ -10,16 +10,23 @@ echo "==> git pull"
 git fetch origin main
 git reset --hard origin/main
 
+# Jangan biarkan NODE_ENV=production (mis. dari sourcing .env) membuat npm
+# melewati devDependencies — tailwindcss & typescript dibutuhkan saat build.
+unset NODE_ENV
+
 echo "==> install"
-npm ci
+npm ci --include=dev
 
 # Terapkan migrasi database SEBELUM build. Tanpa ini, kolom/tabel baru di
 # prisma/schema.prisma hanya ada di Prisma Client (hasil `prisma generate`)
-# tetapi belum ada di database produksi — gejalanya query 500 saat login.
+# tetapi belum ada di database produksi.
 echo "==> prisma migrate deploy"
 npx prisma migrate deploy
 
 echo "==> build"
+# Buang cache Turbopack lama supaya tidak memakai resolusi modul dari
+# node_modules versi sebelumnya (pernah bikin "Cannot find module tailwindcss").
+rm -rf .next
 npm run build
 
 echo "==> restart"

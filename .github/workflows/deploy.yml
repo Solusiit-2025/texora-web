@@ -25,8 +25,10 @@ jobs:
             cd ~/projects/texora-web
             git fetch origin main
             git reset --hard origin/main
-            npm ci
+            unset NODE_ENV
+            npm ci --include=dev
             npx prisma migrate deploy
+            rm -rf .next
             npm run build
             pm2 restart texora-web
             pm2 save
