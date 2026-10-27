@@ -20,6 +20,9 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
+          script_stop: true
+          command_timeout: 30m
+          debug: true
           script: |
             set -e
             # SSH non-interactive tidak membaca .bashrc → nvm tidak termuat.
