@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
   BookOpen,
@@ -530,26 +531,31 @@ export default function ArticleManager() {
 
   return (
     <div className="space-y-5">
-      {/* Notifikasi */}
-      {notification && (
-        <div
-          className={`flex items-center gap-2.5 p-3.5 rounded-xl border text-xs ${
-            notification.type === "success"
-              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
-              : "bg-rose-500/10 border-rose-500/30 text-rose-300"
-          }`}
-        >
-          {notification.type === "success" ? (
-            <CheckCircle2 className="w-4 h-4 shrink-0" />
-          ) : (
-            <AlertCircle className="w-4 h-4 shrink-0" />
-          )}
-          <span className="flex-1">{notification.message}</span>
-          <button onClick={() => setNotification(null)} aria-label="Tutup">
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
+      {/* Notifikasi (toast) — di-portal ke <body> agar tampil di atas modal editor (z-[1000+]) */}
+      {notification &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            role="status"
+            aria-live="polite"
+            className={`fixed top-6 right-6 z-[3000] max-w-[calc(100vw-3rem)] sm:max-w-md flex items-center gap-2.5 px-4 py-3 rounded-2xl border text-xs font-semibold shadow-2xl backdrop-blur-md ${
+              notification.type === "success"
+                ? "bg-emerald-950/95 border-emerald-500/40 text-emerald-200"
+                : "bg-red-950/95 border-red-500/40 text-red-200"
+            }`}
+          >
+            {notification.type === "success" ? (
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+            ) : (
+              <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+            )}
+            <span className="flex-1">{notification.message}</span>
+            <button onClick={() => setNotification(null)} aria-label="Tutup">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>,
+          document.body
+        )}
 
       {/* Ringkasan + aksi */}
       <div className="flex flex-col lg:flex-row lg:items-center gap-4 justify-between">
