@@ -6,6 +6,10 @@ set -euo pipefail
 
 cd ~/projects/texora-web
 
+# Muat nvm bila ada, supaya `npm`/`pm2` tersedia juga di shell non-interactive.
+export NVM_DIR="$HOME/.nvm"
+if [ -s "$NVM_DIR/nvm.sh" ]; then . "$NVM_DIR/nvm.sh"; fi
+
 echo "==> git pull"
 git fetch origin main
 git reset --hard origin/main

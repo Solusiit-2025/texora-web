@@ -22,6 +22,10 @@ jobs:
           port: ${{ secrets.VPS_PORT || 22 }}
           script: |
             set -e
+            # SSH non-interactive tidak membaca .bashrc → nvm tidak termuat.
+            # Tanpa ini, `npm`/`pm2` "command not found" sehingga deploy gagal.
+            export NVM_DIR="$HOME/.nvm"
+            if [ -s "$NVM_DIR/nvm.sh" ]; then . "$NVM_DIR/nvm.sh"; fi
             cd ~/projects/texora-web
             git fetch origin main
             git reset --hard origin/main
