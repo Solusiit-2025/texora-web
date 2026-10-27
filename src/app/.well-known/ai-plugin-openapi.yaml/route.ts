@@ -6,10 +6,9 @@
  */
 
 import { NextResponse } from "next/server";
+import { SITE_URL } from "@/lib/site-url";
 
 export const dynamic = "force-dynamic";
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://texora.co.id";
 
 export async function GET() {
   const yaml = `openapi: 3.0.3

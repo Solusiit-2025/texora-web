@@ -85,6 +85,11 @@ const nextConfig = {
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "assets.texora.co.id" },
       { protocol: "https", hostname: "texora.co.id" },
+      // Domain produksi aktif.
+      { protocol: "https", hostname: "xoramateria.com" },
+      { protocol: "https", hostname: "www.xoramateria.com" },
+      // Cloudflare R2 (file katalog/artwork).
+      { protocol: "https", hostname: "**.r2.dev" },
       { protocol: "http", hostname: "localhost" },
     ],
     formats: ["image/avif", "image/webp"],

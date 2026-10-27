@@ -9,7 +9,7 @@ services:
     restart: always
     environment:
       - DATABASE_URL=postgresql://texora_admin:TexoraSec2026!@texora-db:5432/texora_production?schema=public
-      - NEXTAUTH_URL=https://texora.co.id
+      - NEXTAUTH_URL=https://xoramateria.com
       - NEXTAUTH_SECRET=f7e3c1d4a8b290192e4857b28a4c1023
     depends_on:
       - texora-db

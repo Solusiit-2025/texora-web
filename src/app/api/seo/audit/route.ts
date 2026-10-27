@@ -3,10 +3,9 @@ import { getAuthenticatedUser } from "@/lib/auth/session";
 import { getSeoSettings } from "@/lib/seo";
 import { prisma } from "@/lib/prisma";
 import { canManageContent } from "@/lib/rbac/authorize";
+import { SITE_URL } from "@/lib/site-url";
 
 export const dynamic = "force-dynamic";
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://texora.co.id";
 
 /**
  * GET /api/seo/audit

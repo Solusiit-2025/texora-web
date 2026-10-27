@@ -1,6 +1,5 @@
 import { MetadataRoute } from "next";
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://texora.co.id";
+import { SITE_URL } from "@/lib/site-url";
 
 /**
  * robots.txt

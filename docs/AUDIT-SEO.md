@@ -1,7 +1,7 @@
 # Audit SEO & Rencana Aksi — XoraMateria
 
 **Tanggal audit:** 23 Oktober 2026
-**Domain kanonik:** `https://texora.co.id`
+**Domain kanonik:** `https://xoramateria.com`
 **Stack:** Next.js 14 (App Router) + PostgreSQL/Prisma + Vercel
 **Status:** Audit selesai, sebagian perbaikan sudah diimplementasikan
 
@@ -171,8 +171,8 @@ Vercel-CDN-Cache-Control: public, s-maxage=300, stale-while-revalidate=600
 ### Hari ini (30 menit) — Google Search Console
 
 - [ ] Buka [search.google.com/search-console](https://search.google.com/search-console)
-- [ ] Tambahkan properti **Domain**: `texora.co.id` → verifikasi
-- [ ] Submit sitemap: `https://texora.co.id/sitemap.xml`
+- [ ] Tambahkan properti **Domain**: `xoramateria.com` → verifikasi
+- [ ] Submit sitemap: `https://xoramateria.com/sitemap.xml`
 - [ ] Cek **Indexing → Pages**: jumlah URL per prefix (`/`, `/en`, `/de`, `/zh`, `/ja`, `/ar`)
 - [ ] Cek **Experience → Core Web Vitals**
 - [ ] **URL Inspection** → minta indexing: `/`, `/catalog`, 2 produk, 2 artikel

@@ -13,11 +13,10 @@ import { NextResponse } from "next/server";
 import { getStorefrontProducts, getStorefrontFaqs } from "@/lib/storefront-data";
 import { getSeoSettings } from "@/lib/seo";
 import { htmlToPlainText } from "@/lib/sanitize";
+import { SITE_URL } from "@/lib/site-url";
 
 // Dokumen panjang & di-request jarang oleh AI crawler; cache 1 jam.
 export const revalidate = 3600;
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://texora.co.id";
 
 export async function GET() {
   const [products, faqs, seo] = await Promise.all([

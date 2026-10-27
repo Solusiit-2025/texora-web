@@ -7,6 +7,7 @@ import {
   buildBreadcrumbSchema,
   buildWebPageSchema,
   buildLocalBusinessSchema,
+  SITE_URL,
 } from "@/lib/seo-metadata";
 import { SEO_PAGES } from "@/lib/seo-pages";
 
@@ -54,15 +55,15 @@ export default async function ContactPage() {
   const contactPageSchema = {
     "@context": "https://schema.org",
     "@type": "ContactPage",
-    "@id": "https://texora.co.id/contact#contactpage",
-    url: "https://texora.co.id/contact",
+    "@id": `${SITE_URL}/contact#contactpage`,
+    url: `${SITE_URL}/contact`,
     name: "Kontak Kami — XoraMateria",
     description:
       "Formulir konsultasi procurement kain sublimasi dan permintaan sampel swatch.",
     inLanguage: "id-ID",
-    isPartOf: { "@id": "https://texora.co.id/#website" },
-    about: { "@id": "https://texora.co.id/#organization" },
-    mainEntity: { "@id": "https://texora.co.id/#organization" },
+    isPartOf: { "@id": `${SITE_URL}/#website` },
+    about: { "@id": `${SITE_URL}/#organization` },
+    mainEntity: { "@id": `${SITE_URL}/#organization` },
   };
 
   return (

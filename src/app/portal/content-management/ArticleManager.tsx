@@ -1142,7 +1142,7 @@ export default function ArticleManager() {
                             {form.seoTitle || form.title || "Judul artikel"}
                           </p>
                           <p className="text-[11px] text-[#188038] mt-0.5">
-                            texora.co.id/artikel/{form.slug || "artikel"}
+                            xoramateria.com/artikel/{form.slug || "artikel"}
                           </p>
                           <p className="text-xs text-slate-600 mt-1 leading-relaxed">
                             {form.seoDescription ||

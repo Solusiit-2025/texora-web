@@ -930,7 +930,7 @@ export default function CrmLeadsPage() {
                       </div>
                       <p className="text-[9px] text-slate-500 mt-1">
                         Jl. Walang Baru VI Blok B1/2, RT 04 / RW 07, Tugu Utara, Tanjung Priok, Jakarta Utara<br/>
-                        Telp: +62 21-8983-XORAMATERIA | Email: sales@texora.co.id | Website: www.texora.co.id
+                        Telp: +62 21-8983-XORAMATERIA | Email: sales@texora.co.id | Website: www.xoramateria.com
                       </p>
                     </div>
                     <div className="text-right">

@@ -40,7 +40,7 @@ const SECTIONS: LegalSection[] = [
     heading: "Tentang dokumen ini",
     paragraphs: [
       "Kebijakan Privasi ini menjelaskan bagaimana XoraMateria (PT. Texora Visi Prima) mengumpulkan, menggunakan, menyimpan, dan melindungi data pribadi pengunjung website, calon pelanggan, serta mitra B2B.",
-      "Dokumen ini berlaku untuk situs texora.co.id, portal mitra, formulir permintaan penawaran, dan kanal komunikasi resmi XoraMateria (email dan WhatsApp).",
+      "Dokumen ini berlaku untuk situs xoramateria.com, portal mitra, formulir permintaan penawaran, dan kanal komunikasi resmi XoraMateria (email dan WhatsApp).",
     ],
   },
   {

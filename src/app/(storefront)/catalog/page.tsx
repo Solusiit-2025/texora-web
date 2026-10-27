@@ -9,6 +9,7 @@ import {
   buildPageMetadata,
   buildBreadcrumbSchema,
   buildWebPageSchema,
+  SITE_URL,
 } from "@/lib/seo-metadata";
 import { SEO_PAGES } from "@/lib/seo-pages";
 
@@ -67,13 +68,13 @@ export default async function CatalogPage() {
   const itemListSchema = {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    "@id": "https://texora.co.id/catalog#itemlist",
+    "@id": `${SITE_URL}/catalog#itemlist`,
     name: "Katalog Kain Sublimasi",
     numberOfItems: products.length,
     itemListElement: products.slice(0, 50).map((p, i) => ({
       "@type": "ListItem",
       position: i + 1,
-      url: `https://texora.co.id/catalog/${p.slug}`,
+      url: `${SITE_URL}/catalog/${p.slug}`,
       name: p.name,
     })),
   };

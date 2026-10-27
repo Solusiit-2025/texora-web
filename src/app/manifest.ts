@@ -1,7 +1,5 @@
 import { MetadataRoute } from "next";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://texora.co.id";
-
 /**
  * Web App Manifest.
  * Membantu Google memahami situs sebagai aplikasi web (PWA installable) dan

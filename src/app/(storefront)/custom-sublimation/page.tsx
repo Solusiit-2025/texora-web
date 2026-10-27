@@ -11,6 +11,7 @@ import {
   buildBreadcrumbSchema,
   buildWebPageSchema,
   buildFaqSchema,
+  SITE_URL,
 } from "@/lib/seo-metadata";
 import { SEO_PAGES } from "@/lib/seo-pages";
 
@@ -73,16 +74,16 @@ export default async function CustomSublimationPage() {
   const serviceSchema = {
     "@context": "https://schema.org",
     "@type": "Service",
-    "@id": "https://texora.co.id/custom-sublimation#service",
+    "@id": `${SITE_URL}/custom-sublimation#service`,
     name: "Jasa Desain & Cetak Sublimasi Kustom",
     serviceType: "Digital sublimation printing & graphic design",
     description:
       "Jasa desain pola repeat dan cetak sublimasi kustom pada kain poliester, termasuk proofing digital dan sampel cetak fisik.",
-    provider: { "@id": "https://texora.co.id/#organization" },
+    provider: { "@id": `${SITE_URL}/#organization` },
     areaServed: { "@type": "Country", name: "Indonesia" },
     availableChannel: {
       "@type": "ServiceChannel",
-      serviceUrl: "https://texora.co.id/contact",
+      serviceUrl: `${SITE_URL}/contact`,
       servicePhone: "+62-858-1064-6157",
     },
   };

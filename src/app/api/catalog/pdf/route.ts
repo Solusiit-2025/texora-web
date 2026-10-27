@@ -6,6 +6,7 @@ import QRCode from "qrcode";
 import { prisma } from "@/lib/prisma";
 import { formatRupiah, formatNumber } from "@/lib/utils";
 import { getCatalogPdfMeta } from "@/lib/catalog-pdf";
+import { SITE_HOST, SITE_URL } from "@/lib/site-url";
 import {
   getObjectFromStorage,
   isStorageConfigured,
@@ -546,7 +547,7 @@ async function buildCatalogPdf(products: any[]): Promise<Buffer> {
       .fontSize(8)
       .fillColor("#FFFFFF")
       .text(
-        "texora.co.id   •   +62 858-1064-6157   •   admin@texoraprima.com",
+        `${SITE_HOST}   •   +62 858-1064-6157   •   admin@texoraprima.com`,
         M + 8,
         PAGE_H - 46
       );
@@ -901,7 +902,7 @@ async function buildCatalogPdf(products: any[]): Promise<Buffer> {
   const contacts: Array<[string, string]> = [
     ["WhatsApp", "+62 858-1064-6157"],
     ["Email", "admin@texoraprima.com"],
-    ["Website", "texora.co.id"],
+    ["Website", SITE_HOST],
     ["Jam kerja", "Senin – Sabtu, 08.00 – 17.00 WIB"],
     [
       "Alamat pabrik",
@@ -926,7 +927,7 @@ async function buildCatalogPdf(products: any[]): Promise<Buffer> {
 
   // QR katalog digital
   try {
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://texora.co.id";
+    const siteUrl = SITE_URL;
     const qr = await QRCode.toBuffer(siteUrl, {
       margin: 1,
       width: 240,

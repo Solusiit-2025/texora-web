@@ -16,9 +16,9 @@
 import type { Metadata } from "next";
 import { getSeoSettings, type SeoPageMeta } from "@/lib/seo";
 import { htmlToPlainText } from "@/lib/sanitize";
+import { SITE_URL } from "@/lib/site-url";
 
-export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://texora.co.id";
+export { SITE_URL };
 
 export const SITE_NAME = "XoraMateria";
 export const SITE_LOCALE = "id_ID";

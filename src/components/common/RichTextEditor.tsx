@@ -117,7 +117,7 @@ export function RichTextEditor({
 
   const handleLink = () => {
     const url = window.prompt(
-      "Masukkan URL tautan (contoh: https://texora.co.id/katalog):",
+      "Masukkan URL tautan (contoh: https://xoramateria.com/katalog):",
       "https://"
     );
     if (!url) return;

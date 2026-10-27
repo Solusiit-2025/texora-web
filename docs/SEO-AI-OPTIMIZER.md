@@ -272,14 +272,14 @@ npm run backup:manual
 ## 📌 Catatan Produksi
 
 ```env
-NEXT_PUBLIC_SITE_URL="https://texora.co.id"   # WAJIB diset di produksi
+NEXT_PUBLIC_SITE_URL="https://xoramateria.com"   # WAJIB diset di produksi
 BACKUP_AUTO_ENABLED="true"
 CRON_SECRET="<random-string-minimal-32-karakter>"
 JWT_2FA_SECRET="<random-string-minimal-32-karakter>"
 ```
 
 - `NEXT_PUBLIC_SITE_URL` menentukan canonical, sitemap, OG image, dan llms.txt.
-  **Jangan lupa diubah** saat deploy (default masih `https://texora.co.id`).
+  **Jangan lupa diubah** saat deploy (default sudah `https://xoramateria.com`).
 - Backup otomatis berjalan tiap 24 jam (retensi 14 file). Endpoint
   `/api/cron/backup` bisa dipicu cron eksternal dengan header `x-cron-secret`.
 - `backups/` sudah masuk `.gitignore` (jangan di-commit).

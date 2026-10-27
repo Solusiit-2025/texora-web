@@ -16,11 +16,10 @@ import { NextResponse } from "next/server";
 import { getStorefrontProducts, getStorefrontFaqs } from "@/lib/storefront-data";
 import { getSeoSettings } from "@/lib/seo";
 import { htmlToPlainText } from "@/lib/sanitize";
+import { SITE_URL } from "@/lib/site-url";
 
 // Crawler AI tidak butuh konten real-time; cache 1 jam menghemat query DB.
 export const revalidate = 3600;
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://texora.co.id";
 
 export async function GET() {
   const [products, faqs, seo] = await Promise.all([

@@ -2864,7 +2864,7 @@ function ContentManagementInner() {
                 <h3 className="text-sm font-bold text-white mb-3">Preview Hasil Google</h3>
                 <div className="bg-white rounded-xl p-4 text-[#1a0dab]">
                   <p className="text-[11px] text-[#006621] truncate">
-                    {`texora.co.id${seoSelectedPage === "/" ? "" : seoSelectedPage}`}
+                    {`xoramateria.com${seoSelectedPage === "/" ? "" : seoSelectedPage}`}
                   </p>
                   <p className="text-base leading-snug font-medium cursor-pointer">
                     {seoData.pages[seoSelectedPage]?.title || ""}
