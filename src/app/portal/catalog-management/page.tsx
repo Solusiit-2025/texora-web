@@ -124,7 +124,9 @@ export default function CatalogManagementPage() {
       try {
         // Kompres dulu di browser kalau besar — menghindari 413 dari Nginx/proxy.
         const upload = await shrinkImageForUpload(file);
-        const outcome = await uploadImageFile(upload, { convertToWebp: true });
+        // Sudah dikompres di browser (WebP ≤1920px)? Simpan apa adanya supaya
+        // server tidak meng-encode ulang (menghindari penurunan kualitas).
+        const outcome = await uploadImageFile(upload, { convertToWebp: upload === file });
         if (outcome.success) {
           const url = outcome.url;
           setFormData((f) =>

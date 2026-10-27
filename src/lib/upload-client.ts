@@ -132,7 +132,17 @@ export async function uploadImageFile(
 ): Promise<UploadOutcome> {
   const fd = new FormData();
   fd.append("file", file);
-  if (opts.convertToWebp) fd.append("convert", "webp");
+
+  // Jangan minta konversi untuk:
+  //  - GIF: sharp hanya mengambil frame pertama → animasi hilang.
+  //  - SVG: sudah vektor, tidak perlu (dan tidak bisa) diraster.
+  // Pemanggil juga mengirim `convertToWebp: false` kalau file sudah
+  // dikompres di browser (sudah WebP 1920px) supaya tidak di-encode dua kali.
+  const convert =
+    Boolean(opts.convertToWebp) &&
+    file.type !== "image/gif" &&
+    file.type !== "image/svg+xml";
+  if (convert) fd.append("convert", "webp");
 
   let res: Response;
   try {

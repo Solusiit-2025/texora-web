@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
           });
         }
         const webpBuffer: Buffer = await pipeline
-          .webp({ quality: 82, effort: 4 })
+          .webp({ quality: 85, effort: 4 })
           .toBuffer();
         if (webpBuffer.length > MAX_SIZE) {
           return NextResponse.json(

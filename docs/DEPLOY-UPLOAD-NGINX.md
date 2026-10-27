@@ -44,18 +44,36 @@ curl -s -o /dev/null -w "%{http_code}\n" \
 
 ## Perbaikan 1 — Naikkan limit body di Nginx VPS
 
+Cara tercepat (berlaku untuk semua `server {}` karena diletakkan di konteks
+`http`, yaitu folder `conf.d`):
+
 ```bash
-# 1. cari file konfigurasi server block
+# 1. pastikan nginx memang meng-include folder conf.d
+grep -n "conf.d" /etc/nginx/nginx.conf
+
+# 2. buat drop-in berisi satu baris
+echo 'client_max_body_size 25M;' | sudo tee /etc/nginx/conf.d/upload-size.conf
+
+# 3. uji & reload tanpa downtime
+sudo nginx -t && sudo systemctl reload nginx
+
+# 4. cek nilainya benar-benar terpakai
+sudo nginx -T | grep -n "client_max_body_size"
+```
+
+Kalau `conf.d` tidak di-include, edit server block-nya langsung:
+
+```bash
 grep -rn "server_name" /etc/nginx/sites-enabled/ /etc/nginx/conf.d/
-# contoh: /etc/nginx/sites-enabled/xoramateria.com
-
-# 2. edit, lalu tambahkan baris berikut DI DALAM blok `server { ... }`
-sudo nano /etc/nginx/sites-enabled/xoramateria.com
+sudo nano /etc/nginx/sites-enabled/<nama-file>
+#    tambahkan DI DALAM blok server { ... }:
 #    client_max_body_size 25M;
-
-# 3. uji konfigurasi & reload (tanpa downtime)
 sudo nginx -t && sudo systemctl reload nginx
 ```
+
+Endpoint multipart yang ikut terbantu: `/api/upload` (gambar, batas aplikasi
+5 MB), `/api/catalog/upload` (PDF katalog, 30 MB), dan `POST /api/backup`
+(restore file backup).
 
 Catatan:
 
