@@ -1,11 +1,67 @@
 import { NextRequest, NextResponse } from "next/server";
+import { promises as dns } from "node:dns";
 import { getAuthenticatedUser } from "@/lib/auth/session";
 import { getSeoSettings } from "@/lib/seo";
 import { prisma } from "@/lib/prisma";
 import { canManageContent } from "@/lib/rbac/authorize";
-import { SITE_URL } from "@/lib/site-url";
+import { SITE_HOST, SITE_URL } from "@/lib/site-url";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * Cek record DNS TXT `google-site-verification=...`.
+ *
+ * Ini metode "Penyedia nama domain" di Google Search Console: begitu record
+ * TXT terpasang, domain dianggap terverifikasi tanpa perlu meta tag di <head>.
+ * Dipakai agar dashboard tidak memberi peringatan palsu saat verifikasi
+ * dilakukan lewat DNS.
+ *
+ * Query memakai DNS-over-HTTPS lebih dulu (resolver lokal di sebagian server
+ * menolak query TXT), lalu fallback ke resolver sistem.
+ */
+const TXT_TYPE = 16;
+
+function isGoogleVerificationTxt(value: unknown): boolean {
+  return String(value || "")
+    .toLowerCase()
+    .includes("google-site-verification=");
+}
+
+async function hasGoogleDnsVerification(hostname: string): Promise<boolean> {
+  // 1) DNS-over-HTTPS (Cloudflare)
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 3000);
+    const res = await fetch(
+      `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(hostname)}&type=TXT`,
+      {
+        headers: { accept: "application/dns-json" },
+        signal: ctrl.signal,
+        cache: "no-store",
+      }
+    );
+    clearTimeout(timer);
+    if (res.ok) {
+      const json = (await res.json()) as { Answer?: Array<{ type: number; data: string }> };
+      if ((json.Answer || []).some((a) => a.type === TXT_TYPE && isGoogleVerificationTxt(a.data))) {
+        return true;
+      }
+    }
+  } catch {
+    /* lanjut ke resolver lokal */
+  }
+
+  // 2) Resolver sistem
+  try {
+    const records = await Promise.race([
+      dns.resolveTxt(hostname),
+      new Promise<string[][]>((resolve) => setTimeout(() => resolve([]), 2500)),
+    ]);
+    return records.some((chunks) => isGoogleVerificationTxt(chunks.join("")));
+  } catch {
+    return false;
+  }
+}
 
 /**
  * GET /api/seo/audit
@@ -279,23 +335,30 @@ export async function GET(req: NextRequest) {
       });
     } catch {}
 
-    // Verifikasi search engine
-    const hasVerification = Boolean(
+    // Verifikasi search engine — sah lewat meta tag (env) ATAU DNS TXT.
+    const hasMetaVerification = Boolean(
       process.env.GOOGLE_SITE_VERIFICATION ||
         process.env.BING_SITE_VERIFICATION ||
         process.env.YANDEX_SITE_VERIFICATION
     );
+    const dnsVerified = hasMetaVerification
+      ? false
+      : await hasGoogleDnsVerification(SITE_HOST);
+    const hasVerification = hasMetaVerification || dnsVerified;
+
     checks.push({
       id: "tech-verification",
       label: "Verifikasi Search Engine",
       category: "technical",
       status: hasVerification ? "ok" : "warning",
-      detail: hasVerification
+      detail: hasMetaVerification
         ? "Tag verifikasi Google/Bing/Yandex terpasang di <head>."
-        : "Belum ada tag verifikasi. Isi GOOGLE_SITE_VERIFICATION di .env untuk mendaftarkan situs di Google Search Console & Bing Webmaster Tools.",
+        : dnsVerified
+          ? `Domain ${SITE_HOST} terverifikasi lewat DNS TXT (google-site-verification) — meta tag di .env tidak diperlukan.`
+          : "Belum ada bukti verifikasi. Verifikasi domain lewat DNS TXT di Google Search Console, atau isi GOOGLE_SITE_VERIFICATION di .env.",
       fix: hasVerification
         ? undefined
-        : "Salin tag HTML dari Google Search Console lalu isi GOOGLE_SITE_VERIFICATION di environment variable.",
+        : "Verifikasi domain lewat DNS TXT di Search Console, atau isi GOOGLE_SITE_VERIFICATION di environment variable.",
     });
 
     // ---------- SKOR ----------
