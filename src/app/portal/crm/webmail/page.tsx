@@ -429,7 +429,7 @@ Tim Sales & Komersial XoraMateria`;
       
       {/* TOAST NOTIFICATION */}
       {toastMsg && (
-        <div className="fixed top-6 right-6 z-50 px-4 py-3 rounded-2xl bg-emerald-600 text-white font-medium shadow-2xl flex items-center gap-3 border border-emerald-400/40 animate-in fade-in slide-in-from-top-4 duration-200">
+        <div className="fixed top-6 right-6 z-[2000] px-4 py-3 rounded-2xl bg-emerald-600 text-white font-medium shadow-2xl flex items-center gap-3 border border-emerald-400/40 animate-in fade-in slide-in-from-top-4 duration-200">
           <CheckCircle2 className="w-5 h-5 text-white shrink-0" />
           <span className="text-xs sm:text-sm">{toastMsg}</span>
         </div>

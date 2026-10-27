@@ -530,7 +530,7 @@ export default function CatalogManagementPage() {
       {/* Toast Notification */}
       {notification && (
         <div
-          className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl border text-xs font-semibold backdrop-blur-md transition-all ${
+          className={`fixed top-6 right-6 z-[2000] flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl border text-xs font-semibold backdrop-blur-md transition-all ${
             notification.type === "success"
               ? "bg-emerald-950/90 text-emerald-200 border-emerald-500/40"
               : "bg-red-950/90 text-red-200 border-red-500/40"
