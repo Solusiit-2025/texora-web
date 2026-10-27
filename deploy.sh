@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Deploy script untuk web-texora di VPS (dipanggil oleh GitHub Actions).
-# Bisa juga dijalankan manual di VPS: bash ~/projects/texora-web/deploy.sh
+# Deploy script untuk web-texora di VPS.
+# Jalankan manual: bash ~/projects/texora-web/deploy.sh
+# (Auto-deploy GitHub Actions sudah dihapus — deploy sengaja manual.)
 
 cd ~/projects/texora-web
 
