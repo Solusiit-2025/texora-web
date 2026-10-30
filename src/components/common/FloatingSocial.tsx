@@ -482,12 +482,6 @@ export function FloatingSocial() {
           className="fixed bottom-6 right-5 md:right-6 z-50"
         >
           <div className="group relative flex items-center">
-            {/* Tooltip desktop */}
-            <span className="pointer-events-none absolute right-full mr-3 hidden translate-x-1 items-center gap-1.5 whitespace-nowrap rounded-xl border border-white/10 bg-slate-950/90 px-3 py-2 text-[11px] font-semibold text-slate-100 opacity-0 shadow-2xl backdrop-blur-xl transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100 md:flex">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Chat via WhatsApp
-            </span>
-
             <div className="relative h-14 w-14 md:h-16 md:w-16">
               {/* Pulse ring */}
               <span className="pointer-events-none absolute inset-0 animate-ping rounded-full bg-[#25D366]/30" />
@@ -496,7 +490,7 @@ export function FloatingSocial() {
                 href={whatsappLink.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Chat via WhatsApp"
+                aria-label="WhatsApp"
                 whileHover={{ scale: 1.08 }}
                 whileTap={{ scale: 0.94 }}
                 className="relative flex h-full w-full items-center justify-center rounded-full bg-[#25D366] text-white shadow-[0_12px_35px_rgba(37,211,102,0.45)] ring-4 ring-emerald-400/20 transition-colors hover:bg-[#1FBE5A]"

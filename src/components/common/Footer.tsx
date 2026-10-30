@@ -239,15 +239,6 @@ export async function Footer() {
         {/* Bottom copyright */}
         <div className="border-t border-slate-800/60 pt-8 flex flex-col md:flex-row items-center justify-between text-xs text-slate-500">
           <p>© {new Date().getFullYear()} XoraMateria. All Rights Reserved. Platform E-Commerce &amp; CRM Suite.</p>
-          <div className="flex space-x-6 mt-4 md:mt-0">
-            <span className="text-slate-500">Next.js App Router</span>
-            <span className="text-slate-500">•</span>
-            <span className="text-slate-500">Prisma ORM</span>
-            <span className="text-slate-500">•</span>
-            <span className="text-slate-500">PostgreSQL</span>
-            <span className="text-slate-500">•</span>
-            <span className="text-slate-500">Docker &amp; Nginx</span>
-          </div>
         </div>
 
       </div>
