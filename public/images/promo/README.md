@@ -1,4 +1,11 @@
-# Poster Popup Storefront
+# Poster Popup Storefront (Fallback)
+
+> **Sejak popup dikelola dari CMS**, tambah/ganti banner lewat
+> **Portal → Content Management → tab “Popup Banner”**. Anda bisa mengunggah
+> poster, mengatur jadwal tayang, frekuensi, tautan, dan melihat pratinjau
+> hasil langsung dari CMS.
+>
+> Folder ini hanya dipakai sebagai **fallback** bila CMS belum pernah diisi.
 
 Letakkan file poster di folder ini. Popup akan otomatis menampilkannya
 sebagai carousel (maksimal **4 file**).

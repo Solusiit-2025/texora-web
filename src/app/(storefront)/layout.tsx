@@ -3,19 +3,7 @@ import { Footer } from "@/components/common/Footer";
 import { NavProgress } from "@/components/common/NavProgress";
 import { WelcomePopup } from "@/components/storefront/WelcomePopup";
 import { getSeoSettings } from "@/lib/seo";
-import { PROMO_POSTERS, PROMO_POSTER_VERSION } from "@/config/promo";
-
-/**
- * Daftar poster popup diambil dari konfigurasi statis (src/config/promo.ts),
- * bukan scan filesystem — agar tetap bekerja di serverless (Vercel/Netlify)
- * yang tidak menyertakan folder `public` di runtime function.
- */
-function resolvePromoPosters(): Array<{ src: string; alt: string }> {
-  return PROMO_POSTERS.map((poster) => ({
-    ...poster,
-    src: `${poster.src}?v=${PROMO_POSTER_VERSION}`,
-  }));
-}
+import { getStorefrontPopup } from "@/lib/popup-data";
 
 /**
  * Layout publik (storefront).
@@ -36,7 +24,11 @@ export default async function StorefrontLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const seo = await getSeoSettings().catch(() => null);
+  const [seo, popup] = await Promise.all([
+    getSeoSettings().catch(() => null),
+    getStorefrontPopup().catch(() => null),
+  ]);
+
   const disabledPaths = seo
     ? Object.entries(seo.pages || {})
         .filter(([, meta]) => (meta as any)?.enabled === false)
@@ -49,7 +41,22 @@ export default async function StorefrontLayout({
       <Navbar initialDisabledPaths={disabledPaths} />
       <main className="flex-1">{children}</main>
       <Footer />
-      <WelcomePopup posters={resolvePromoPosters()} />
+      {popup && (
+        <WelcomePopup
+          posters={popup.banners.map((banner) => ({
+            src: banner.imageUrl,
+            alt: banner.alt || banner.title,
+            title: banner.title,
+            href: banner.linkUrl,
+            ctaLabel: banner.ctaLabel,
+          }))}
+          enabled={popup.settings.enabled}
+          delaySeconds={popup.settings.delaySeconds}
+          frequencyDays={popup.settings.frequencyDays}
+          showOnMobile={popup.settings.showOnMobile}
+          storageKey={popup.storageKey}
+        />
+      )}
     </div>
   );
 }

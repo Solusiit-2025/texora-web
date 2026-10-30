@@ -1,11 +1,12 @@
 /**
- * Daftar poster popup storefront.
+ * Poster popup storefront — FALLBACK STATIS.
  *
- * Sengaja STATIS (bukan scan folder saat runtime) supaya tetap bekerja di
- * hosting serverless seperti Vercel/Netlify, di mana folder `public` tidak
- * selalu ada di filesystem function.
+ * Sejak popup banner dikelola dari CMS (Portal → Content Management →
+ * "Popup Banner"), daftar di sini hanya dipakai bila admin BELUM pernah
+ * menyimpan pengaturan popup di database. Setelah CMS diisi, banner dari
+ * database yang tayang (termasuk jadwal & frekuensinya).
  *
- * Cara menambah/mengganti poster:
+ * Cara menambah/mengganti poster fallback:
  *  1. Taruh file di `public/images/promo/`.
  *  2. Daftarkan path-nya di array ini (urutan = urutan slide).
  *  3. Jika mengganti file dengan NAMA SAMA, ubah PROMO_POSTER_VERSION agar

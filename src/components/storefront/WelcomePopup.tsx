@@ -4,13 +4,14 @@
  * Popup sambutan + pengumuman (storefront).
  *
  * Perilaku:
- *  - Tampil 1,5 detik setelah render pertama.
- *  - Maksimal sekali per 7 hari per browser (localStorage).
+ *  - Tampil setelah jeda yang diatur dari CMS (default 1,5 detik).
+ *  - Frekuensi & tampilan mobile mengikuti pengaturan CMS.
  *  - Hanya dirender di layout storefront (tidak muncul di portal/customer/auth).
  *  - Bisa ditutup via tombol X, tombol Tutup, klik backdrop, atau Escape.
- *  - Mendukung beberapa poster (maks 4) sebagai carousel: panah, dots,
- *    keyboard (â†/â†’), dan swipe. Urutan file diatur di layout storefront.
- *  - Bila belum ada poster, tampil versi teks yang tetap informatif.
+ *  - Mendukung beberapa poster sebagai carousel: panah, dots,
+ *    keyboard (←/→), dan swipe. Urutan banner diatur di CMS.
+ *  - Tautan poster mengikuti field "Tautan Tujuan"; jika kosong -> WhatsApp.
+ *  - Bila belum ada poster, popup tidak ditampilkan.
  *
  * Desain: kartu ringkas (bukan full-page), animasi spring halus, dan
  * menghormati preferensi `prefers-reduced-motion`.
@@ -38,17 +39,34 @@ const WA_BASE =
   DEFAULT_SOCIAL_LINKS.find((l) => l.id === "whatsapp")?.href ||
   "https://wa.me/6285810646157";
 const WA_HREF = `${WA_BASE.split("?")[0]}?text=${encodeURIComponent(
-  "Halo XoraMateria, saya melihat promo Grand Opening / Raya Ready Deals. Saya ingin bertanya."
+  "Halo XoraMateria, saya melihat promo di website. Saya ingin bertanya."
 )}`;
 
-const STORAGE_KEY = "texora-welcome-popup-v1";
-const TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 hari
-const SHOW_DELAY_MS = 1500;
+const DEFAULT_STORAGE_KEY = "texora-welcome-popup-v1";
+const DEFAULT_FREQUENCY_DAYS = 7;
+
+export interface WelcomePopupPoster {
+  src: string;
+  alt?: string;
+  title?: string;
+  href?: string;
+  ctaLabel?: string;
+}
 
 export function WelcomePopup({
   posters: posterList = [],
+  enabled = true,
+  delaySeconds = 1.5,
+  frequencyDays = DEFAULT_FREQUENCY_DAYS,
+  showOnMobile = true,
+  storageKey = DEFAULT_STORAGE_KEY,
 }: {
-  posters?: Array<{ src: string; alt?: string }>;
+  posters?: WelcomePopupPoster[];
+  enabled?: boolean;
+  delaySeconds?: number;
+  frequencyDays?: number;
+  showOnMobile?: boolean;
+  storageKey?: string;
 }) {
   const { t } = useI18n();
   const localePath = useLocalePath();
@@ -58,7 +76,7 @@ export function WelcomePopup({
   const count = posters.length;
 
   const [open, setOpen] = useState(false);
-  const [posterFailed, setPosterFailed] = useState(count === 0);
+  const [posterFailed, setPosterFailed] = useState(false);
   const [index, setIndex] = useState(0);
   const [direction, setDirection] = useState(1);
 
@@ -76,48 +94,66 @@ export function WelcomePopup({
     [count]
   );
 
-  // Jadwalkan popup bila belum pernah tampil dalam 7 hari terakhir.
+  // Jadwalkan popup sesuai pengaturan tayang dari CMS.
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     const params = new URLSearchParams(window.location.search);
     if (params.has("preview") || params.has("fresh")) return;
 
-    // Mode tes/QA: paksa tampil walau sudah pernah ditutup (tidak mengubah data).
+    // Mode tes/QA: paksa tampil walau popup nonaktif / sudah pernah ditutup.
     const forceShow = params.get("popup") === "1";
 
-    let lastShown = 0;
-    try {
-      lastShown = Number(window.localStorage.getItem(STORAGE_KEY) || 0);
-    } catch {
-      /* localStorage bisa diblokir (mode privat) â€” tetap tampilkan. */
-    }
-    // Aturan normal: maksimal sekali per 7 hari per browser.
+    if (count === 0) return;
+    if (!enabled && !forceShow) return;
     if (
+      !showOnMobile &&
       !forceShow &&
-      Number.isFinite(lastShown) &&
-      Date.now() - lastShown < TTL_MS
+      window.matchMedia("(max-width: 639px)").matches
     ) {
       return;
     }
 
+    const frequency = Math.max(0, Number(frequencyDays) || 0);
+    const ttlMs = frequency * 24 * 60 * 60 * 1000;
+
+    let lastShown = 0;
+    try {
+      lastShown = Number(window.localStorage.getItem(storageKey) || 0);
+    } catch {
+      /* localStorage bisa diblokir (mode privat) - tetap tampilkan. */
+    }
+    // frequency = 0 -> tampil setiap kunjungan (tanpa cooldown).
+    if (
+      !forceShow &&
+      frequency > 0 &&
+      Number.isFinite(lastShown) &&
+      Date.now() - lastShown < ttlMs
+    ) {
+      return;
+    }
+
+    const delayMs = Math.max(0, Number(delaySeconds) || 0) * 1000;
     const timer = window.setTimeout(() => {
       lastFocusRef.current = document.activeElement as HTMLElement | null;
       setOpen(true);
-    }, SHOW_DELAY_MS);
+    }, delayMs);
 
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [count, enabled, delaySeconds, frequencyDays, showOnMobile, storageKey]);
 
   const dismiss = useCallback(() => {
     try {
-      window.localStorage.setItem(STORAGE_KEY, String(Date.now()));
+      // frequency 0 = setiap kunjungan -> jangan simpan cooldown.
+      if ((Number(frequencyDays) || 0) > 0) {
+        window.localStorage.setItem(storageKey, String(Date.now()));
+      }
     } catch {
       /* abaikan */
     }
     setOpen(false);
     lastFocusRef.current?.focus?.();
-  }, []);
+  }, [frequencyDays, storageKey]);
 
   // Escape/panah kiri-kanan, focus awal, focus trap sederhana, kunci scroll.
   useEffect(() => {
@@ -188,6 +224,28 @@ export function WelcomePopup({
   };
 
   const current = posters[index] ?? null;
+
+  // frequency 0 = setiap kunjungan -> keterangan footer menyesuaikan.
+  const frequency = Math.max(0, Number(frequencyDays) || 0);
+  const frequencyNote =
+    frequency > 0
+      ? `Tampil sekali per ${frequency} hari`
+      : "Tampil setiap kunjungan";
+
+  // Tautan poster: prioritas dari CMS, fallback ke WhatsApp sales.
+  const rawHref = current?.href?.trim() || "";
+  const posterHref = rawHref
+    ? rawHref.startsWith("/")
+      ? localePath(rawHref)
+      : rawHref
+    : WA_HREF;
+  const posterHrefExternal = /^(https?:)?\/\//i.test(posterHref) || /^(mailto|tel):/i.test(posterHref);
+  const posterHint =
+    current?.ctaLabel?.trim() ||
+    (rawHref ? "Buka penawaran" : "Klik untuk chat WhatsApp");
+
+  // Tidak ada banner aktif -> jangan tampilkan popup sama sekali.
+  if (count === 0) return null;
 
   return (
     <AnimatePresence>
@@ -298,17 +356,17 @@ export function WelcomePopup({
                             }}
                           >
                             <a
-                              href={WA_HREF}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              aria-label="Chat via WhatsApp"
+                              href={posterHref}
+                              target={posterHrefExternal ? "_blank" : undefined}
+                              rel={posterHrefExternal ? "noopener noreferrer" : undefined}
+                              aria-label={current.ctaLabel || "Buka penawaran"}
                               onClick={(e) => {
                                 if (draggedRef.current) {
                                   e.preventDefault();
                                   return;
                                 }
                                 // Kunjungan dianggap sudah melihat promo:
-                                // jangan munculkan lagi dalam 7 hari.
+                                // jangan munculkan lagi sesuai frekuensi CMS.
                                 dismiss();
                               }}
                               className="group/poster relative block cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
@@ -334,10 +392,14 @@ export function WelcomePopup({
                                 className="pointer-events-none block h-auto max-h-[64vh] w-auto max-w-full select-none sm:max-h-[72vh] lg:max-h-[82vh] xl:max-h-[84vh]"
                               />
 
-                              {/* Hint di desktop: klik poster untuk WhatsApp */}
+                              {/* Hint di desktop: sesuai CTA banner */}
                               <span className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-center gap-1.5 bg-gradient-to-t from-black/75 via-black/35 to-transparent px-3 pb-3 pt-10 text-[11px] font-semibold text-white opacity-0 transition-opacity duration-300 group-hover/poster:opacity-100">
-                                <MessageCircle className="h-3.5 w-3.5" />
-                                Klik untuk chat WhatsApp
+                                {rawHref ? (
+                                  <ArrowRight className="h-3.5 w-3.5" />
+                                ) : (
+                                  <MessageCircle className="h-3.5 w-3.5" />
+                                )}
+                                {posterHint}
                               </span>
                             </a>
                           </motion.div>
@@ -439,7 +501,7 @@ export function WelcomePopup({
                   <span className="text-[10px] text-slate-500">
                     {count > 1
                       ? `${index + 1} / ${count}`
-                      : t("popup.note", "Tampil sekali per 7 hari")}
+                      : frequencyNote}
                   </span>
 
                   {count > 1 ? (

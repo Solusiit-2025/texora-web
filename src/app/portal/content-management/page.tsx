@@ -32,6 +32,12 @@ import {
   MapPin,
   Mail,
   Phone,
+  Megaphone,
+  CalendarDays,
+  Clock3,
+  ArrowUp,
+  ArrowDown,
+  PlayCircle,
 } from "lucide-react";
 import { formatRupiah } from "@/lib/utils";
 import { SOCIAL_ICONS, SOCIAL_BRAND } from "@/components/common/SocialLinks";
@@ -45,6 +51,18 @@ import { RedirectManager } from "@/components/common/RedirectManager";
 import { TranslationManager } from "@/components/common/TranslationManager";
 import ArticleManager from "./ArticleManager";
 import { CmsTabBar } from "@/components/portal/CmsTabBar";
+import { PopupBannerUpload } from "@/components/portal/PopupBannerUpload";
+import { PopupPreview } from "@/components/portal/PopupPreview";
+import {
+  POPUP_CONTENT_KEY,
+  DEFAULT_POPUP_SETTINGS,
+  normalizePopupSettings,
+  getPopupBannerStatus,
+  formatPopupDate,
+  type PopupBanner,
+  type PopupSettings,
+} from "@/config/popup";
+import { PROMO_POSTERS, PROMO_POSTER_VERSION } from "@/config/promo";
 import {
   HERO_TEXT_KEY,
   HERO_TEXT_FIELD_META,
@@ -56,6 +74,7 @@ import {
 type TabType =
   | "hero"
   | "hero-text"
+  | "popup"
   | "testimonials"
   | "faqs"
   | "content"
@@ -120,6 +139,90 @@ const DEFAULT_SOCIAL_FORM: SocialLinkItem[] = [
   { id: "whatsapp", label: "WhatsApp Sales", href: "https://wa.me/6285810646157?text=Halo%20XoraMateria%2C%20saya%20ingin%20bertanya%20tentang%20kain%20sublimasi.", handle: "+62 858-1064-6157", isActive: true, order: 6 },
 ];
 
+interface PopupBannerForm {
+  title: string;
+  imageUrl: string;
+  alt: string;
+  linkUrl: string;
+  ctaLabel: string;
+  startAt: string;
+  endAt: string;
+  isActive: boolean;
+  order: number;
+}
+
+const EMPTY_POPUP_FORM: PopupBannerForm = {
+  title: "",
+  imageUrl: "",
+  alt: "",
+  linkUrl: "",
+  ctaLabel: "",
+  startAt: "",
+  endAt: "",
+  isActive: true,
+  order: 1,
+};
+
+/**
+ * Poster statis dipakai sebagai isi awal CMS saat `storefront.popup` belum
+ * pernah disimpan. Begitu admin menyimpan, daftar ini bermigrasi ke database.
+ */
+const STATIC_POPUP_BANNERS: PopupBanner[] = PROMO_POSTERS.map((poster, index) => ({
+  id: `static-${index + 1}`,
+  title: index === 0 ? "Grand Opening Raya 2026" : "Price List Raya 2026",
+  imageUrl: `${poster.src}?v=${PROMO_POSTER_VERSION}`,
+  alt: poster.alt,
+  linkUrl: "",
+  ctaLabel: "",
+  startAt: null,
+  endAt: null,
+  isActive: true,
+  order: index + 1,
+}));
+
+/** ISO -> nilai input datetime-local (zona waktu browser). */
+function toDateTimeLocal(value?: string | null): string {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
+    date.getHours()
+  )}:${pad(date.getMinutes())}`;
+}
+
+/** Nilai input datetime-local -> ISO (atau null bila kosong). */
+function fromDateTimeLocal(value: string): string | null {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function popupStatusMeta(status: ReturnType<typeof getPopupBannerStatus>) {
+  switch (status) {
+    case "live":
+      return {
+        label: "Tayang",
+        className: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
+      };
+    case "scheduled":
+      return {
+        label: "Terjadwal",
+        className: "bg-amber-500/10 text-amber-300 border-amber-500/30",
+      };
+    case "expired":
+      return {
+        label: "Kedaluwarsa",
+        className: "bg-rose-500/10 text-rose-300 border-rose-500/30",
+      };
+    default:
+      return {
+        label: "Non-aktif",
+        className: "bg-slate-800 text-slate-400 border-slate-700",
+      };
+  }
+}
+
 /**
  * Modul halaman yang dapat dinonaktifkan dari dashboard.
  * Sumber data: `seo.pages[path].enabled` (sumber tunggal, sinkron dengan tab SEO & AI).
@@ -163,7 +266,7 @@ function ContentManagementInner() {
 
   useEffect(() => {
     const tab = searchParams.get("tab") as TabType | null;
-    if (tab && ["hero","hero-text","testimonials","faqs","content","social","pricing","pages","artikel","seo","catalog","translations"].includes(tab)) {
+    if (tab && ["hero","hero-text","popup","testimonials","faqs","content","social","pricing","pages","artikel","seo","catalog","translations"].includes(tab)) {
       setActiveTab(tab);
     }
   }, [searchParams]);
@@ -177,6 +280,16 @@ function ContentManagementInner() {
   const [faqs, setFaqs] = useState<FaqItemData[]>([]);
   const [siteContent, setSiteContent] = useState<SiteContentItem[]>([]);
   const [socialLinks, setSocialLinks] = useState<SocialLinkItem[]>(DEFAULT_SOCIAL_FORM);
+
+  // Popup banner storefront (dikelola via SiteContent `storefront.popup`)
+  const [popupSettings, setPopupSettings] = useState<PopupSettings>(DEFAULT_POPUP_SETTINGS);
+  const [popupSaving, setPopupSaving] = useState(false);
+  const [popupModalOpen, setPopupModalOpen] = useState(false);
+  const [popupEditingId, setPopupEditingId] = useState<string | null>(null);
+  const [popupForm, setPopupForm] = useState<PopupBannerForm>(EMPTY_POPUP_FORM);
+  const [popupPreviewDevice, setPopupPreviewDevice] = useState<"mobile" | "desktop">("mobile");
+  const [popupPreviewId, setPopupPreviewId] = useState<string | null>(null);
+  const [popupUsingFallback, setPopupUsingFallback] = useState(false);
 
   // Modals state
   const [modalType, setModalType] = useState<"hero" | "testimonial" | "faq" | null>(null);
@@ -378,6 +491,24 @@ function ContentManagementInner() {
             setHeroTextData(next);
             setSavedHeroText(next);
           } catch {}
+        }
+
+        const popupRow = json.data.siteContent?.find(
+          (s: any) => s.key === POPUP_CONTENT_KEY
+        );
+        if (popupRow?.value) {
+          try {
+            setPopupSettings(normalizePopupSettings(JSON.parse(popupRow.value)));
+            setPopupUsingFallback(false);
+          } catch {}
+        } else {
+          // Belum pernah disimpan di CMS -> tampilkan poster fallback agar
+          // admin melihat banner yang saat ini tayang di storefront.
+          setPopupSettings({
+            ...DEFAULT_POPUP_SETTINGS,
+            banners: STATIC_POPUP_BANNERS,
+          });
+          setPopupUsingFallback(true);
         }
       }
     } catch (err) {
@@ -806,6 +937,185 @@ function ContentManagementInner() {
     }
   };
 
+  /**
+   * Simpan seluruh pengaturan popup (settings + daftar banner) ke SiteContent.
+   * Dipakai oleh form pengaturan tayang maupun aksi CRUD banner.
+   */
+  const persistPopupSettings = async (
+    next: PopupSettings,
+    message: string
+  ): Promise<boolean> => {
+    setPopupSaving(true);
+    try {
+      const payload: PopupSettings = {
+        ...next,
+        banners: [...next.banners]
+          .sort((a, b) => a.order - b.order)
+          .map((banner, index) => ({ ...banner, order: index + 1 })),
+        updatedAt: new Date().toISOString(),
+      };
+
+      const res = await fetch("/api/cms", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "siteContent",
+          data: {
+            key: POPUP_CONTENT_KEY,
+            group: "storefront",
+            label: "Popup Banner Storefront",
+            value: JSON.stringify(payload),
+          },
+        }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.success) {
+        throw new Error(json?.error || "Gagal menyimpan popup banner.");
+      }
+
+      setPopupSettings(payload);
+      setPopupUsingFallback(false);
+      showNotice("success", message);
+      return true;
+    } catch (err: any) {
+      showNotice("error", err?.message || "Gagal menyimpan popup banner.");
+      return false;
+    } finally {
+      setPopupSaving(false);
+    }
+  };
+
+  const handleOpenPopupModal = (banner?: PopupBanner) => {
+    if (banner) {
+      setPopupEditingId(banner.id);
+      setPopupForm({
+        title: banner.title,
+        imageUrl: banner.imageUrl,
+        alt: banner.alt,
+        linkUrl: banner.linkUrl,
+        ctaLabel: banner.ctaLabel,
+        startAt: toDateTimeLocal(banner.startAt),
+        endAt: toDateTimeLocal(banner.endAt),
+        isActive: banner.isActive,
+        order: banner.order,
+      });
+    } else {
+      setPopupEditingId(null);
+      setPopupForm({
+        ...EMPTY_POPUP_FORM,
+        order: popupSettings.banners.length + 1,
+      });
+    }
+    setPopupModalOpen(true);
+  };
+
+  const handleSavePopupBanner = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!popupForm.imageUrl.trim()) {
+      showNotice("error", "Poster banner wajib diunggah atau diisi URL-nya.");
+      return;
+    }
+
+    const startAt = fromDateTimeLocal(popupForm.startAt);
+    const endAt = fromDateTimeLocal(popupForm.endAt);
+    if (startAt && endAt && new Date(endAt).getTime() < new Date(startAt).getTime()) {
+      showNotice("error", "Jadwal selesai harus setelah jadwal mulai.");
+      return;
+    }
+
+    const banner: PopupBanner = {
+      id: popupEditingId || `promo-${Date.now().toString(36)}`,
+      title: popupForm.title.trim(),
+      imageUrl: popupForm.imageUrl.trim(),
+      alt: popupForm.alt.trim(),
+      linkUrl: popupForm.linkUrl.trim(),
+      ctaLabel: popupForm.ctaLabel.trim(),
+      startAt,
+      endAt,
+      isActive: popupForm.isActive,
+      order: Number(popupForm.order) || popupSettings.banners.length + 1,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const exists = popupSettings.banners.some((item) => item.id === banner.id);
+    const banners = exists
+      ? popupSettings.banners.map((item) => (item.id === banner.id ? banner : item))
+      : [...popupSettings.banners, banner];
+
+    const ok = await persistPopupSettings(
+      { ...popupSettings, banners },
+      exists ? "Banner popup berhasil diperbarui." : "Banner popup berhasil ditambahkan."
+    );
+
+    if (ok) {
+      setPopupModalOpen(false);
+      setPopupPreviewId(banner.id);
+    }
+  };
+
+  const handleDeletePopupBanner = async (banner: PopupBanner) => {
+    if (
+      !window.confirm(
+        `Hapus banner "${banner.title || banner.alt || "tanpa judul"}"? Tindakan ini tidak bisa dibatalkan.`
+      )
+    ) {
+      return;
+    }
+    const ok = await persistPopupSettings(
+      {
+        ...popupSettings,
+        banners: popupSettings.banners.filter((item) => item.id !== banner.id),
+      },
+      "Banner popup berhasil dihapus."
+    );
+    if (ok && popupPreviewId === banner.id) setPopupPreviewId(null);
+  };
+
+  const handleTogglePopupBanner = async (banner: PopupBanner) => {
+    await persistPopupSettings(
+      {
+        ...popupSettings,
+        banners: popupSettings.banners.map((item) =>
+          item.id === banner.id ? { ...item, isActive: !item.isActive } : item
+        ),
+      },
+      banner.isActive
+        ? "Banner dinonaktifkan dari popup."
+        : "Banner diaktifkan di popup."
+    );
+  };
+
+  const handleMovePopupBanner = async (banner: PopupBanner, direction: -1 | 1) => {
+    const sorted = [...popupSettings.banners].sort((a, b) => a.order - b.order);
+    const index = sorted.findIndex((item) => item.id === banner.id);
+    const target = index + direction;
+    if (index < 0 || target < 0 || target >= sorted.length) return;
+
+    const reordered = [...sorted];
+    [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+    await persistPopupSettings(
+      {
+        ...popupSettings,
+        banners: reordered.map((item, i) => ({ ...item, order: i + 1 })),
+      },
+      "Urutan banner diperbarui."
+    );
+  };
+
+  const handleSavePopupDisplay = async () => {
+    if (popupSettings.enabled && popupSettings.banners.length === 0) {
+      showNotice(
+        "error",
+        "Tambahkan minimal satu banner (atau matikan popup) sebelum menyimpan pengaturan tayang."
+      );
+      return;
+    }
+    await persistPopupSettings(
+      normalizePopupSettings(popupSettings),
+      "Pengaturan tayang popup berhasil disimpan."
+    );
+  };
+
   const CMS_GUIDE_DETAILS: Record<
     string,
     { title: string; desc: string; steps: string[]; fields?: { label: string; hint: string }[]; tips?: string[] }
@@ -849,6 +1159,31 @@ function ContentManagementInner() {
         { label: "Paragraf pengantar", hint: "Deskripsi singkat di bawah judul." },
         { label: "Poin keunggulan #1–#3", hint: "Tiga poin singkat dengan ikon centang." },
         { label: "Tombol utama / sekunder", hint: "Label tombol CTA. Tautannya tetap mengikuti halaman studio & katalog." },
+      ],
+    },
+    popup: {
+      title: "Panduan Popup Banner",
+      desc: "Modul untuk mengelola banner promo yang muncul otomatis di storefront, lengkap dengan jadwal tayang, frekuensi, dan pratinjau hasil.",
+      steps: [
+        "Atur master switch, jeda muncul, frekuensi, dan tampilan mobile pada kartu 'Pengaturan Tayang'.",
+        "Klik 'Tambah Banner' lalu unggah poster (rasio 9:16) — pratinjau muncul langsung di panel kanan.",
+        "Isi judul internal, alt text, tautan tujuan, dan label tombol bila banner dapat diklik.",
+        "Tentukan jadwal mulai/selesai bila promo hanya tayang pada periode tertentu.",
+        "Klik 'Simpan Banner'. Gunakan tombol 'Pratinjau' pada kartu untuk meninjau hasil.",
+        "Buka 'Lihat Hasil di Storefront' untuk memeriksa popup asli di tab baru.",
+      ],
+      fields: [
+        { label: "Master Switch", hint: "Mematikan seluruh popup tanpa menghapus banner." },
+        { label: "Jeda Muncul", hint: "Berapa detik setelah halaman dimuat popup ditampilkan (0–30 detik)." },
+        { label: "Frekuensi", hint: "0 = setiap kunjungan; 7 = sekali per 7 hari per browser." },
+        { label: "Tampil di Mobile", hint: "Nonaktifkan bila poster terlalu berat untuk layar kecil." },
+        { label: "Poster Banner", hint: "Gambar portrait 9:16, disarankan 900×1600 px, maks 5 MB." },
+        { label: "Judul Internal", hint: "Nama kampanye untuk admin; tidak wajib tampil ke pengunjung." },
+        { label: "Alt Text", hint: "Deskripsi gambar untuk aksesibilitas & SEO." },
+        { label: "Tautan Tujuan", hint: "URL internal (/contact) atau eksternal (https://...). Kosongkan untuk WhatsApp sales." },
+        { label: "Label Tombol", hint: "Teks hint saat poster di-hover, mis. 'Lihat promo'." },
+        { label: "Jadwal Mulai/Selesai", hint: "Kosongkan untuk tayang terus. Banner otomatis berhenti setelah tanggal selesai." },
+        { label: "Aktif", hint: "Nonaktifkan banner tertentu tanpa menghapusnya." },
       ],
     },
     testimonials: {
@@ -1009,6 +1344,13 @@ function ContentManagementInner() {
       "Tiga poin keunggulan sebaiknya konkret dan terukur (gratis, fleksibel, termin 30/60 hari).",
       "Hindari menulis ulang nama produk di hero; fokus pada manfaat bagi calon pembeli.",
       "Setelah menyimpan, buka homepage dan uji tampilan mobile sebelum mengumumkan perubahan.",
+    ],
+    popup: [
+      "Gunakan satu pesan utama per banner; hindari teks kecil karena poster tampil di layar HP.",
+      "Ekspor poster 9:16 (1080×1920 px) lalu kompres ke bawah 500 KB agar popup cepat dibuka.",
+      "Isi tautan tujuan yang relevan — banner tanpa tautan akan mengarah ke WhatsApp sales.",
+      "Jadwalkan promo Raya/akhir tahun dengan tanggal mulai & selesai agar tidak lupa menonaktifkannya.",
+      "Uji hasil lewat tombol 'Pratinjau' dan 'Lihat Hasil di Storefront' sebelum mengumumkan promo.",
     ],
     testimonials: [
       "Pilih ulasan yang spesifik dan menyebut manfaat nyata (angka, hasil).",
@@ -1185,6 +1527,16 @@ function ContentManagementInner() {
     );
   };
 
+  const sortedPopupBanners = [...popupSettings.banners].sort(
+    (a, b) => a.order - b.order
+  );
+  const livePopupBanners = sortedPopupBanners.filter(
+    (banner) => getPopupBannerStatus(banner) === "live"
+  );
+  const previewPopupBanners = popupPreviewId
+    ? sortedPopupBanners.filter((banner) => banner.id === popupPreviewId)
+    : sortedPopupBanners;
+
   return (
     <div className="p-6 lg:p-8 space-y-8">
       {/* Toast Notification */}
@@ -1216,7 +1568,7 @@ function ContentManagementInner() {
             Content Management System
           </h1>
           <p className="text-xs text-slate-400">
-            Kelola slider hero, ulasan testimoni mitra, daftar pertanyaan umum (FAQ), teks banner B2B, dan tautan media sosial storefront.
+            Kelola slider hero, popup banner, ulasan testimoni mitra, daftar pertanyaan umum (FAQ), teks banner B2B, dan tautan media sosial storefront.
           </p>
         </div>
 
@@ -1567,6 +1919,451 @@ function ContentManagementInner() {
                 <span>Simpan Teks Hero</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 1C: POPUP BANNER (storefront) */}
+      {!loading && activeTab === "popup" && (
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+            <div className="min-w-0">
+              <h2 className="flex items-center gap-2 text-base font-bold text-white">
+                <Megaphone className="h-4 w-4 text-brand-400" />
+                Popup Banner Storefront
+              </h2>
+              <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-400">
+                Kelola banner promo yang muncul otomatis di storefront. Atur jadwal
+                tayang, frekuensi, unggah poster, lalu tinjau hasilnya sebelum
+                diumumkan.
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold text-emerald-300">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                  {livePopupBanners.length} banner tayang
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-[10px] font-semibold text-slate-300">
+                  {sortedPopupBanners.length} total banner
+                </span>
+                {popupUsingFallback && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[10px] font-semibold text-amber-300">
+                    Poster statis — simpan untuk pindah ke CMS
+                  </span>
+                )}
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${
+                    popupSettings.enabled
+                      ? "border-brand-500/30 bg-brand-500/10 text-brand-200"
+                      : "border-slate-700 bg-slate-900 text-slate-400"
+                  }`}
+                >
+                  {popupSettings.enabled ? "Popup aktif" : "Popup dimatikan"}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <a
+                href="/?popup=1"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2.5 text-xs font-semibold text-slate-300 transition-all hover:border-brand-500/50 hover:text-white"
+              >
+                <PlayCircle className="h-3.5 w-3.5 text-brand-400" />
+                Lihat Hasil di Storefront
+              </a>
+              <button
+                type="button"
+                onClick={() => handleOpenPopupModal()}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-brand-500 px-4 py-2.5 text-xs font-bold text-slate-950 shadow-lg shadow-brand-500/20 transition-all hover:bg-brand-400"
+              >
+                <Plus className="h-4 w-4" />
+                Tambah Banner
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
+            {/* Pengaturan tayang */}
+            <div className="glass-panel space-y-5 rounded-3xl border border-slate-800 p-5 xl:col-span-2">
+              <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
+                <Sliders className="h-4 w-4 text-brand-400" />
+                <div>
+                  <h3 className="text-sm font-bold text-white">Pengaturan Tayang</h3>
+                  <p className="text-[10px] text-slate-500">
+                    Berlaku untuk semua banner di popup.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start justify-between gap-3 rounded-2xl border border-slate-800 bg-slate-950/70 p-3.5">
+                <div>
+                  <div className="text-xs font-semibold text-white">Aktifkan Popup</div>
+                  <p className="mt-0.5 text-[10px] leading-relaxed text-slate-500">
+                    Master switch. Saat dimatikan, popup tidak muncul sama sekali.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={popupSettings.enabled}
+                  onClick={() =>
+                    setPopupSettings({
+                      ...popupSettings,
+                      enabled: !popupSettings.enabled,
+                    })
+                  }
+                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors ${
+                    popupSettings.enabled
+                      ? "border-brand-400 bg-brand-500"
+                      : "border-slate-700 bg-slate-800"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                      popupSettings.enabled ? "translate-x-5" : "translate-x-0.5"
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-slate-300">
+                    <Clock3 className="h-3 w-3 text-slate-500" />
+                    Jeda Muncul
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min={0}
+                      max={30}
+                      step={0.5}
+                      value={popupSettings.delaySeconds}
+                      onChange={(e) =>
+                        setPopupSettings({
+                          ...popupSettings,
+                          delaySeconds: Number(e.target.value),
+                        })
+                      }
+                      className="w-full rounded-xl border border-slate-700 bg-slate-950/80 p-2.5 pr-10 text-xs text-white outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                    />
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-500">
+                      detik
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-slate-300">
+                    <CalendarDays className="h-3 w-3 text-slate-500" />
+                    Frekuensi
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min={0}
+                      max={365}
+                      step={1}
+                      value={popupSettings.frequencyDays}
+                      onChange={(e) =>
+                        setPopupSettings({
+                          ...popupSettings,
+                          frequencyDays: Number(e.target.value),
+                        })
+                      }
+                      className="w-full rounded-xl border border-slate-700 bg-slate-950/80 p-2.5 pr-9 text-xs text-white outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                    />
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-500">
+                      hari
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <p className="rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2 text-[10px] leading-relaxed text-slate-500">
+                <span className="font-semibold text-slate-300">0 hari</span> = tampil
+                setiap kunjungan. Nilai <span className="font-semibold text-slate-300">7</span>{" "}
+                = maksimal sekali per 7 hari per browser. Kunci penyimpanan otomatis
+                diperbarui saat poster/jadwal berubah.
+              </p>
+
+              <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-800 bg-slate-950/70 p-3.5">
+                <div>
+                  <div className="text-xs font-semibold text-white">Tampil di Mobile</div>
+                  <p className="mt-0.5 text-[10px] leading-relaxed text-slate-500">
+                    Layar &lt; 640px. Matikan bila poster terlalu berat.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={popupSettings.showOnMobile}
+                  onClick={() =>
+                    setPopupSettings({
+                      ...popupSettings,
+                      showOnMobile: !popupSettings.showOnMobile,
+                    })
+                  }
+                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors ${
+                    popupSettings.showOnMobile
+                      ? "border-brand-400 bg-brand-500"
+                      : "border-slate-700 bg-slate-800"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                      popupSettings.showOnMobile ? "translate-x-5" : "translate-x-0.5"
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleSavePopupDisplay}
+                disabled={popupSaving}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-4 py-2.5 text-xs font-bold text-slate-950 transition-colors hover:bg-brand-400 disabled:opacity-60"
+              >
+                {popupSaving ? (
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                )}
+                Simpan Pengaturan Tayang
+              </button>
+            </div>
+
+            {/* Peninjauan hasil */}
+            <div
+              id="popup-preview-panel"
+              className="glass-panel scroll-mt-24 space-y-4 rounded-3xl border border-brand-500/25 p-5 xl:col-span-3"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <Eye className="h-4 w-4 text-brand-400" />
+                  <div>
+                    <h3 className="text-sm font-bold text-white">Peninjauan Hasil</h3>
+                    <p className="text-[10px] text-slate-500">
+                      Simulasi tampilan popup di storefront.
+                    </p>
+                  </div>
+                </div>
+                {popupPreviewId && (
+                  <button
+                    type="button"
+                    onClick={() => setPopupPreviewId(null)}
+                    className="text-[10px] font-semibold text-brand-300 hover:text-brand-200"
+                  >
+                    Tampilkan semua banner
+                  </button>
+                )}
+              </div>
+
+              <PopupPreview
+                banners={previewPopupBanners}
+                device={popupPreviewDevice}
+                onDeviceChange={setPopupPreviewDevice}
+                emptyHint="Belum ada banner. Tambahkan banner lalu simpan untuk melihat pratinjau hasil."
+              />
+
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2 text-[10px] text-slate-500">
+                <span>
+                  {popupPreviewId
+                    ? "Pratinjau banner terpilih. Banner terjadwal tetap ditampilkan untuk peninjauan."
+                    : "Pratinjau semua banner (termasuk yang terjadwal/non-aktif)."}
+                </span>
+                <a
+                  href="/?popup=1"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 font-semibold text-brand-300 hover:text-brand-200"
+                >
+                  Buka popup asli
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Daftar banner */}
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-bold text-white">Daftar Banner</h3>
+                <p className="text-[10px] text-slate-500">
+                  Urutan atas = slide pertama. Banner otomatis berhenti tayang setelah
+                  tanggal selesai.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleOpenPopupModal()}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2 text-xs font-semibold text-slate-300 transition-colors hover:border-brand-500/50 hover:text-white"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Tambah Banner
+              </button>
+            </div>
+
+            {sortedPopupBanners.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-slate-700 bg-slate-950/40 px-6 py-12 text-center">
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-brand-500/30 bg-brand-500/10 text-brand-300">
+                  <Megaphone className="h-6 w-6" />
+                </span>
+                <div>
+                  <p className="text-sm font-bold text-white">Belum ada banner popup</p>
+                  <p className="mt-1 max-w-md text-[11px] leading-relaxed text-slate-500">
+                    Daftar banner masih kosong. Tambahkan banner pertama untuk mulai
+                    menampilkan popup dari CMS.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleOpenPopupModal()}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-brand-500 px-4 py-2.5 text-xs font-bold text-slate-950 transition-colors hover:bg-brand-400"
+                >
+                  <Plus className="h-4 w-4" />
+                  Tambah Banner Pertama
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 2xl:grid-cols-3">
+                {sortedPopupBanners.map((banner, index) => {
+                  const status = popupStatusMeta(getPopupBannerStatus(banner));
+                  const schedule =
+                    banner.startAt && banner.endAt
+                      ? `${formatPopupDate(banner.startAt)} → ${formatPopupDate(banner.endAt)}`
+                      : banner.startAt
+                        ? `Mulai ${formatPopupDate(banner.startAt)}`
+                        : banner.endAt
+                          ? `Sampai ${formatPopupDate(banner.endAt)}`
+                          : "Tayang tanpa batas waktu";
+
+                  return (
+                    <div
+                      key={banner.id}
+                      className="glass-panel flex flex-col overflow-hidden rounded-3xl border border-slate-800 transition-all hover:border-brand-500/40"
+                    >
+                      <div className="relative h-52 overflow-hidden bg-slate-950">
+                        <img
+                          src={banner.imageUrl}
+                          alt={banner.alt || banner.title || "Banner popup"}
+                          className="h-full w-full object-cover object-top"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+                        <span
+                          className={`absolute left-3 top-3 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-bold ${status.className}`}
+                        >
+                          {status.label}
+                        </span>
+                        <span className="absolute right-3 top-3 rounded-full border border-white/20 bg-slate-950/75 px-2 py-0.5 text-[9px] font-mono font-bold text-white/90 backdrop-blur">
+                          #{index + 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPopupPreviewId(banner.id);
+                            document
+                              .getElementById("popup-preview-panel")
+                              ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                          }}
+                          className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-slate-950/80 px-2.5 py-1.5 text-[10px] font-semibold text-white backdrop-blur transition-colors hover:bg-slate-800"
+                        >
+                          <Eye className="h-3 w-3" />
+                          Pratinjau
+                        </button>
+                      </div>
+
+                      <div className="flex flex-1 flex-col gap-3 p-4">
+                        <div className="min-w-0">
+                          <h4 className="truncate text-xs font-bold text-white">
+                            {banner.title || "Banner tanpa judul"}
+                          </h4>
+                          <p className="mt-0.5 line-clamp-2 text-[10px] leading-relaxed text-slate-500">
+                            {banner.alt || "Belum ada alt text."}
+                          </p>
+                        </div>
+
+                        <div className="space-y-1.5 rounded-xl border border-slate-800 bg-slate-950/60 p-2.5 text-[10px] text-slate-400">
+                          <p className="flex items-start gap-1.5">
+                            <CalendarDays className="mt-0.5 h-3 w-3 shrink-0 text-brand-400" />
+                            <span className="leading-relaxed">{schedule}</span>
+                          </p>
+                          <p className="flex items-start gap-1.5">
+                            <ExternalLink className="mt-0.5 h-3 w-3 shrink-0 text-brand-400" />
+                            <span className="truncate">
+                              {banner.linkUrl || "WhatsApp sales (default)"}
+                            </span>
+                          </p>
+                        </div>
+
+                        <div className="mt-auto flex items-center justify-between gap-2 border-t border-slate-800 pt-3">
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleTogglePopupBanner(banner)}
+                              disabled={popupSaving}
+                              title={banner.isActive ? "Nonaktifkan banner" : "Aktifkan banner"}
+                              className={`rounded-lg border p-1.5 transition-colors disabled:opacity-50 ${
+                                banner.isActive
+                                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
+                                  : "border-slate-700 bg-slate-900 text-slate-400 hover:text-white"
+                              }`}
+                            >
+                              {banner.isActive ? (
+                                <Eye className="h-3.5 w-3.5" />
+                              ) : (
+                                <EyeOff className="h-3.5 w-3.5" />
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMovePopupBanner(banner, -1)}
+                              disabled={popupSaving || index === 0}
+                              title="Naikkan urutan"
+                              className="rounded-lg border border-slate-700 bg-slate-900 p-1.5 text-slate-400 transition-colors hover:text-white disabled:opacity-40"
+                            >
+                              <ArrowUp className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMovePopupBanner(banner, 1)}
+                              disabled={popupSaving || index === sortedPopupBanners.length - 1}
+                              title="Turunkan urutan"
+                              className="rounded-lg border border-slate-700 bg-slate-900 p-1.5 text-slate-400 transition-colors hover:text-white disabled:opacity-40"
+                            >
+                              <ArrowDown className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenPopupModal(banner)}
+                              title="Edit banner"
+                              className="rounded-lg border border-slate-700 bg-slate-900 p-1.5 text-slate-300 transition-colors hover:border-brand-500/40 hover:text-white"
+                            >
+                              <Edit className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeletePopupBanner(banner)}
+                              disabled={popupSaving}
+                              title="Hapus banner"
+                              className="rounded-lg border border-slate-700 bg-slate-900 p-1.5 text-slate-400 transition-colors hover:border-rose-500/50 hover:text-rose-400 disabled:opacity-50"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -3182,6 +3979,216 @@ function ContentManagementInner() {
                 >
                   Simpan Pertanyaan
                 </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* MODAL POPUP BANNER */}
+      {popupModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md">
+          <div className="glass-panel max-h-[92vh] w-full max-w-5xl space-y-4 overflow-y-auto rounded-3xl border border-brand-500/30 p-5 sm:p-6">
+            <div className="flex items-start justify-between gap-3 border-b border-slate-800 pb-3">
+              <div>
+                <h3 className="flex items-center gap-2 text-lg font-bold text-white">
+                  <Megaphone className="h-4 w-4 text-brand-400" />
+                  {popupEditingId ? "Edit Banner Popup" : "Tambah Banner Popup"}
+                </h3>
+                <p className="mt-0.5 text-[10px] text-slate-500">
+                  Unggah poster portrait, atur tautan, dan tentukan jadwal tayang.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPopupModalOpen(false)}
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-slate-400 hover:text-white"
+                aria-label="Tutup form banner"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSavePopupBanner} className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                {/* Kiri: upload + preview poster */}
+                <div className="space-y-3">
+                  <PopupBannerUpload
+                    value={popupForm.imageUrl}
+                    onChange={(url) => setPopupForm({ ...popupForm, imageUrl: url })}
+                    onError={(message) => showNotice("error", message)}
+                  />
+                  <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-3">
+                    <div className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold text-slate-400">
+                      <Eye className="h-3 w-3 text-brand-400" />
+                      Tips poster yang baik
+                    </div>
+                    <ul className="space-y-1 text-[10px] leading-relaxed text-slate-500">
+                      <li>• Rasio portrait 9:16, teks besar agar terbaca di HP.</li>
+                      <li>• Ukuran disarankan 900×1600 px, file &lt; 500 KB.</li>
+                      <li>• Satu banner = satu pesan promo utama.</li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Kanan: metadata + jadwal */}
+                <div className="space-y-3.5">
+                  <div>
+                    <label className="mb-1 block font-semibold text-slate-300">
+                      Judul Internal
+                    </label>
+                    <input
+                      type="text"
+                      value={popupForm.title}
+                      onChange={(e) =>
+                        setPopupForm({ ...popupForm, title: e.target.value })
+                      }
+                      placeholder="mis. Grand Opening Raya 2026"
+                      className="w-full rounded-xl border border-slate-700 bg-slate-900 p-2.5 text-white outline-none focus:border-brand-500"
+                    />
+                    <p className="mt-1 text-[10px] text-slate-500">
+                      Hanya untuk admin — tidak wajib tampil ke pengunjung.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block font-semibold text-slate-300">
+                      Alt Text (aksesibilitas &amp; SEO)
+                    </label>
+                    <input
+                      type="text"
+                      value={popupForm.alt}
+                      onChange={(e) => setPopupForm({ ...popupForm, alt: e.target.value })}
+                      placeholder="Deskripsi singkat isi poster"
+                      className="w-full rounded-xl border border-slate-700 bg-slate-900 p-2.5 text-white outline-none focus:border-brand-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block font-semibold text-slate-300">
+                        Tautan Tujuan
+                      </label>
+                      <input
+                        type="text"
+                        value={popupForm.linkUrl}
+                        onChange={(e) =>
+                          setPopupForm({ ...popupForm, linkUrl: e.target.value })
+                        }
+                        placeholder="/contact atau https://..."
+                        className="w-full rounded-xl border border-slate-700 bg-slate-900 p-2.5 text-white outline-none focus:border-brand-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block font-semibold text-slate-300">
+                        Label Tombol
+                      </label>
+                      <input
+                        type="text"
+                        value={popupForm.ctaLabel}
+                        onChange={(e) =>
+                          setPopupForm({ ...popupForm, ctaLabel: e.target.value })
+                        }
+                        placeholder="mis. Lihat promo"
+                        className="w-full rounded-xl border border-slate-700 bg-slate-900 p-2.5 text-white outline-none focus:border-brand-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-3">
+                    <div className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold text-slate-300">
+                      <CalendarDays className="h-3 w-3 text-brand-400" />
+                      Jadwal Tayang (opsional)
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-[10px] font-semibold text-slate-400">
+                          Mulai
+                        </label>
+                        <input
+                          type="datetime-local"
+                          value={popupForm.startAt}
+                          onChange={(e) =>
+                            setPopupForm({ ...popupForm, startAt: e.target.value })
+                          }
+                          className="w-full rounded-xl border border-slate-700 bg-slate-900 p-2.5 text-white outline-none focus:border-brand-500 [color-scheme:dark]"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-[10px] font-semibold text-slate-400">
+                          Selesai
+                        </label>
+                        <input
+                          type="datetime-local"
+                          value={popupForm.endAt}
+                          onChange={(e) =>
+                            setPopupForm({ ...popupForm, endAt: e.target.value })
+                          }
+                          className="w-full rounded-xl border border-slate-700 bg-slate-900 p-2.5 text-white outline-none focus:border-brand-500 [color-scheme:dark]"
+                        />
+                      </div>
+                    </div>
+                    <p className="mt-2 text-[10px] leading-relaxed text-slate-500">
+                      Kosongkan kedua kolom untuk tayang terus. Banner otomatis berhenti
+                      setelah tanggal selesai.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 items-end gap-3">
+                    <div>
+                      <label className="mb-1 block font-semibold text-slate-300">
+                        Urutan
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={popupForm.order}
+                        onChange={(e) =>
+                          setPopupForm({ ...popupForm, order: Number(e.target.value) })
+                        }
+                        className="w-full rounded-xl border border-slate-700 bg-slate-900 p-2.5 text-white outline-none focus:border-brand-500"
+                      />
+                    </div>
+                    <label className="flex min-h-[42px] cursor-pointer items-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-3 text-[11px] font-semibold text-slate-300">
+                      <input
+                        type="checkbox"
+                        checked={popupForm.isActive}
+                        onChange={(e) =>
+                          setPopupForm({ ...popupForm, isActive: e.target.checked })
+                        }
+                        className="h-4 w-4 rounded accent-brand-500"
+                      />
+                      Aktifkan banner
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-800 pt-3">
+                <p className="text-[10px] text-slate-500">
+                  Setelah disimpan, banner langsung masuk daftar dan bisa ditinjau di
+                  panel “Peninjauan Hasil”.
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPopupModalOpen(false)}
+                    className="rounded-xl bg-slate-800 px-4 py-2 text-slate-300"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={popupSaving}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-brand-500 px-5 py-2 font-bold text-slate-950 transition-colors hover:bg-brand-400 disabled:opacity-60"
+                  >
+                    {popupSaving ? (
+                      <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                    )}
+                    {popupSaving ? "Menyimpan..." : "Simpan Banner"}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
