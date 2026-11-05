@@ -410,7 +410,7 @@ export default function CatalogManagementPage() {
       composition: fabric.composition,
       weaveType: fabric.weaveType || "",
       widthInch: fabric.widthInch,
-      basePricePerMeter: fabric.basePricePerMeter,
+      basePricePerMeter: Number(fabric.basePricePerMeter) || 0,
       gsm: fabric.variants[0]?.gsm || 140,
       stockMeters: fabric.variants[0]?.stockMeters || 2000,
       description: fabric.description,

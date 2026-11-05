@@ -111,9 +111,11 @@ export async function PUT(
         description: body.description ?? existing.description,
         composition: body.composition ?? existing.composition,
         weaveType: body.weaveType ?? existing.weaveType,
-        widthInch: body.widthInch ? Number(body.widthInch) : existing.widthInch,
+        widthInch: body.widthInch !== undefined && body.widthInch !== null
+          ? Number(body.widthInch)
+          : existing.widthInch,
         isSublimationReady: body.isSublimationReady ?? existing.isSublimationReady,
-        basePricePerMeter: body.basePricePerMeter
+        basePricePerMeter: body.basePricePerMeter !== undefined && body.basePricePerMeter !== null
           ? Number(body.basePricePerMeter)
           : existing.basePricePerMeter,
         thumbnailUrl: body.thumbnailUrl ?? existing.thumbnailUrl,
