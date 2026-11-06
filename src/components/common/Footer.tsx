@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Layers, ShieldCheck, Award, Truck, Sparkles, Mail, Phone, MapPin, FileText, Download, BookOpen } from "lucide-react";
+import { Layers, ShieldCheck, Award, Truck, Sparkles, Mail, Phone, MapPin, FileText, Download, BookOpen, Building2 } from "lucide-react";
 import { SocialLinks } from "./SocialLinks";
 import { getStorefrontProducts } from "@/lib/storefront-data";
 import { CATEGORY_SEO } from "@/lib/category-seo";
@@ -120,11 +120,17 @@ export async function Footer() {
                 fallback="Pabrik & manufaktur cetak sublimasi kain industri terintegrasi. Menyuplai kebutuhan bahan kain poliester khusus jersey olahraga, hijab voal, gaun satin, dan merchandise komersial untuk ratusan brand garmen di Indonesia."
               />
             </p>
-            <div className="flex items-start gap-2 pt-2 text-xs text-slate-400">
-              <MapPin className="w-4 h-4 text-brand-400 shrink-0 mt-0.5" />
-              <span className="leading-relaxed">
-                Jl. Walang Baru VI Blok B1/2, RT 04 / RW 07, Tugu Utara, Tanjung Priok, Jakarta Utara
-              </span>
+            <div className="space-y-1.5 pt-1 text-xs">
+              <div className="flex items-center gap-2 font-semibold text-slate-200">
+                <Building2 className="w-4 h-4 text-brand-400 shrink-0" />
+                <span>PT. TEXORA VISI PRIMA</span>
+              </div>
+              <div className="flex items-start gap-2 text-slate-400">
+                <MapPin className="w-4 h-4 text-brand-400 shrink-0 mt-0.5" />
+                <span className="leading-relaxed">
+                  Jl. Walang Baru VI Blok B1/2, RT 04 / RW 07, Tugu Utara, Tanjung Priok, Jakarta Utara
+                </span>
+              </div>
             </div>
             <div className="pt-3">
               <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2.5">
