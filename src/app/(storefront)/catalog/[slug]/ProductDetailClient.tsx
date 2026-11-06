@@ -81,19 +81,39 @@ export default function ProductDetailClient({
   // Refresh data di background agar tetap up-to-date tanpa mengosongkan HTML awal
   useEffect(() => {
     if (!slug) return;
-    fetch(`/api/products?slug=${slug}&lang=${locale}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data?.success && data.data?.length > 0) {
-          const found = data.data[0];
-          setFabric(found);
-          if (found.variants?.length > 0) {
-            setSelectedVariantId((prev) => prev || found.variants[0].id);
+    const refreshProduct = () => {
+      fetch(`/api/products?slug=${slug}&lang=${locale}&t=${Date.now()}`, { cache: "no-store" })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.success && data.data?.length > 0) {
+            const found = data.data[0];
+            setFabric(found);
+            if (found.variants?.length > 0) {
+              setSelectedVariantId((prev) => prev || found.variants[0].id);
+            }
           }
-        }
-      })
-      .catch((err) => console.warn("Gagal memuat produk:", err))
-      .finally(() => setLoading(false));
+        })
+        .catch((err) => console.warn("Gagal memuat produk:", err))
+        .finally(() => setLoading(false));
+    };
+
+    refreshProduct();
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === "texora_catalog_hide_prices") {
+        refreshProduct();
+      }
+    };
+    const handleFocus = () => {
+      refreshProduct();
+    };
+
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener("focus", handleFocus);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("focus", handleFocus);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug, locale]);
 

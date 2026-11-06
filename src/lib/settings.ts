@@ -1,21 +1,37 @@
 import { prisma } from "@/lib/prisma";
 
-const memorySettings = new Map<string, string>();
+interface SettingCacheEntry {
+  value: string;
+  expires: number;
+}
+
+const memorySettings = new Map<string, SettingCacheEntry>();
+
+export function invalidateSetting(key?: string) {
+  if (key) {
+    memorySettings.delete(key);
+  } else {
+    memorySettings.clear();
+  }
+}
 
 /**
  * Baca setting dari database, fallback ke memory / env var.
+ * Menggunakan TTL pendek (10 detik) agar perubahan dari admin langsung terbaca
+ * lintas proses/worker tanpa query berlebihan ke DB remote.
  */
 export async function getSetting(key: string, envFallback = ""): Promise<string> {
-  if (memorySettings.has(key)) {
-    return memorySettings.get(key)!;
+  const hit = memorySettings.get(key);
+  if (hit && Date.now() < hit.expires) {
+    return hit.value;
   }
   if (!process.env.DATABASE_URL) {
     return envFallback;
   }
   try {
     const row = await prisma.systemSetting.findUnique({ where: { key } });
-    if (row && row.value) {
-      memorySettings.set(key, row.value);
+    if (row && row.value !== null && row.value !== undefined) {
+      memorySettings.set(key, { value: row.value, expires: Date.now() + 10_000 });
       return row.value;
     }
   } catch {
@@ -49,7 +65,7 @@ export async function getWhatsAppConfig() {
 }
 
 export async function setSetting(key: string, value: string) {
-  memorySettings.set(key, value);
+  memorySettings.set(key, { value, expires: Date.now() + 30_000 });
   if (!process.env.DATABASE_URL) {
     return;
   }

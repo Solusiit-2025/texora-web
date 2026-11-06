@@ -52,8 +52,7 @@ function cacheHeaders(fresh: boolean): Record<string, string> {
   return fresh
     ? { "Cache-Control": "no-store, no-cache, must-revalidate" }
     : {
-        "Cache-Control":
-          "public, max-age=60, s-maxage=300, stale-while-revalidate=600",
+        "Cache-Control": "no-cache, must-revalidate",
       };
 }
 
@@ -119,12 +118,14 @@ export async function GET(request: Request) {
       // Sembunyikan harga bila admin mengaktifkannya (setting terpusat).
       // NOTE: portal admin memanggil dengan ?fresh=1 & butuh harga utuh,
       // jadi strip di-skip untuk fresh mode.
-      if (!fresh && (await isPriceHidden())) {
+      const pricesHidden = await isPriceHidden();
+      if (!fresh && pricesHidden) {
         formatted = stripProductPrices(formatted);
       }
       return NextResponse.json(
         {
           success: true,
+          hidePrices: pricesHidden,
           source: "database",
           total: formatted.length,
           data: formatted,

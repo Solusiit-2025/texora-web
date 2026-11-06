@@ -286,6 +286,10 @@ export default function CatalogManagementPage() {
         setHidePrice(!next);
         showNotice("error", json.error || "Gagal menyimpan pengaturan harga.");
       } else {
+        try {
+          localStorage.setItem("texora_catalog_hide_prices", String(Date.now()));
+        } catch {}
+
         showNotice(
           "success",
           next

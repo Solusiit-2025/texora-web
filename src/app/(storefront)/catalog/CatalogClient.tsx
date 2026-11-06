@@ -121,28 +121,55 @@ interface CatalogClientProps {
   hidePrices?: boolean;
 }
 
-export default function CatalogClient({ initialFabrics, hidePrices = false }: CatalogClientProps) {
+export default function CatalogClient({ initialFabrics, hidePrices: initialHidePrices = false }: CatalogClientProps) {
   const { t, locale } = useI18n();
   const localePath = useLocalePath();
   const [fabrics, setFabrics] = useState<StorefrontProduct[]>(initialFabrics);
+  const [hidePrices, setHidePrices] = useState<boolean>(initialHidePrices);
   const [loading, setLoading] = useState(initialFabrics.length === 0);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedGsmFilter, setSelectedGsmFilter] = useState<string>("All");
   const [sortBy, setSortBy] = useState<string>("default");
 
-  // Refresh ringan di background; konten utama sudah SSR sehingga tidak ada
-  // layout shift (CLS) dan crawler langsung melihat isi katalog.
-  useEffect(() => {
-    fetch(`/api/products?lang=${locale}`)
+  // Refresh data di background agar selalu sinkron dengan pengaturan portal
+  const refreshCatalog = (showLoading = false) => {
+    if (showLoading) setLoading(true);
+    fetch(`/api/products?lang=${locale}&t=${Date.now()}`, { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
-        if (data?.success && data.data?.length > 0) {
-          setFabrics(data.data);
+        if (data?.success) {
+          if (Array.isArray(data.data)) {
+            setFabrics(data.data);
+          }
+          if (typeof data.hidePrices === "boolean") {
+            setHidePrices(data.hidePrices);
+          }
         }
       })
       .catch((err) => console.warn("Gagal memuat katalog:", err))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    refreshCatalog(fabrics.length === 0);
+
+    // Sinkronisasi otomatis saat user kembali ke tab ini atau saat admin mengubah setting di tab portal
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === "texora_catalog_hide_prices") {
+        refreshCatalog(false);
+      }
+    };
+    const handleFocus = () => {
+      refreshCatalog(false);
+    };
+
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener("focus", handleFocus);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("focus", handleFocus);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locale]);
 
@@ -368,11 +395,16 @@ export default function CatalogClient({ initialFabrics, hidePrices = false }: Ca
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredFabrics.map((fabric, fabricIndex) => {
           const defaultVariant = fabric.variants[0];
-          // Kalau harga disembunyikan (priceTiers kosong), nilai ini tak dipakai render.
+          // Kalau harga disembunyikan (priceTiers kosong atau hidePrices true), tampilkan kalimat penawaran harga.
           const lowestTierPrice =
             fabric.priceTiers?.length > 0
               ? fabric.priceTiers[fabric.priceTiers.length - 1].unitPrice
               : 0;
+          const isItemPriceHidden =
+            hidePrices ||
+            !fabric.priceTiers ||
+            fabric.priceTiers.length === 0 ||
+            lowestTierPrice <= 0;
 
           return (
             <article
@@ -449,11 +481,11 @@ export default function CatalogClient({ initialFabrics, hidePrices = false }: Ca
                   <div>
                     <div className="text-[10px] uppercase font-bold text-slate-400 mb-1.5 flex items-center justify-between">
                       <span>{t("catalog.tier")}</span>
-                      {!hidePrices && (
+                      {!isItemPriceHidden && (
                         <span className="text-accent-cyan font-normal lowercase">{t("catalog.perMeter")}</span>
                       )}
                     </div>
-                    {hidePrices ? (
+                    {isItemPriceHidden ? (
                       <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-300 italic leading-relaxed">
                         {t("catalog.priceHidden")}
                       </div>
@@ -477,7 +509,7 @@ export default function CatalogClient({ initialFabrics, hidePrices = false }: Ca
               {/* Card Footer Actions */}
               <div className="p-5 pt-0 border-t border-slate-800/60 mt-4 flex items-center justify-between">
                 <div>
-                  {hidePrices ? (
+                  {isItemPriceHidden ? (
                     <span className="text-[11px] text-slate-400 italic">
                       {t("catalog.priceHidden")}
                     </span>
