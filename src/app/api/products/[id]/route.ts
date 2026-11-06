@@ -4,6 +4,7 @@ import { parseGalleryImages, serializeGalleryImages, PRODUCT_FALLBACK_THUMB } fr
 import { getAuthenticatedUser } from "@/lib/auth/session";
 import { canManageCatalog } from "@/lib/rbac/authorize";
 import { writeAuditLog } from "@/lib/audit";
+import { invalidateCache } from "@/lib/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -146,20 +147,35 @@ export async function PUT(
       }
     }
 
-    // If priceTiers were provided, update them
+    // If priceTiers were provided, replace them entirely.
+    // Hapus-lalu-buat ulang dipakai agar penambahan/penghapusan tier dari
+    // portal ikut tersimpan (bukan hanya update baris yang punya id).
     if (body.priceTiers && Array.isArray(body.priceTiers)) {
-      for (const t of body.priceTiers) {
-        if (t.id) {
-          await prisma.priceTier.updateMany({
-            where: { id: t.id, productId: (await params).id },
-            data: {
-              minMeters: Number(t.minMeters),
-              maxMeters: t.maxMeters ? Number(t.maxMeters) : null,
-              unitPrice: Number(t.unitPrice),
-            },
-          });
+      const productId = (await params).id;
+      const tiers = body.priceTiers
+        .map((t: any) => ({
+          productId,
+          minMeters: Number(t.minMeters),
+          maxMeters:
+            t.maxMeters !== undefined && t.maxMeters !== null && t.maxMeters !== ""
+              ? Number(t.maxMeters)
+              : null,
+          unitPrice: Number(t.unitPrice),
+        }))
+        .filter(
+          (t: any) =>
+            Number.isFinite(t.minMeters) &&
+            Number.isFinite(t.unitPrice) &&
+            t.minMeters > 0 &&
+            t.unitPrice > 0
+        );
+
+      await prisma.$transaction(async (tx) => {
+        await tx.priceTier.deleteMany({ where: { productId } });
+        if (tiers.length > 0) {
+          await tx.priceTier.createMany({ data: tiers });
         }
-      }
+      });
     }
 
     const finalProduct = await prisma.fabricProduct.findUnique({
@@ -201,6 +217,10 @@ export async function PUT(
       }.`,
       request,
     });
+
+    // Data katalog berubah → buang cache agar storefront langsung ikut.
+    invalidateCache("api.products");
+    invalidateCache("storefront.products");
 
     return NextResponse.json({
       success: true,

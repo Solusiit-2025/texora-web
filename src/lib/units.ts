@@ -31,6 +31,16 @@ export function pricePerYard(pricePerMeter: number): number {
 }
 
 /**
+ * Harga per meter → harga per yard tanpa pembulatan ke Rp 100.
+ * Dipakai untuk nilai awal INPUT admin (mis. tier harga) supaya
+ * bolak-balik input → simpan tidak bergeser. Tetap dibulatkan ke
+ * rupiah utuh karena input hanya menerima bilangan bulat.
+ */
+export function pricePerYardExact(pricePerMeter: number): number {
+  return Math.round(pricePerMeter * YARD_TO_METER);
+}
+
+/**
  * Harga per yard (input admin) → harga per meter (disimpan ke database).
  * Tidak dibulatkan ke 100 supaya nilai asli admin terjaga sebisa mungkin.
  */

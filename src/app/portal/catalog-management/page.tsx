@@ -25,7 +25,7 @@ import {
   EyeOff,
 } from "lucide-react";
 import { formatRupiah, formatNumber } from "@/lib/utils";
-import { metersToYards, yardsToMeters, pricePerYard, pricePerMeterFromYard } from "@/lib/units";
+import { metersToYards, yardsToMeters, pricePerYard, pricePerYardExact, pricePerMeterFromYard } from "@/lib/units";
 import { FabricProduct } from "@/types";
 import { RichTextEditor } from "@/components/common/RichTextEditor";
 import { htmlToPlainText } from "@/lib/sanitize";
@@ -35,6 +35,94 @@ import { shrinkImageForUpload, uploadImageFile } from "@/lib/upload-client";
 /** Batas galeri gambar kain (sinkron lib/image-gallery). */
 const MAX_PRODUCT_IMAGES = 5;
 const MAX_PRODUCT_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB per gambar
+
+/**
+ * Baris editor tier harga. Disimpan sebagai string agar admin bisa mengetik
+ * bebas (termasuk mengosongkan field) tanpa nilai langsung dibulatkan balik.
+ * Satuan mengikuti storefront: yard & Rupiah/yard.
+ */
+type TierDraft = {
+  id?: string;
+  minYard: string;
+  maxYard: string; // "" = tanpa batas atas (tier terakhir)
+  priceYard: string;
+};
+
+function tierToDraft(tier: { id: string; minMeters: number; maxMeters?: number; unitPrice: number }): TierDraft {
+  return {
+    id: tier.id,
+    minYard: String(metersToYards(tier.minMeters)),
+    maxYard: tier.maxMeters ? String(metersToYards(tier.maxMeters)) : "",
+    priceYard: String(pricePerYardExact(tier.unitPrice)),
+  };
+}
+
+/** Tiga tier bawaan yang sama dengan fallback API (1–49 m, 50–199 m, ≥200 m). */
+function standardTierDrafts(basePricePerMeter: number): TierDraft[] {
+  const baseYard = pricePerYardExact(basePricePerMeter);
+  return [
+    {
+      minYard: String(metersToYards(1)),
+      maxYard: String(metersToYards(49)),
+      priceYard: String(baseYard),
+    },
+    {
+      minYard: String(metersToYards(50)),
+      maxYard: String(metersToYards(199)),
+      priceYard: String(Math.round((baseYard * 0.9) / 100) * 100),
+    },
+    {
+      minYard: String(metersToYards(200)),
+      maxYard: "",
+      priceYard: String(Math.round((baseYard * 0.8) / 100) * 100),
+    },
+  ];
+}
+
+/** Validasi tier: minimal 1, harga > 0, maks ≥ min, tidak tumpang tindih. */
+function validateTierDrafts(rows: TierDraft[]): string | null {
+  if (rows.length === 0) return "Minimal harus ada satu tingkat harga grosir.";
+
+  type TierCheck =
+    | { ok: true; min: number; max: number | null; price: number }
+    | { ok: false; error: string };
+
+  const parsed: TierCheck[] = rows.map((row, i) => {
+    const label = `Tier ${i + 1}`;
+    const min = Number(row.minYard);
+    const max = row.maxYard === "" ? null : Number(row.maxYard);
+    const price = Number(row.priceYard);
+
+    if (!Number.isFinite(min) || min <= 0) {
+      return { ok: false, error: `${label}: minimal yard harus lebih dari 0.` };
+    }
+    if (max !== null && (!Number.isFinite(max) || max < min)) {
+      return { ok: false, error: `${label}: maksimal yard harus lebih besar atau sama dengan minimal.` };
+    }
+    if (!Number.isFinite(price) || price <= 0) {
+      return { ok: false, error: `${label}: harga per yard harus lebih dari 0.` };
+    }
+    return { ok: true, min, max, price };
+  });
+
+  const invalid = parsed.find((p): p is { ok: false; error: string } => !p.ok);
+  if (invalid) return invalid.error;
+
+  const sorted = parsed
+    .filter((p): p is { ok: true; min: number; max: number | null; price: number } => p.ok)
+    .sort((a, b) => a.min - b.min);
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const currentMax = sorted[i].max;
+    if (currentMax === null) {
+      return "Tier tanpa batas atas harus berada di urutan terakhir.";
+    }
+    if (sorted[i + 1].min <= currentMax) {
+      return "Rentang antar tier tidak boleh tumpang tindih.";
+    }
+  }
+  return null;
+}
+
 
 export default function CatalogManagementPage() {
   const [fabrics, setFabrics] = useState<FabricProduct[]>([]);
@@ -85,6 +173,14 @@ export default function CatalogManagementPage() {
     thumbnailUrl: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=800&q=80",
     images: [] as string[], // galeri (maks 5) — untuk /catalog manual carousel
   });
+
+  // Input harga per yard disimpan sebagai teks terpisah. Jika nilainya diturunkan
+  // langsung dari basePricePerMeter (yang dibulatkan ke Rp 100), setiap ketikan
+  // langsung dibulatkan balik ke 0 sehingga field tidak bisa diisi.
+  const [priceYardInput, setPriceYardInput] = useState("");
+
+  // Baris tier harga grosir yang bisa diedit admin (yard & Rp/yard).
+  const [tierDrafts, setTierDrafts] = useState<TierDraft[]>([]);
 
   const [imageBusy, setImageBusy] = useState(false);
 
@@ -399,6 +495,8 @@ export default function CatalogManagementPage() {
       description: "",
       thumbnailUrl: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=800&q=80",
     });
+    setPriceYardInput(String(pricePerYardExact(34000)));
+    setTierDrafts(standardTierDrafts(34000));
     setShowAddModal(true);
   };
 
@@ -422,10 +520,93 @@ export default function CatalogManagementPage() {
         .filter((v, i, arr) => v && arr.indexOf(v) === i)
         .slice(0, 5),
     });
+    setPriceYardInput(String(pricePerYardExact(Number(fabric.basePricePerMeter) || 0)));
+    setTierDrafts(
+      fabric.priceTiers?.length
+        ? fabric.priceTiers.map(tierToDraft)
+        : standardTierDrafts(Number(fabric.basePricePerMeter) || 0)
+    );
+  };
+
+  const handleAddTier = () => {
+    setTierDrafts((rows) => {
+      const next = [...rows];
+      const last = next[next.length - 1];
+      let min = 1;
+      if (last) {
+        if (last.maxYard === "") {
+          // Tier terakhir tanpa batas → beri batas atas supaya tier baru valid.
+          const cap = Number(last.minYard || 0) + 99;
+          next[next.length - 1] = { ...last, maxYard: String(cap) };
+          min = cap + 1;
+        } else {
+          min = Number(last.maxYard || 0) + 1;
+        }
+      }
+      return [
+        ...next,
+        {
+          minYard: String(min),
+          maxYard: "",
+          priceYard: last?.priceYard || priceYardInput || String(pricePerYardExact(formData.basePricePerMeter)),
+        },
+      ];
+    });
+  };
+
+  const handleUpdateTier = (index: number, patch: Partial<TierDraft>) => {
+    setTierDrafts((rows) => rows.map((row, i) => (i === index ? { ...row, ...patch } : row)));
+  };
+
+  const handleRemoveTier = (index: number) => {
+    setTierDrafts((rows) => rows.filter((_, i) => i !== index));
+  };
+
+  const handleResetTiers = () => {
+    setTierDrafts(standardTierDrafts(Number(formData.basePricePerMeter) || 0));
+  };
+
+  /** Tier dengan minimal yard terkecil = harga acuan / harga dasar. */
+  const firstTierIndex = tierDrafts.length
+    ? tierDrafts.reduce(
+        (best, tier, i) => (Number(tier.minYard) < Number(tierDrafts[best].minYard) ? i : best),
+        0
+      )
+    : -1;
+  const firstTier = firstTierIndex >= 0 ? tierDrafts[firstTierIndex] : undefined;
+  const basePriceMismatch =
+    firstTier !== undefined &&
+    priceYardInput !== "" &&
+    Number(priceYardInput) !== Number(firstTier.priceYard);
+
+  const handleSyncBasePriceToFirstTier = () => {
+    const tier = firstTier;
+    if (!tier) return;
+    setPriceYardInput(tier.priceYard);
+    setFormData((f) => ({
+      ...f,
+      basePricePerMeter: pricePerMeterFromYard(Number(tier.priceYard) || 0),
+    }));
   };
 
   const handleSaveFabric = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const tierError = validateTierDrafts(tierDrafts);
+    if (tierError) {
+      showNotice("error", tierError);
+      return;
+    }
+
+    const priceTiers = tierDrafts
+      .map((tier) => ({
+        id: tier.id,
+        minMeters: yardsToMeters(Number(tier.minYard)),
+        maxMeters: tier.maxYard === "" ? undefined : yardsToMeters(Number(tier.maxYard)),
+        unitPrice: pricePerMeterFromYard(Number(tier.priceYard)),
+      }))
+      .sort((a, b) => a.minMeters - b.minMeters);
+
     setSubmitting(true);
 
     try {
@@ -451,6 +632,7 @@ export default function CatalogManagementPage() {
             thumbnailUrl: formData.images[0] || "",
             galleryImages: formData.images,
             variants: updatedVariants,
+            priceTiers,
           }),
         });
 
@@ -485,6 +667,7 @@ export default function CatalogManagementPage() {
                 stockMeters: Number(formData.stockMeters),
               },
             ],
+            priceTiers,
           }),
         });
 
@@ -850,7 +1033,7 @@ export default function CatalogManagementPage() {
                       </div>
                     ) : (
                       <div className="grid grid-cols-2 gap-2 text-[11px]">
-                        {fabric.priceTiers.slice(0, 2).map((tier, idx) => (
+                        {fabric.priceTiers.map((tier, idx) => (
                           <div key={idx} className="p-2 rounded-lg bg-slate-900 border border-slate-800">
                             <div className="text-[9px] text-slate-400 font-medium">
                               {tier.maxMeters ? `${metersToYards(tier.minMeters)}-${metersToYards(tier.maxMeters)} yd` : `≥ ${metersToYards(tier.minMeters)} yd`}
@@ -1030,18 +1213,34 @@ export default function CatalogManagementPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">
-                    Harga Dasar (Rp/yd)
-                    <span className="text-[10px] text-slate-500 ml-1">({formatRupiah(formData.basePricePerMeter)}/m di database)</span>
+                  <label className="flex flex-wrap items-center gap-1.5 text-slate-300 font-semibold mb-1">
+                    <span>Harga Dasar (Rp/yd)</span>
+                    {basePriceMismatch && (
+                      <span className="px-1.5 py-0.5 rounded bg-amber-400 text-slate-950 text-[8px] font-bold tracking-wide">
+                        PERLU DISESUAIKAN
+                      </span>
+                    )}
+                    <span className="text-[10px] text-slate-500 font-normal">
+                      ({formatRupiah(formData.basePricePerMeter)}/m di database)
+                    </span>
                   </label>
                   <input
                     type="number"
                     required
-                    value={pricePerYard(formData.basePricePerMeter)}
-                    onChange={(e) =>
-                      setFormData({ ...formData, basePricePerMeter: pricePerMeterFromYard(Number(e.target.value) || 0) })
-                    }
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl py-2 px-3 text-white focus:outline-none focus:border-brand-500"
+                    value={priceYardInput}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      setPriceYardInput(raw);
+                      setFormData({
+                        ...formData,
+                        basePricePerMeter: raw === "" ? 0 : pricePerMeterFromYard(Number(raw) || 0),
+                      });
+                    }}
+                    className={`w-full rounded-xl py-2 px-3 focus:outline-none ${
+                      basePriceMismatch
+                        ? "bg-amber-500/20 border border-amber-400 ring-2 ring-amber-400/50 text-amber-50 font-bold focus:border-amber-300"
+                        : "bg-slate-900 border border-slate-700 text-white focus:border-brand-500"
+                    }`}
                   />
                 </div>
                 <div>
@@ -1059,6 +1258,148 @@ export default function CatalogManagementPage() {
                     className="w-full bg-slate-900 border border-slate-700 rounded-xl py-2 px-3 text-white focus:outline-none focus:border-brand-500"
                   />
                 </div>
+              </div>
+
+              {/* Tingkat Harga Grosir (Volume Tier) — sumber data storefront */}
+              <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <div className="flex items-center gap-1.5 text-slate-200 font-bold">
+                      <Layers className="w-4 h-4 text-brand-400" />
+                      Tingkat Harga Grosir (Volume Tier)
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-0.5">
+                      Rentang dalam yard dan harga Rp/yard. Kosongkan &quot;Maks&quot; untuk tier tanpa batas atas
+                      (harus di baris terakhir). Tingkat ini yang tampil di halaman detail katalog.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleResetTiers}
+                      className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-semibold text-slate-300"
+                      title="Isi ulang dengan pola standar 3 tier dari harga dasar"
+                    >
+                      Pola Standar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleAddTier}
+                      className="px-2.5 py-1.5 rounded-lg bg-brand-500/15 border border-brand-500/40 text-[10px] font-bold text-brand-300 hover:bg-brand-500/25 flex items-center gap-1"
+                    >
+                      <Plus className="w-3 h-3" />
+                      Tier
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  {tierDrafts.map((tier, i) => {
+                    const isBaseTier = i === firstTierIndex;
+                    const highlightBaseTier = basePriceMismatch && isBaseTier;
+                    return (
+                      <div
+                        key={tier.id || `tier-${i}`}
+                        className={`grid grid-cols-12 gap-2 items-end rounded-xl p-1.5 -mx-1.5 transition-colors ${
+                          highlightBaseTier ? "bg-amber-500/15 ring-1 ring-amber-400/70" : ""
+                        }`}
+                      >
+                        <div className="col-span-3">
+                          <label className="block text-[10px] text-slate-400 mb-0.5">Min (yd)</label>
+                          <input
+                            type="number"
+                            min={1}
+                            required
+                            value={tier.minYard}
+                            onChange={(e) => handleUpdateTier(i, { minYard: e.target.value })}
+                            className="w-full bg-slate-950 border border-slate-700 rounded-lg py-1.5 px-2 text-white text-xs focus:outline-none focus:border-brand-500"
+                          />
+                        </div>
+                        <div className="col-span-3">
+                          <label className="block text-[10px] text-slate-400 mb-0.5">Maks (yd)</label>
+                          <input
+                            type="number"
+                            min={1}
+                            value={tier.maxYard}
+                            onChange={(e) => handleUpdateTier(i, { maxYard: e.target.value })}
+                            placeholder="∞"
+                            className="w-full bg-slate-950 border border-slate-700 rounded-lg py-1.5 px-2 text-white text-xs focus:outline-none focus:border-brand-500"
+                          />
+                        </div>
+                        <div className="col-span-4">
+                          <label className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mb-0.5">
+                            <span>Harga (Rp/yd)</span>
+                            {isBaseTier && (
+                              <span
+                                className={`px-1.5 py-0.5 rounded text-[8px] font-bold tracking-wide ${
+                                  highlightBaseTier
+                                    ? "bg-amber-400 text-slate-950"
+                                    : "bg-slate-800 text-slate-300"
+                                }`}
+                              >
+                                ACUAN
+                              </span>
+                            )}
+                          </label>
+                          <input
+                            type="number"
+                            min={1}
+                            required
+                            value={tier.priceYard}
+                            onChange={(e) => handleUpdateTier(i, { priceYard: e.target.value })}
+                            className={`w-full rounded-lg py-1.5 px-2 text-xs focus:outline-none ${
+                              highlightBaseTier
+                                ? "bg-amber-500/20 border border-amber-400 ring-2 ring-amber-400/50 text-amber-50 font-bold focus:border-amber-300"
+                                : "bg-slate-950 border border-slate-700 text-white focus:border-brand-500"
+                            }`}
+                          />
+                        </div>
+                        <div className="col-span-2 flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveTier(i)}
+                            disabled={tierDrafts.length <= 1}
+                            className="w-8 h-8 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 hover:text-red-400 hover:border-red-500/50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center"
+                            title="Hapus tier"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <p className="text-[10px] text-slate-500">
+                  Contoh urutan benar: 1–54 yd · 55–218 yd · ≥219 yd. Harga dasar sebaiknya sama dengan tier pertama.
+                </p>
+
+                {basePriceMismatch && firstTier && (
+                  <div className="space-y-2 p-3 rounded-xl bg-amber-500/15 border border-amber-400/50">
+                    <p className="text-[10px] font-semibold text-amber-100">
+                      Harga dasar berbeda dengan harga tier acuan. Storefront memakai harga tier — samakan
+                      salah satunya.
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2 text-[10px]">
+                      <span className="px-2 py-1 rounded-md bg-slate-950/70 border border-slate-700 text-slate-300">
+                        Harga dasar:{" "}
+                        <b className="font-mono text-slate-100">{formatRupiah(Number(priceYardInput) || 0)}</b>/yd
+                      </span>
+                      <span className="text-amber-300 font-black">≠</span>
+                      <span className="px-2.5 py-1 rounded-md bg-amber-400 text-slate-950 font-bold shadow-md shadow-amber-500/30">
+                        Harga tier acuan:{" "}
+                        <span className="font-mono">{formatRupiah(Number(firstTier.priceYard) || 0)}</span>/yd
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleSyncBasePriceToFirstTier}
+                      className="px-3 py-1.5 rounded-md bg-amber-400 hover:bg-amber-300 text-slate-950 text-[10px] font-bold"
+                    >
+                      Samakan harga dasar ke tier acuan
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Galeri gambar — maks 5, JPG/PNG/GIF otomatis .webp */}
