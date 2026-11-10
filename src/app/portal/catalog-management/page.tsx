@@ -25,6 +25,7 @@ import {
   EyeOff,
   Tag,
   Image as ImageIcon,
+  Check,
 } from "lucide-react";
 import { formatRupiah, formatNumber } from "@/lib/utils";
 import { metersToYards, yardsToMeters, pricePerYard, pricePerYardExact, pricePerMeterFromYard } from "@/lib/units";
@@ -154,6 +155,9 @@ export default function CatalogManagementPage() {
   const [categoryWarning, setCategoryWarning] = useState<string | null>(null);
   const [savingCategory, setSavingCategory] = useState(false);
   const [deletingCategory, setDeletingCategory] = useState<string | null>(null);
+  const [editingCategoryName, setEditingCategoryName] = useState<string | null>(null);
+  const [editCategoryInput, setEditCategoryInput] = useState<string>("");
+  const [savingEditCategory, setSavingEditCategory] = useState(false);
 
   /** Katalog PDF unggahan manual (CMS). null = memakai katalog otomatis. */
   const [catalogPdf, setCatalogPdf] = useState<{
@@ -429,6 +433,72 @@ export default function CatalogManagementPage() {
       showNotice("error", "Koneksi gagal. Kategori tidak terhapus.");
     } finally {
       setDeletingCategory(null);
+    }
+  };
+
+  const handleStartEditCategory = (catName: string) => {
+    setEditingCategoryName(catName);
+    setEditCategoryInput(catName);
+    setCategoryError(null);
+    setCategoryWarning(null);
+  };
+
+  const handleCancelEditCategory = () => {
+    setEditingCategoryName(null);
+    setEditCategoryInput("");
+  };
+
+  const handleSaveEditCategory = async (oldName: string) => {
+    const newName = editCategoryInput.trim().replace(/\s+/g, " ");
+    if (!newName) {
+      setCategoryError("Nama kategori tidak boleh kosong.");
+      return;
+    }
+    if (newName === oldName) {
+      setEditingCategoryName(null);
+      return;
+    }
+
+    setSavingEditCategory(true);
+    setCategoryError(null);
+    try {
+      const res = await fetch("/api/categories", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ oldName, newName }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        setCategoryError(json.error || "Gagal mengubah nama kategori.");
+        showNotice("error", json.error || "Gagal mengubah nama kategori.");
+        return;
+      }
+
+      setCategories(json.categories || []);
+      if (json.details?.length) setCategoryDetails(json.details);
+
+      // Sinkronkan seluruh produk lokal agar kartu langsung ter-update ke nama baru
+      setFabrics((prev) =>
+        prev.map((f) => (f.category === oldName ? { ...f, category: newName } : f))
+      );
+
+      if (selectedCategory === oldName) {
+        setSelectedCategory(newName);
+      }
+      if (formData.category === oldName) {
+        setFormData((f) => ({ ...f, category: newName }));
+      }
+
+      try {
+        localStorage.setItem("texora_catalog_categories", String(Date.now()));
+      } catch {}
+
+      setEditingCategoryName(null);
+      showNotice("success", `Nama kategori berhasil diubah menjadi "${newName}".`);
+    } catch {
+      setCategoryError("Koneksi gagal. Silakan coba lagi.");
+    } finally {
+      setSavingEditCategory(false);
     }
   };
 
@@ -1665,49 +1735,107 @@ export default function CatalogManagementPage() {
                 const count = detail?.productCount ?? fabrics.filter((f) => f.category === catName).length;
                 const isDeleting = deletingCategory === catName;
 
+                const isEditing = editingCategoryName === catName;
+
                 return (
                   <div
                     key={catName}
-                    className="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 hover:border-slate-700 transition-colors"
+                    className="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 hover:border-slate-700 transition-colors gap-3"
                   >
-                    <div className="flex items-center gap-2.5">
-                      <span className="font-semibold text-white text-xs">{catName}</span>
-                      <span
-                        className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
-                          count > 0
-                            ? "bg-brand-500/10 text-brand-300 border-brand-500/30"
-                            : "bg-slate-800 text-slate-400 border-slate-700"
-                        }`}
-                      >
-                        {count} kain
-                      </span>
-                    </div>
-
-                    <div>
-                      {count > 0 ? (
-                        <span
-                          title={`Kategori masih dipakai oleh ${count} kain. Ubah kategori kain tersebut terlebih dahulu agar bisa dihapus.`}
-                          className="text-[10px] text-slate-500 italic px-2 py-1"
-                        >
-                          Sedang digunakan
-                        </span>
-                      ) : (
+                    {isEditing ? (
+                      <div className="flex-1 flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={editCategoryInput}
+                          onChange={(e) => setEditCategoryInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleSaveEditCategory(catName);
+                            } else if (e.key === "Escape") {
+                              handleCancelEditCategory();
+                            }
+                          }}
+                          disabled={savingEditCategory}
+                          className="flex-1 bg-slate-950 border border-brand-500 rounded-lg py-1 px-2.5 text-xs text-white focus:outline-none"
+                          autoFocus
+                        />
                         <button
                           type="button"
-                          disabled={isDeleting}
-                          onClick={() => handleDeleteCategory(catName)}
-                          title={`Hapus kategori "${catName}"`}
-                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-500/30 border border-rose-500/30 transition-colors disabled:opacity-50"
+                          disabled={savingEditCategory || !editCategoryInput.trim()}
+                          onClick={() => handleSaveEditCategory(catName)}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-brand-500 text-slate-950 hover:bg-brand-400 disabled:opacity-50 transition-colors shrink-0"
+                          title="Simpan nama kategori"
                         >
-                          {isDeleting ? (
+                          {savingEditCategory ? (
                             <RefreshCw className="w-3 h-3 animate-spin" />
                           ) : (
-                            <Trash2 className="w-3 h-3" />
+                            <Check className="w-3 h-3" />
                           )}
-                          Hapus
+                          Simpan
                         </button>
-                      )}
-                    </div>
+                        <button
+                          type="button"
+                          disabled={savingEditCategory}
+                          onClick={handleCancelEditCategory}
+                          className="p-1 rounded-lg text-xs text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 transition-colors shrink-0"
+                          title="Batal"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="font-semibold text-white text-xs truncate">{catName}</span>
+                          <span
+                            className={`text-[10px] font-mono px-2 py-0.5 rounded-full border shrink-0 ${
+                              count > 0
+                                ? "bg-brand-500/10 text-brand-300 border-brand-500/30"
+                                : "bg-slate-800 text-slate-400 border-slate-700"
+                            }`}
+                          >
+                            {count} kain
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleStartEditCategory(catName)}
+                            title={`Ubah nama kategori "${catName}"`}
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-colors"
+                          >
+                            <Edit className="w-3 h-3 text-brand-400" />
+                            <span>Edit</span>
+                          </button>
+
+                          {count > 0 ? (
+                            <span
+                              title={`Kategori masih dipakai oleh ${count} kain. Ubah kategori kain tersebut terlebih dahulu agar bisa dihapus.`}
+                              className="text-[10px] text-slate-500 italic px-1.5"
+                            >
+                              Dipakai
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={isDeleting}
+                              onClick={() => handleDeleteCategory(catName)}
+                              title={`Hapus kategori "${catName}"`}
+                              className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-500/30 border border-rose-500/30 transition-colors disabled:opacity-50"
+                            >
+                              {isDeleting ? (
+                                <RefreshCw className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-3 h-3" />
+                              )}
+                              <span>Hapus</span>
+                            </button>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
                 );
               })}

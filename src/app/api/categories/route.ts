@@ -4,6 +4,7 @@ import {
   allCategories,
   getCategoriesWithDetails,
   deleteCategory,
+  updateCategory,
   categoryKey,
   pluralKey,
 } from "@/lib/categories";
@@ -168,6 +169,63 @@ export async function DELETE(request: NextRequest) {
     console.error("[categories] DELETE gagal:", err);
     return NextResponse.json(
       { success: false, error: "Gagal menghapus kategori." },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const user = await getAuthenticatedUser(request);
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Sesi tidak valid. Silakan login." },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json().catch(() => ({}));
+    const target = String(body.id || body.oldName || "").trim();
+    const newName = String(body.name || body.newName || "").trim();
+
+    if (!target) {
+      return NextResponse.json(
+        { success: false, error: "Nama kategori asal wajib disertakan." },
+        { status: 400 }
+      );
+    }
+    if (!newName) {
+      return NextResponse.json(
+        { success: false, error: "Nama kategori baru wajib diisi." },
+        { status: 400 }
+      );
+    }
+
+    const result = await updateCategory(target, newName);
+    if (!result.success) {
+      return NextResponse.json(
+        { success: false, error: result.error || "Gagal mengubah nama kategori." },
+        { status: 400 }
+      );
+    }
+
+    const [categories, details] = await Promise.all([
+      allCategories(),
+      getCategoriesWithDetails(),
+    ]);
+
+    return NextResponse.json({
+      success: true,
+      message: "Nama kategori berhasil diperbarui.",
+      category: result.category,
+      oldName: target,
+      categories,
+      details,
+    });
+  } catch (err) {
+    console.error("[categories] PUT gagal:", err);
+    return NextResponse.json(
+      { success: false, error: "Gagal mengubah nama kategori." },
       { status: 500 }
     );
   }

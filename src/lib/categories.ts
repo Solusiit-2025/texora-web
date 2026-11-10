@@ -118,6 +118,65 @@ export async function getCategoriesWithDetails(): Promise<CategoryDetail[]> {
   }
 }
 
+/** Edit / ganti nama kategori di database dan perbarui seluruh kain yang menggunakannya */
+export async function updateCategory(
+  nameOrId: string,
+  rawNewName: string
+): Promise<{ success: boolean; category?: string; error?: string }> {
+  try {
+    const cleanNewName = rawNewName.trim().replace(/\s+/g, " ");
+    if (!cleanNewName) {
+      return { success: false, error: "Nama kategori tidak boleh kosong." };
+    }
+    if (cleanNewName.length < 2 || cleanNewName.length > 60) {
+      return { success: false, error: "Nama kategori harus antara 2 hingga 60 karakter." };
+    }
+
+    const category = await prisma.category.findFirst({
+      where: {
+        OR: [{ id: nameOrId }, { name: nameOrId }],
+      },
+    });
+
+    if (!category) {
+      return { success: false, error: "Kategori tidak ditemukan." };
+    }
+
+    if (category.name === cleanNewName) {
+      return { success: true, category: cleanNewName };
+    }
+
+    // Cek duplikasi dengan kategori lain
+    const existing = await prisma.category.findMany({
+      where: { id: { not: category.id } },
+    });
+    const duplicate = existing.find((c) => isSimilarCategory(c.name, cleanNewName));
+    if (duplicate) {
+      return {
+        success: false,
+        error: `Nama kategori "${cleanNewName}" mirip dengan kategori yang sudah ada: "${duplicate.name}".`,
+      };
+    }
+
+    // Update Category record DAN update seluruh fabricProduct yang menggunakan nama lama
+    await prisma.$transaction([
+      prisma.category.update({
+        where: { id: category.id },
+        data: { name: cleanNewName },
+      }),
+      prisma.fabricProduct.updateMany({
+        where: { category: category.name },
+        data: { category: cleanNewName },
+      }),
+    ]);
+
+    return { success: true, category: cleanNewName };
+  } catch (err: any) {
+    console.error("[categories] Gagal memperbarui kategori:", err);
+    return { success: false, error: err?.message || "Gagal memperbarui nama kategori di database." };
+  }
+}
+
 /** Hapus kategori dari database (dicek ke produk aktif) */
 export async function deleteCategory(nameOrId: string): Promise<{ success: boolean; error?: string }> {
   try {
