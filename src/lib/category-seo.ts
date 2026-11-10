@@ -305,9 +305,74 @@ export const CATEGORY_SEO: CategorySeoContent[] = [
   },
 ];
 
-/** Cari konten SEO kategori berdasarkan slug. */
-export function getCategorySeo(slug: string): CategorySeoContent | null {
-  return CATEGORY_SEO.find((c) => c.slug === slug) || null;
+/** Template generator konten SEO untuk kategori dinamis yang baru ditambahkan */
+export function buildDynamicCategorySeo(name: string, slug?: string): CategorySeoContent {
+  const finalSlug = slug || slugifyCategory(name);
+  return {
+    slug: finalSlug,
+    name: name,
+    title: `Kain ${name} Siap Sublimasi`,
+    metaTitle: `Kain ${name} Siap Sublimasi | XoraMateria`,
+    metaDescription: `Koleksi bahan kain ${name} berkualitas industri siap cetak sublimasi dengan harga grosir bertingkat dari pabrik XoraMateria.`,
+    keywords: [
+      `kain ${name.toLowerCase()}`,
+      `kain ${name.toLowerCase()} sublimasi`,
+      `supplier kain ${name.toLowerCase()}`,
+      `harga kain ${name.toLowerCase()}`,
+    ],
+    dbCategory: name,
+    intro: `Koleksi bahan kain ${name} pilihan untuk kebutuhan industri garmen dan printing sublimasi skala besar. Diproduksi dengan standar kontrol kualitas tinggi untuk daya serap tinta optimal.`,
+    benefits: [
+      {
+        title: "Kualitas Standar Industri",
+        body: `Kain ${name} dengan formulasi serat optimal untuk hasil cetak tajam dan warna tahan lama.`,
+      },
+      {
+        title: "Harga Grosir Bertingkat",
+        body: "Dapatkan harga khusus rol dan partai besar dengan volume tier pricing langsung dari pabrik.",
+      },
+      {
+        title: "Siap Cetak & Sublimasi",
+        body: "Sudah melalui proses heat treatment dan siap masuk mesin kalender maupun flatbed press.",
+      },
+    ],
+    guide: [
+      {
+        heading: `Karakteristik & Penggunaan Kain ${name}`,
+        body: `Kain ${name} sangat cocok untuk berbagai aplikasi produk tekstil komersial maupun fashion dengan variasi gramasi dan lebar yang fleksibel.`,
+      },
+    ],
+    faqs: [
+      {
+        question: `Berapa minimal pemesanan untuk kain ${name}?`,
+        answer: `Pemesanan mulai dari 1 yard atau 1 meter untuk sampel, dan tersedia harga grosir bertingkat untuk pembelian rol dan partai besar.`,
+      },
+    ],
+  };
+}
+
+/** Cari konten SEO kategori berdasarkan slug. Mendukung kategori statis & dinamis. */
+export function getCategorySeo(slug: string, extraCategories: string[] = []): CategorySeoContent | null {
+  const staticHit = CATEGORY_SEO.find((c) => c.slug === slug);
+  if (staticHit) return staticHit;
+
+  // Cek apakah slug cocok dengan kategori dinamis
+  const dynamicHit = extraCategories.find((cat) => slugifyCategory(cat) === slug);
+  if (dynamicHit) {
+    return buildDynamicCategorySeo(dynamicHit, slug);
+  }
+
+  // Fallback: coba rekonstruksi nama jika format slug valid
+  if (slug && slug.length > 2) {
+    const candidateName = slug
+      .replace(/^kain-/, "")
+      .split("-")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
+    return buildDynamicCategorySeo(candidateName, slug);
+  }
+
+  return null;
 }
 
 /** Slugify nama kategori database menjadi slug URL. */

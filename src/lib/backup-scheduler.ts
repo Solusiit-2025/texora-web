@@ -34,6 +34,14 @@ declare global {
 export function ensureSchedulerStarted(): void {
   if (globalThis.__xoramateriaBackupTimer) return;
 
+  // Di mode development (next dev), nonaktifkan scheduler backup otomatis
+  // agar penulisan file backup ke disk (folder backups/) tidak memicu file watcher
+  // Next.js (Fast Refresh / HMR infinite compile loop).
+  if (process.env.NODE_ENV === "development") {
+    console.log("[backup] Dev mode: scheduler backup otomatis di-skip untuk mencegah HMR loop.");
+    return;
+  }
+
   const enabled = process.env.BACKUP_AUTO_ENABLED !== "false";
   if (!enabled) {
     console.log("[backup] Backup otomatis dinonaktifkan (BACKUP_AUTO_ENABLED=false).");

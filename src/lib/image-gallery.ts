@@ -2,7 +2,7 @@
  * Helper galeri gambar (JSON string di kolom `galleryImages`).
  * Dipakai oleh FabricProduct & Article agar format konsisten.
  */
-export const MAX_GALLERY_IMAGES = 5;
+export const MAX_GALLERY_IMAGES = 10;
 
 export const PRODUCT_FALLBACK_THUMB =
   "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=800&q=80";

@@ -5,6 +5,7 @@ import Image from "next/image";
 import { JsonLd } from "@/components/common/JsonLd";
 import { Breadcrumb } from "@/components/common/Breadcrumb";
 import { getStorefrontProducts } from "@/lib/storefront-data";
+import { allCategories } from "@/lib/categories";
 import { isPriceHidden, stripProductPrices } from "@/lib/catalog-visibility";
 import { getRequestLocale, getContentLocale } from "@/lib/server-locale";
 import { localizeRows, localizeObject } from "@/lib/content-translator";
@@ -31,7 +32,9 @@ interface PageProps {
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const category = getCategorySeo((await params).slug);
+  const { slug } = await params;
+  const categories = await allCategories().catch(() => []);
+  const category = getCategorySeo(slug, categories);
 
   if (!category) {
     return { title: "Kategori Tidak Ditemukan | XoraMateria", robots: { index: false } };
@@ -50,7 +53,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function CategoryPage({ params }: PageProps) {
-  const category = getCategorySeo((await params).slug);
+  const { slug } = await params;
+  const categories = await allCategories().catch(() => []);
+  const category = getCategorySeo(slug, categories);
   if (!category) notFound();
 
   // Tahap 2: localize konten kategori utk URL berprefik bahasa.

@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { JsonLd } from "@/components/common/JsonLd";
 import { Breadcrumb } from "@/components/common/Breadcrumb";
-import { CATEGORY_SEO } from "@/lib/category-seo";
+import { CATEGORY_SEO, buildDynamicCategorySeo, type CategorySeoContent } from "@/lib/category-seo";
 import { getStorefrontProducts } from "@/lib/storefront-data";
+import { allCategories } from "@/lib/categories";
 import { getRequestLocale } from "@/lib/server-locale";
 import {
   buildPageMetadata,
@@ -34,7 +35,25 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function CategoryIndexPage() {
-  const products = await getStorefrontProducts();
+  const [products, masterCategories] = await Promise.all([
+    getStorefrontProducts(),
+    allCategories().catch(() => []),
+  ]);
+
+  const allCategoryNames = Array.from(
+    new Set([
+      ...CATEGORY_SEO.map((c) => c.dbCategory),
+      ...masterCategories,
+      ...products.map((p) => p.category).filter(Boolean),
+    ])
+  ).filter(Boolean);
+
+  const seoList: CategorySeoContent[] = allCategoryNames.map((catName) => {
+    const existing = CATEGORY_SEO.find(
+      (c) => c.dbCategory === catName || c.name === catName
+    );
+    return existing || buildDynamicCategorySeo(catName);
+  });
 
   const countByCategory = products.reduce<Record<string, number>>((acc, p) => {
     acc[p.category] = (acc[p.category] || 0) + 1;
@@ -57,7 +76,7 @@ export default async function CategoryIndexPage() {
     "@type": "ItemList",
     "@id": `${SITE_URL}/kategori#itemlist`,
     name: "Kategori Kain Sublimasi XoraMateria",
-    itemListElement: CATEGORY_SEO.map((c, i) => ({
+    itemListElement: seoList.map((c, i) => ({
       "@type": "ListItem",
       position: i + 1,
       url: `${SITE_URL}/kategori/${c.slug}`,
@@ -93,7 +112,7 @@ export default async function CategoryIndexPage() {
             Daftar kategori kain
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {CATEGORY_SEO.map((c) => {
+            {seoList.map((c) => {
               const count = countByCategory[c.dbCategory] || 0;
               return (
                 <Link

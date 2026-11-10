@@ -103,9 +103,6 @@ const nextConfig = {
     imageSizes: [64, 96, 128, 256, 384],
     minimumCacheTTL: 60 * 60 * 24 * 30, // 30 hari
   },
-  // Next 16: Turbopack default. Konfigurasi `webpack` lama (watch-ignore
-  // folder backups) dihapus — Turbopack hanya mem-watch modul yang diimpor,
-  // jadi penulisan file backup di ./backups tidak memicu rebuild.
   // Header keamanan + SEO-friendly
   async headers() {
     return [

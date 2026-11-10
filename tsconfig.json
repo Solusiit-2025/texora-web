@@ -29,19 +29,17 @@
     }
   },
   "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    ".next-dev/types/**/*.ts",
-    ".next-dev*/dev/types/**/*.ts",
-    ".next-dev-3001/types/**/*.ts",
     "next-env.d.ts",
-    ".next-dev-3004/types/**/*.ts",
-    ".next-dev-3004/dev/types/**/*.ts"
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next-dev-3003/types/**/*.ts",
+    ".next-dev-3003/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",
-    "scripts"
+    "scripts",
+    ".next-dev*",
+    "backups"
   ]
 }

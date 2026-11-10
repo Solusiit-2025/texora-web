@@ -122,7 +122,6 @@ export const metadata: Metadata = {
       { url: "/icons/apple-touch-icon.png", type: "image/png", sizes: "180x180" },
     ],
   },
-  manifest: "/manifest.webmanifest",
   formatDetection: {
     telephone: true,
     address: true,

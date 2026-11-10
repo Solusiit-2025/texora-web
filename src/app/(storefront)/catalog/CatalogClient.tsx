@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { formatRupiah, formatNumber } from "@/lib/utils";
 import { metersToYards, pricePerYard } from "@/lib/units";
 import { Breadcrumb } from "@/components/common/Breadcrumb";
 import { htmlToPlainText } from "@/lib/sanitize";
-import { CATEGORY_SEO } from "@/lib/category-seo";
+import { CATEGORY_SEO, slugifyCategory } from "@/lib/category-seo";
 import { ImageCarousel } from "@/components/common/ImageCarousel";
 import { useI18n, useLocalePath } from "@/lib/i18n/LanguageContext";
 import type { StorefrontProduct } from "@/lib/storefront-data";
@@ -119,12 +119,19 @@ interface CatalogClientProps {
   initialFabrics: StorefrontProduct[];
   /** true saat admin portal menyembunyikan harga (setting terpusat). */
   hidePrices?: boolean;
+  /** Daftar kategori master hasil SSR dari database. */
+  initialCategories?: string[];
 }
 
-export default function CatalogClient({ initialFabrics, hidePrices: initialHidePrices = false }: CatalogClientProps) {
+export default function CatalogClient({
+  initialFabrics,
+  hidePrices: initialHidePrices = false,
+  initialCategories = [],
+}: CatalogClientProps) {
   const { t, locale } = useI18n();
   const localePath = useLocalePath();
   const [fabrics, setFabrics] = useState<StorefrontProduct[]>(initialFabrics);
+  const [categories, setCategories] = useState<string[]>(initialCategories);
   const [hidePrices, setHidePrices] = useState<boolean>(initialHidePrices);
   const [loading, setLoading] = useState(initialFabrics.length === 0);
   const [searchQuery, setSearchQuery] = useState("");
@@ -132,9 +139,21 @@ export default function CatalogClient({ initialFabrics, hidePrices: initialHideP
   const [selectedGsmFilter, setSelectedGsmFilter] = useState<string>("All");
   const [sortBy, setSortBy] = useState<string>("default");
 
+  const fetchCategories = () => {
+    fetch("/api/categories", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data?.categories) && data.categories.length > 0) {
+          setCategories(data.categories);
+        }
+      })
+      .catch(() => {});
+  };
+
   // Refresh data di background agar selalu sinkron dengan pengaturan portal
   const refreshCatalog = (showLoading = false) => {
     if (showLoading) setLoading(true);
+    fetchCategories();
     fetch(`/api/products?lang=${locale}&t=${Date.now()}`, { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
@@ -156,7 +175,10 @@ export default function CatalogClient({ initialFabrics, hidePrices: initialHideP
 
     // Sinkronisasi otomatis saat user kembali ke tab ini atau saat admin mengubah setting di tab portal
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === "texora_catalog_hide_prices") {
+      if (
+        e.key === "texora_catalog_hide_prices" ||
+        e.key === "texora_catalog_categories"
+      ) {
         refreshCatalog(false);
       }
     };
@@ -172,6 +194,33 @@ export default function CatalogClient({ initialFabrics, hidePrices: initialHideP
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locale]);
+
+  // Daftar kategori dinamis: membaca dari master kategori database & produk aktif
+  const dynamicCategories = useMemo(() => {
+    const list: Array<{ v: string; label: string }> = [
+      { v: "All", label: t("cat.all") || "Semua Kategori" },
+    ];
+    const uniqueCats = Array.from(
+      new Set([
+        ...categories,
+        ...fabrics.map((f) => f.category).filter(Boolean),
+      ])
+    ).filter(Boolean).sort((a, b) => a.localeCompare(b, "id"));
+
+    const translationKeyMap: Record<string, string> = {
+      Sportswear: "cat.sport",
+      "Fashion & Hijab": "cat.fashion",
+      "Home Living": "cat.home",
+      "Merchandise & Flag": "cat.merch",
+    };
+
+    for (const c of uniqueCats) {
+      const k = translationKeyMap[c];
+      const translated = k ? t(k) : c;
+      list.push({ v: c, label: translated || c });
+    }
+    return list;
+  }, [categories, fabrics, t]);
 
   const filteredFabrics = fabrics.filter((fabric) => {
     const matchesSearch = 
@@ -254,15 +303,23 @@ export default function CatalogClient({ initialFabrics, hidePrices: initialHideP
         className="flex flex-wrap items-center gap-2 text-xs"
       >
         <span className="text-slate-500 font-semibold">{t("catalog.panduan")}</span>
-        {CATEGORY_SEO.map((c) => (
-          <Link
-            key={c.slug}
-            href={localePath(`/kategori/${c.slug}`)}
-            className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-brand-300 hover:border-brand-500/40 transition-colors font-medium"
-          >
-            {c.name}
-          </Link>
-        ))}
+        {dynamicCategories
+          .filter((cat) => cat.v !== "All")
+          .map((cat) => {
+            const seoEntry = CATEGORY_SEO.find(
+              (c) => c.dbCategory === cat.v || c.name === cat.v
+            );
+            const slug = seoEntry ? seoEntry.slug : slugifyCategory(cat.v);
+            return (
+              <Link
+                key={cat.v}
+                href={localePath(`/kategori/${slug}`)}
+                className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-brand-300 hover:border-brand-500/40 transition-colors font-medium"
+              >
+                {cat.label}
+              </Link>
+            );
+          })}
         <Link
           href={localePath("/kategori")}
           className="px-3 py-1.5 rounded-lg bg-brand-500/15 border border-brand-500/30 text-brand-300 hover:bg-brand-500/25 transition-colors font-semibold"
@@ -289,13 +346,7 @@ export default function CatalogClient({ initialFabrics, hidePrices: initialHideP
 
           {/* Category Filter */}
           <div className="md:col-span-7 flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
-            {[
-              { v: "All", k: "cat.all" },
-              { v: "Sportswear", k: "cat.sport" },
-              { v: "Fashion & Hijab", k: "cat.fashion" },
-              { v: "Home Living", k: "cat.home" },
-              { v: "Merchandise & Flag", k: "cat.merch" },
-            ].map((cat) => (
+            {dynamicCategories.map((cat) => (
               <button
                 key={cat.v}
                 onClick={() => setSelectedCategory(cat.v)}
@@ -305,7 +356,7 @@ export default function CatalogClient({ initialFabrics, hidePrices: initialHideP
                     : "bg-slate-900 text-slate-400 hover:text-white border border-slate-800"
                 }`}
               >
-                {t(cat.k)} {cat.v === "All" ? `(${fabrics.length})` : ""}
+                {cat.label} {cat.v === "All" ? `(${fabrics.length})` : ""}
               </button>
             ))}
           </div>

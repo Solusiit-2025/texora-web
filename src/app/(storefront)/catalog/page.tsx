@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import CatalogClient from "./CatalogClient";
 import { JsonLd } from "@/components/common/JsonLd";
 import { getStorefrontProducts } from "@/lib/storefront-data";
+import { getCategories } from "@/lib/categories";
 import { isPriceHidden, stripProductPrices } from "@/lib/catalog-visibility";
 import { getRequestLocale, getContentLocale } from "@/lib/server-locale";
 import { localizeRows } from "@/lib/content-translator";
@@ -43,7 +44,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function CatalogPage() {
   const lang = await getContentLocale();
-  const productsRaw = await getStorefrontProducts();
+  const [productsRaw, categories] = await Promise.all([
+    getStorefrontProducts(),
+    getCategories().catch(() => []),
+  ]);
   const products = lang
     ? await localizeRows("product", productsRaw, (p: any) => p.slug, ["description"], lang)
     : productsRaw;
@@ -71,7 +75,7 @@ export default async function CatalogPage() {
     "@id": `${SITE_URL}/catalog#itemlist`,
     name: "Katalog Kain Sublimasi",
     numberOfItems: products.length,
-    itemListElement: products.slice(0, 50).map((p, i) => ({
+    itemListElement: products.slice(0, 50).map((p: any, i: number) => ({
       "@type": "ListItem",
       position: i + 1,
       url: `${SITE_URL}/catalog/${p.slug}`,
@@ -85,7 +89,11 @@ export default async function CatalogPage() {
         schema={[breadcrumbSchema, webPageSchema, itemListSchema]}
         id="ld-catalog"
       />
-      <CatalogClient initialFabrics={visibleProducts} hidePrices={hidePrices} />
+      <CatalogClient
+        initialFabrics={visibleProducts}
+        hidePrices={hidePrices}
+        initialCategories={categories}
+      />
     </>
   );
 }

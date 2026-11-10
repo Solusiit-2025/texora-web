@@ -23,6 +23,8 @@ import {
   ExternalLink,
   Eye,
   EyeOff,
+  Tag,
+  Image as ImageIcon,
 } from "lucide-react";
 import { formatRupiah, formatNumber } from "@/lib/utils";
 import { metersToYards, yardsToMeters, pricePerYard, pricePerYardExact, pricePerMeterFromYard } from "@/lib/units";
@@ -32,8 +34,8 @@ import { htmlToPlainText } from "@/lib/sanitize";
 import { getImageFileDimensions, isLowResolutionImage } from "@/lib/image-gallery";
 import { shrinkImageForUpload, uploadImageFile } from "@/lib/upload-client";
 
-/** Batas galeri gambar kain (sinkron lib/image-gallery). */
-const MAX_PRODUCT_IMAGES = 5;
+/** Batas galeri gambar kain (sinkron lib/image-gallery: maks 10 gambar). */
+const MAX_PRODUCT_IMAGES = 10;
 const MAX_PRODUCT_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB per gambar
 
 /**
@@ -141,13 +143,17 @@ export default function CatalogManagementPage() {
   const [hidePrice, setHidePrice] = useState(false);
   const [hidePriceBusy, setHidePriceBusy] = useState(false);
 
-  // ── Master kategori (dikelola via /api/categories) ──
+  // ── Master kategori dinamis (dikelola via /api/categories) ──
   const [categories, setCategories] = useState<string[]>([]);
-  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [categoryDetails, setCategoryDetails] = useState<
+    Array<{ id: string; name: string; productCount: number }>
+  >([]);
+  const [showManageCategoryModal, setShowManageCategoryModal] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [categoryError, setCategoryError] = useState<string | null>(null);
   const [categoryWarning, setCategoryWarning] = useState<string | null>(null);
   const [savingCategory, setSavingCategory] = useState(false);
+  const [deletingCategory, setDeletingCategory] = useState<string | null>(null);
 
   /** Katalog PDF unggahan manual (CMS). null = memakai katalog otomatis. */
   const [catalogPdf, setCatalogPdf] = useState<{
@@ -315,9 +321,9 @@ export default function CatalogManagementPage() {
       const res = await fetch("/api/categories", { cache: "no-store" });
       const json = await res.json();
       if (json?.categories?.length) setCategories(json.categories);
+      if (json?.details?.length) setCategoryDetails(json.details);
     } catch (err) {
       console.error("Failed to load categories:", err);
-      // Fallback: derive dari produk + default ((service tetap jalan walau API kategori error)
     }
   };
 
@@ -326,7 +332,7 @@ export default function CatalogManagementPage() {
   const catKey = (s: string) =>
     s.toLowerCase().replace(/[^a-z0-9]+/g, "").replace(/(es|s)$/, "");
 
-  // Daftar dropdown & chip: dari master kategori (API). Fallback dari produk jika API gagal.
+  // Daftar dropdown & chip: dari master kategori dinamis (API). Fallback dari produk jika API gagal.
   const categoryList =
     categories.length > 0
       ? categories
@@ -380,15 +386,49 @@ export default function CatalogManagementPage() {
         return;
       }
       setCategories(json.categories || []);
+      if (json.details?.length) setCategoryDetails(json.details);
       setFormData({ ...formData, category: json.category });
-      setShowCategoryModal(false);
       setNewCategoryName("");
       setCategoryWarning(null);
-      showNotice("success", `Kategori "${json.category}" ditambahkan & langsung terpilih.`);
+      try {
+        localStorage.setItem("texora_catalog_categories", String(Date.now()));
+      } catch {}
+      showNotice("success", `Kategori "${json.category}" berhasil ditambahkan.`);
     } catch {
       setCategoryError("Koneksi gagal. Silakan coba lagi.");
     } finally {
       setSavingCategory(false);
+    }
+  };
+
+  const handleDeleteCategory = async (catName: string) => {
+    if (!window.confirm(`Hapus kategori "${catName}" dari master katalog?`)) return;
+    setDeletingCategory(catName);
+    setCategoryError(null);
+    try {
+      const res = await fetch(`/api/categories?name=${encodeURIComponent(catName)}`, {
+        method: "DELETE",
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        setCategoryError(json.error || "Gagal menghapus kategori.");
+        showNotice("error", json.error || "Gagal menghapus kategori.");
+        return;
+      }
+      setCategories(json.categories || []);
+      if (json.details?.length) setCategoryDetails(json.details);
+      if (selectedCategory === catName) {
+        setSelectedCategory("ALL");
+      }
+      try {
+        localStorage.setItem("texora_catalog_categories", String(Date.now()));
+      } catch {}
+      showNotice("success", `Kategori "${catName}" berhasil dihapus.`);
+    } catch {
+      setCategoryError("Koneksi gagal. Kategori tidak terhapus.");
+      showNotice("error", "Koneksi gagal. Kategori tidak terhapus.");
+    } finally {
+      setDeletingCategory(null);
     }
   };
 
@@ -922,20 +962,38 @@ export default function CatalogManagementPage() {
 
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 w-full sm:w-auto">
-          {["ALL", ...categoryList].map((cat) => (            <button
-              key={cat}
-              type="button"
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-3 py-1.5 rounded-xl text-[11px] font-bold shrink-0 transition-all ${
-                selectedCategory === cat
-                  ? "bg-brand-500 text-slate-950"
-                  : "bg-slate-900 text-slate-400 hover:text-white border border-slate-800"
-              }`}
-            >
-              {cat === "ALL" ? "Semua Kategori" : cat}
-            </button>
-          ))}
+            {["ALL", ...categoryList].map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-3 py-1.5 rounded-xl text-[11px] font-bold shrink-0 transition-all ${
+                  selectedCategory === cat
+                    ? "bg-brand-500 text-slate-950"
+                    : "bg-slate-900 text-slate-400 hover:text-white border border-slate-800"
+                }`}
+              >
+                {cat === "ALL" ? "Semua Kategori" : cat}
+              </button>
+            ))}
           </div>
+
+          {/* Tombol Kelola Kategori */}
+          <button
+            type="button"
+            onClick={() => {
+              setShowManageCategoryModal(true);
+              setCategoryError(null);
+              setCategoryWarning(null);
+              setNewCategoryName("");
+              fetchCategories();
+            }}
+            title="Kelola Master Kategori (Tambah & Hapus Kategori)"
+            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold bg-slate-900 hover:bg-slate-800 border border-slate-700/80 hover:border-brand-500/50 text-slate-300 hover:text-white transition-all"
+          >
+            <Tag className="w-3.5 h-3.5 text-brand-400" />
+            Kelola Kategori
+          </button>
 
           {/* Toggle tampilkan/sembunyikan harga di kartu */}
           <button
@@ -971,58 +1029,79 @@ export default function CatalogManagementPage() {
       {/* Fabrics Grid */}
       {!loading && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredFabrics.map((fabric) => (
-            <div
-              key={fabric.id}
-              className="glass-panel rounded-3xl border border-slate-800 hover:border-brand-500/50 transition-all overflow-hidden flex flex-col justify-between group"
-            >
-              <div>
-                <div className="h-44 relative overflow-hidden bg-slate-950">
-                  <img
-                    src={fabric.thumbnailUrl}
-                    alt={fabric.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                  />
-                  <div className="absolute top-3 left-3 bg-slate-900/90 backdrop-blur px-2.5 py-1 rounded-lg border border-slate-700 text-[10px] font-bold text-brand-300">
-                    {fabric.category}
-                  </div>
-                  <div className="absolute top-3 right-3 bg-emerald-500/20 backdrop-blur border border-emerald-500/40 text-emerald-400 px-2.5 py-1 rounded-lg text-[10px] font-bold">
-                    Ready Sublimasi
-                  </div>
-                </div>
+          {filteredFabrics.map((fabric) => {
+            const uploadedImageCount =
+              Array.isArray(fabric.images) && fabric.images.length > 0
+                ? fabric.images.length
+                : fabric.thumbnailUrl
+                ? 1
+                : 0;
 
-                <div className="p-5 space-y-3">
-                  <h3 className="text-base font-display font-bold text-white group-hover:text-brand-300 transition-colors">
-                    {fabric.name}
-                  </h3>
-                  <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
-                    {htmlToPlainText(fabric.description, 140)}
-                  </p>
+            return (
+              <div
+                key={fabric.id}
+                className="glass-panel rounded-3xl border border-slate-800 hover:border-brand-500/50 transition-all overflow-hidden flex flex-col justify-between group"
+              >
+                <div>
+                  <div className="h-44 relative overflow-hidden bg-slate-950">
+                    <img
+                      src={fabric.thumbnailUrl}
+                      alt={fabric.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    />
+                    <div className="absolute top-3 left-3 bg-slate-900/90 backdrop-blur px-2.5 py-1 rounded-lg border border-slate-700 text-[10px] font-bold text-brand-300">
+                      {fabric.category}
+                    </div>
+                    <div className="absolute top-3 right-3 bg-emerald-500/20 backdrop-blur border border-emerald-500/40 text-emerald-400 px-2.5 py-1 rounded-lg text-[10px] font-bold">
+                      Ready Sublimasi
+                    </div>
 
-                  <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800/80 space-y-1.5 text-[11px]">
-                    <div className="flex justify-between text-slate-400">
-                      <span>Komposisi Serat:</span>
-                      <span className="font-semibold text-white">{fabric.composition}</span>
-                    </div>
-                    <div className="flex justify-between text-slate-400">
-                      <span>Anyaman & Lebar:</span>
-                      <span className="font-semibold text-white">
-                        {fabric.weaveType} ({fabric.widthInch}&quot;)
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-slate-400">
-                      <span>Varian Gramasi:</span>
-                      <span className="font-semibold text-brand-400">
-                        {fabric.variants.map((v) => `${v.gsm} GSM`).join(", ")}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-slate-400">
-                      <span>Total Stok Tersedia:</span>
-                      <span className="font-mono text-emerald-400 font-semibold">
-                        {metersToYards(fabric.variants.reduce((acc, v) => acc + (v.stockMeters || 0), 0))} Yard
-                      </span>
+                    {/* Badge Label Jumlah Gambar Terupload */}
+                    <div className="absolute bottom-3 left-3 bg-slate-950/85 backdrop-blur px-2.5 py-1 rounded-lg border border-slate-700/80 flex items-center gap-1.5 text-[10px] font-bold text-slate-200 shadow-md">
+                      <ImageIcon className="w-3.5 h-3.5 text-brand-400" />
+                      <span>{uploadedImageCount} / {MAX_PRODUCT_IMAGES} Foto</span>
                     </div>
                   </div>
+
+                  <div className="p-5 space-y-3">
+                    <h3 className="text-base font-display font-bold text-white group-hover:text-brand-300 transition-colors">
+                      {fabric.name}
+                    </h3>
+                    <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+                      {htmlToPlainText(fabric.description, 140)}
+                    </p>
+
+                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800/80 space-y-1.5 text-[11px]">
+                      <div className="flex justify-between text-slate-400">
+                        <span>Komposisi Serat:</span>
+                        <span className="font-semibold text-white">{fabric.composition}</span>
+                      </div>
+                      <div className="flex justify-between text-slate-400">
+                        <span>Anyaman & Lebar:</span>
+                        <span className="font-semibold text-white">
+                          {fabric.weaveType} ({fabric.widthInch}&quot;)
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-slate-400">
+                        <span>Varian Gramasi:</span>
+                        <span className="font-semibold text-brand-400">
+                          {fabric.variants.map((v) => `${v.gsm} GSM`).join(", ")}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-slate-400">
+                        <span>Total Stok Tersedia:</span>
+                        <span className="font-mono text-emerald-400 font-semibold">
+                          {metersToYards(fabric.variants.reduce((acc, v) => acc + (v.stockMeters || 0), 0))} Yard
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-slate-400 pt-1 border-t border-slate-800/70">
+                        <span>Foto Terupload:</span>
+                        <span className="font-semibold text-brand-300 flex items-center gap-1 font-mono">
+                          <ImageIcon className="w-3 h-3 text-brand-400" />
+                          {uploadedImageCount} / {MAX_PRODUCT_IMAGES} Foto
+                        </span>
+                      </div>
+                    </div>
 
                   {/* Pricing Tiers Preview (bisa disembunyikan via toggle) */}
                   <div className="pt-1">
@@ -1083,7 +1162,8 @@ export default function CatalogManagementPage() {
                 </div>
               </div>
             </div>
-          ))}
+          );
+        })}
         </div>
       )}
 
@@ -1142,15 +1222,16 @@ export default function CatalogManagementPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        setShowCategoryModal(true);
+                        setShowManageCategoryModal(true);
                         setNewCategoryName("");
                         setCategoryError(null);
                         setCategoryWarning(null);
+                        fetchCategories();
                       }}
                       className="flex items-center gap-1 text-[11px] font-bold text-brand-400 hover:text-brand-300 transition-colors"
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      Kategori
+                      Kelola Kategori
                     </button>
                   </div>
                   <select
@@ -1498,80 +1579,147 @@ export default function CatalogManagementPage() {
         </div>
       )}
 
-      {/* Modal Tambah Kategori Baru */}
-      {showCategoryModal && (
+      {/* Modal Kelola Kategori Dinamis (Tambah & Hapus) */}
+      {showManageCategoryModal && (
         <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="max-w-sm w-full glass-panel p-6 rounded-3xl border border-brand-500/30 shadow-2xl space-y-4">
+          <div className="max-w-lg w-full glass-panel p-6 rounded-3xl border border-brand-500/30 shadow-2xl space-y-5 max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div>
-                <h3 className="text-lg font-display font-bold text-white">Tambah Kategori Baru</h3>
-                <p className="text-[11px] text-slate-400">
-                  Kategori akan tervalidasi otomatis (anti-duplikat).
-                </p>
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-brand-500/10 text-brand-400 border border-brand-500/20">
+                  <Tag className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-display font-bold text-white">Kelola Kategori Kain</h3>
+                  <p className="text-[11px] text-slate-400">
+                    Tambah kategori baru atau hapus kategori yang sudah tidak digunakan.
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
-                onClick={() => setShowCategoryModal(false)}
+                onClick={() => setShowManageCategoryModal(false)}
                 className="w-8 h-8 rounded-full bg-slate-900 text-slate-400 hover:text-white flex items-center justify-center"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div>
-              <label className="block text-slate-300 font-semibold mb-1 text-xs">Nama Kategori</label>
-              <input
-                type="text"
-                autoFocus
-                value={newCategoryName}
-                onChange={(e) => handleCategoryNameChange(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !savingCategory) handleAddCategory();
-                }}
-                placeholder="mis. Industrial Tent"
-                maxLength={60}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl py-2 px-3 text-xs text-white focus:outline-none focus:border-brand-500"
-              />
+            {/* Input Tambah Kategori Baru */}
+            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3">
+              <label className="block text-slate-300 font-semibold text-xs">
+                Tambah Kategori Baru
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  autoFocus
+                  value={newCategoryName}
+                  onChange={(e) => handleCategoryNameChange(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !savingCategory && newCategoryName.trim()) {
+                      handleAddCategory();
+                    }
+                  }}
+                  placeholder="Ketik nama kategori (mis. Activewear)..."
+                  maxLength={60}
+                  className="flex-1 bg-slate-950 border border-slate-700 rounded-xl py-2 px-3 text-xs text-white focus:outline-none focus:border-brand-500"
+                />
+                <button
+                  type="button"
+                  disabled={!newCategoryName.trim() || savingCategory}
+                  onClick={handleAddCategory}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-brand-500 text-slate-950 hover:bg-brand-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
+                >
+                  {savingCategory ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Plus className="w-3.5 h-3.5" />
+                  )}
+                  {savingCategory ? "Menyimpan..." : "Tambah"}
+                </button>
+              </div>
+
               {categoryWarning && (
-                <p className="text-[11px] text-amber-400 mt-2 flex items-start gap-1.5">
+                <p className="text-[11px] text-amber-400 flex items-start gap-1.5">
                   <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                   {categoryWarning}
                 </p>
               )}
               {categoryError && (
-                <p className="text-[11px] text-red-400 mt-2 flex items-start gap-1.5">
+                <p className="text-[11px] text-red-400 flex items-start gap-1.5">
                   <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                   {categoryError}
                 </p>
               )}
-              {categoryWarning && !categoryError && (
-                <p className="text-[10px] text-slate-500 mt-1">
-                  Cukup pilih kategori yang sudah ada di dropdown — server juga
-                  akan memvalidasi ulang saat disimpan.
-                </p>
-              )}
             </div>
 
-            <div className="flex justify-end gap-2 pt-1">
+            {/* Daftar Kategori Saat Ini */}
+            <div className="flex-1 overflow-y-auto space-y-2 pr-1 min-h-[160px] max-h-[320px]">
+              <div className="flex items-center justify-between text-xs text-slate-400 pb-1">
+                <span className="font-semibold text-white">Daftar Kategori ({categoryList.length})</span>
+                <span className="text-[10px]">Hanya kategori tanpa produk yang dapat dihapus</span>
+              </div>
+
+              {categoryList.map((catName) => {
+                const detail = categoryDetails.find((d) => d.name === catName);
+                const count = detail?.productCount ?? fabrics.filter((f) => f.category === catName).length;
+                const isDeleting = deletingCategory === catName;
+
+                return (
+                  <div
+                    key={catName}
+                    className="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 hover:border-slate-700 transition-colors"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className="font-semibold text-white text-xs">{catName}</span>
+                      <span
+                        className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
+                          count > 0
+                            ? "bg-brand-500/10 text-brand-300 border-brand-500/30"
+                            : "bg-slate-800 text-slate-400 border-slate-700"
+                        }`}
+                      >
+                        {count} kain
+                      </span>
+                    </div>
+
+                    <div>
+                      {count > 0 ? (
+                        <span
+                          title={`Kategori masih dipakai oleh ${count} kain. Ubah kategori kain tersebut terlebih dahulu agar bisa dihapus.`}
+                          className="text-[10px] text-slate-500 italic px-2 py-1"
+                        >
+                          Sedang digunakan
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={isDeleting}
+                          onClick={() => handleDeleteCategory(catName)}
+                          title={`Hapus kategori "${catName}"`}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-500/30 border border-rose-500/30 transition-colors disabled:opacity-50"
+                        >
+                          {isDeleting ? (
+                            <RefreshCw className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-3 h-3" />
+                          )}
+                          Hapus
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-slate-800">
               <button
                 type="button"
-                onClick={() => setShowCategoryModal(false)}
-                className="px-4 py-2 rounded-xl text-[11px] font-bold bg-slate-900 text-slate-300 hover:text-white border border-slate-800 transition-colors"
+                onClick={() => setShowManageCategoryModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 hover:text-white border border-slate-800 transition-colors"
               >
-                Batal
-              </button>
-              <button
-                type="button"
-                disabled={!newCategoryName.trim() || savingCategory}
-                onClick={handleAddCategory}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-bold bg-brand-500 text-slate-950 hover:bg-brand-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                {savingCategory ? (
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Plus className="w-3.5 h-3.5" />
-                )}
-                {savingCategory ? "Menyimpan..." : "Tambah Kategori"}
+                Tutup
               </button>
             </div>
           </div>

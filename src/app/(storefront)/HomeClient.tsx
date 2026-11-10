@@ -3,7 +3,7 @@
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MOCK_FABRICS } from "@/lib/mock-data";
 import { formatRupiah, formatNumber } from "@/lib/utils";
@@ -238,6 +238,7 @@ export default function HomePage({ initialData }: HomeClientProps) {
   const [fabricsList, setFabricsList] = useState<any[]>(
     initialData?.fabrics?.length ? initialData.fabrics : MOCK_FABRICS
   );
+  const [masterCategories, setMasterCategories] = useState<string[]>([]);
   const [heroSlides, setHeroSlides] = useState<any[]>(
     initialData?.heroSlides?.length ? initialData.heroSlides : HERO_SLIDES
   );
@@ -281,10 +282,15 @@ export default function HomePage({ initialData }: HomeClientProps) {
   useEffect(() => {
     async function loadLiveData() {
       try {
-        const [prodRes, cmsRes] = await Promise.all([
+        const [prodRes, cmsRes, catRes] = await Promise.all([
           fetch(`/api/products?lang=${locale}`).then((r) => r.json()).catch(() => null),
           fetch(`/api/cms?lang=${locale}`).then((r) => r.json()).catch(() => null),
+          fetch(`/api/categories`).then((r) => r.json()).catch(() => null),
         ]);
+
+        if (catRes?.categories?.length > 0) {
+          setMasterCategories(catRes.categories);
+        }
 
         if (prodRes?.success && prodRes.data?.length > 0) {
           setFabricsList(prodRes.data);
@@ -363,6 +369,32 @@ export default function HomePage({ initialData }: HomeClientProps) {
   const fabrics = category === "All" ? fabricsList : fabricsList.filter((f) => f.category === category);
   const container = "texora-container";
   const pad2 = (n: number) => String(n).padStart(2, "0");
+
+  const availableCategories = useMemo(() => {
+    const list: Array<{ v: string; label: string }> = [
+      { v: "All", label: t("cat.all") || "Semua Kategori" },
+    ];
+    const uniqueCats = Array.from(
+      new Set([
+        ...masterCategories,
+        ...fabricsList.map((f) => f.category).filter(Boolean),
+      ])
+    ).filter(Boolean).sort((a, b) => a.localeCompare(b, "id"));
+
+    const translationKeyMap: Record<string, string> = {
+      Sportswear: "cat.sport",
+      "Fashion & Hijab": "cat.fashion",
+      "Home Living": "cat.home",
+      "Merchandise & Flag": "cat.merch",
+    };
+
+    for (const c of uniqueCats) {
+      const k = translationKeyMap[c];
+      const translated = k ? t(k) : c;
+      list.push({ v: c, label: translated || c });
+    }
+    return list;
+  }, [masterCategories, fabricsList, t]);
 
   // Copy hero: utamakan nilai CMS, fallback ke kamus i18n per field.
   // (Trim supaya field yang dikosongkan admin tidak meninggalkan ruang kosong.)
@@ -769,13 +801,7 @@ export default function HomePage({ initialData }: HomeClientProps) {
             role="tablist"
             aria-label="Filter kategori kain"
           >
-            {[
-              { v: "All", k: "cat.all" },
-              { v: "Sportswear", k: "cat.sport" },
-              { v: "Fashion & Hijab", k: "cat.fashion" },
-              { v: "Home Living", k: "cat.home" },
-              { v: "Merchandise & Flag", k: "cat.merch" },
-            ].map((c) => (
+            {availableCategories.map((c) => (
               <button
                 key={c.v}
                 role="tab"
@@ -792,7 +818,7 @@ export default function HomePage({ initialData }: HomeClientProps) {
                     transition={{ type: "spring", stiffness: 400, damping: 32 }}
                   />
                 )}
-                <span className="relative">{t(c.k)}</span>
+                <span className="relative">{c.label}</span>
               </button>
             ))}
           </div>

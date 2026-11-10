@@ -2,27 +2,34 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import {
   allCategories,
+  getCategoriesWithDetails,
+  deleteCategory,
   categoryKey,
   pluralKey,
 } from "@/lib/categories";
+import { getAuthenticatedUser } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
 /**
  * MASTER KATEGORI KAIN
  *
- * GET  /api/categories          → daftar kategori (DB + kategori terpakai di produk + default)
- * POST /api/categories { name } → tambah kategori baru (tervalidasi)
+ * GET    /api/categories          → daftar kategori (array string & details dengan count produk)
+ * POST   /api/categories { name } → tambah kategori baru (tervalidasi)
+ * DELETE /api/categories { name } → hapus kategori (dicek agar tidak ada produk aktif)
  */
 
 export async function GET() {
   try {
-    const categories = await allCategories();
-    return NextResponse.json({ success: true, categories });
+    const [categories, details] = await Promise.all([
+      allCategories(),
+      getCategoriesWithDetails(),
+    ]);
+    return NextResponse.json({ success: true, categories, details });
   } catch (err) {
     console.error("[categories] GET gagal:", err);
     return NextResponse.json(
-      { success: false, error: "Gagal memuat kategori.", categories: [] },
+      { success: false, error: "Gagal memuat kategori.", categories: [], details: [] },
       { status: 500 }
     );
   }
@@ -30,6 +37,14 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await getAuthenticatedUser(request);
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Sesi tidak valid. Silakan login." },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json().catch(() => ({}));
     const name = String(body.name || "")
       .trim()
@@ -77,10 +92,9 @@ export async function POST(request: NextRequest) {
 
     try {
       await prisma.category.create({
-        data: { name, createdBy: null },
+        data: { name, createdBy: user.id || null },
       });
     } catch (dbErr: any) {
-      // Race condition: kategori dibuat bersamaan → P2002 unique constraint
       if (dbErr?.code === "P2002") {
         return NextResponse.json(
           { success: false, error: `Kategori "${name}" sudah ada.`, similar: name },
@@ -90,12 +104,70 @@ export async function POST(request: NextRequest) {
       throw dbErr;
     }
 
-    const categories = await allCategories();
-    return NextResponse.json({ success: true, category: name, categories });
+    const [categories, details] = await Promise.all([
+      allCategories(),
+      getCategoriesWithDetails(),
+    ]);
+    return NextResponse.json({ success: true, category: name, categories, details });
   } catch (err) {
     console.error("[categories] POST gagal:", err);
     return NextResponse.json(
       { success: false, error: "Gagal menyimpan kategori ke database." },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const user = await getAuthenticatedUser(request);
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Sesi tidak valid. Silakan login." },
+        { status: 401 }
+      );
+    }
+
+    let name = request.nextUrl.searchParams.get("name") || "";
+    let id = request.nextUrl.searchParams.get("id") || "";
+
+    if (!name && !id) {
+      const body = await request.json().catch(() => ({}));
+      name = body.name || "";
+      id = body.id || "";
+    }
+
+    const target = id || name;
+    if (!target) {
+      return NextResponse.json(
+        { success: false, error: "Parameter nama atau ID kategori wajib disertakan." },
+        { status: 400 }
+      );
+    }
+
+    const result = await deleteCategory(target);
+    if (!result.success) {
+      return NextResponse.json(
+        { success: false, error: result.error || "Gagal menghapus kategori." },
+        { status: 400 }
+      );
+    }
+
+    const [categories, details] = await Promise.all([
+      allCategories(),
+      getCategoriesWithDetails(),
+    ]);
+
+    return NextResponse.json({
+      success: true,
+      message: "Kategori berhasil dihapus.",
+      categories,
+      details,
+    });
+  } catch (err) {
+    console.error("[categories] DELETE gagal:", err);
+    return NextResponse.json(
+      { success: false, error: "Gagal menghapus kategori." },
       { status: 500 }
     );
   }
