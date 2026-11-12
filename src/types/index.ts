@@ -37,7 +37,7 @@ export interface FabricProduct {
   isSublimationReady: boolean;
   basePricePerMeter: number;
   thumbnailUrl: string;
-  /** JSON array URL galeri gambar (kolom galleryImages, maks 5). */
+  /** JSON array URL galeri gambar (kolom galleryImages, maks 30). */
   galleryImages?: string;
   /** Galeri yang sudah di-parse (array URL) — termasuk fallback thumbnail. */
   images?: string[];

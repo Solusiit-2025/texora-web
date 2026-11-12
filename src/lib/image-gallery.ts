@@ -2,12 +2,17 @@
  * Helper galeri gambar (JSON string di kolom `galleryImages`).
  * Dipakai oleh FabricProduct & Article agar format konsisten.
  */
-export const MAX_GALLERY_IMAGES = 10;
+/**
+ * Batas maksimum gambar galeri produk (kolom `galleryImages`).
+ * Dinaikkan dari 10 → 30 karena satu katalog motif bisa berisi
+ * lebih dari 10 corak/motif dalam satu produk kain.
+ */
+export const MAX_GALLERY_IMAGES = 30;
 
 export const PRODUCT_FALLBACK_THUMB =
   "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=800&q=80";
 
-/** Parse kolom galleryImages (JSON string) → array URL bersih (maks 5). */
+/** Parse kolom galleryImages (JSON string) → array URL bersih (maks MAX_GALLERY_IMAGES). */
 export function parseGalleryImages(raw: unknown): string[] {
   if (Array.isArray(raw)) {
     return raw.map((v) => String(v || "").trim()).filter(Boolean).slice(0, MAX_GALLERY_IMAGES);
@@ -22,7 +27,7 @@ export function parseGalleryImages(raw: unknown): string[] {
   }
 }
 
-/** Serialize input (array/JSON string) → JSON string siap disimpan (maks 5). */
+/** Serialize input (array/JSON string) → JSON string siap disimpan (maks MAX_GALLERY_IMAGES). */
 export function serializeGalleryImages(value: unknown): string {
   return JSON.stringify(parseGalleryImages(value));
 }

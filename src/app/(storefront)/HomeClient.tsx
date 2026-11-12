@@ -664,8 +664,12 @@ export default function HomePage({ initialData }: HomeClientProps) {
                     <BadgeCheck className="h-5 w-5" />
                   </span>
                   <div>
-                    <p className="text-[11px] font-bold text-white">{t("home.badge.oeko.title")}</p>
-                    <p className="text-[10px] text-slate-400">{t("home.badge.oeko.sub")}</p>
+                    <p className="text-[11px] font-bold text-white">
+                      {heroCopy("floatingBadge1Title", "home.badge.oeko.title")}
+                    </p>
+                    <p className="text-[10px] text-slate-400">
+                      {heroCopy("floatingBadge1Sub", "home.badge.oeko.sub")}
+                    </p>
                   </div>
                 </motion.div>
 
@@ -679,8 +683,12 @@ export default function HomePage({ initialData }: HomeClientProps) {
                     <Gauge className="h-5 w-5" />
                   </span>
                   <div>
-                    <p className="text-[11px] font-bold text-white">{t("home.badge.capacity.title")}</p>
-                    <p className="text-[10px] text-slate-400">{t("home.badge.capacity.sub")}</p>
+                    <p className="text-[11px] font-bold text-white">
+                      {heroCopy("floatingBadge2Title", "home.badge.capacity.title")}
+                    </p>
+                    <p className="text-[10px] text-slate-400">
+                      {heroCopy("floatingBadge2Sub", "home.badge.capacity.sub")}
+                    </p>
                   </div>
                 </motion.div>
               </div>

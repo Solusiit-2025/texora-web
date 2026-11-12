@@ -37,6 +37,12 @@ export interface HeroText {
   ctaPrint: string;
   /** Label tombol sekunder. */
   ctaCatalog: string;
+  /** Floating badge kiri atas di atas foto slider (default: Oeko-Tex Standard 100). */
+  floatingBadge1Title: string;
+  floatingBadge1Sub: string;
+  /** Floating badge kanan bawah di samping slider (default: Produksi 10.000 m/hari). */
+  floatingBadge2Title: string;
+  floatingBadge2Sub: string;
 }
 
 /** Field yang ikut diterjemahkan otomatis oleh AI (urutan = urutan form). */
@@ -52,6 +58,10 @@ export const HERO_TEXT_FIELDS = [
   "badge3",
   "ctaPrint",
   "ctaCatalog",
+  "floatingBadge1Title",
+  "floatingBadge1Sub",
+  "floatingBadge2Title",
+  "floatingBadge2Sub",
 ] as const;
 
 /**
@@ -70,6 +80,10 @@ export const DEFAULT_HERO_TEXT: HeroText = {
   badge3: "Termin 30/60 hari",
   ctaPrint: "Mulai cetak motif",
   ctaCatalog: "Lihat katalog kain",
+  floatingBadge1Title: "Oeko-Tex Standard 100",
+  floatingBadge1Sub: "Tinta aman & anti-luntur",
+  floatingBadge2Title: "Produksi 10.000 m/hari",
+  floatingBadge2Sub: "Lead time 3–7 hari kerja",
 };
 
 /** Metadata form CMS: label, hint, dan apakah memakai textarea. */
@@ -108,6 +122,26 @@ export const HERO_TEXT_FIELD_META: Array<{
     key: "ctaCatalog",
     label: "Tombol sekunder",
     hint: "Label tombol yang mengarah ke katalog kain.",
+  },
+  {
+    key: "floatingBadge1Title",
+    label: "Floating Badge Kiri (Judul)",
+    hint: "Badge mutu di atas foto slider kiri. Contoh: Oeko-Tex Standard 100",
+  },
+  {
+    key: "floatingBadge1Sub",
+    label: "Floating Badge Kiri (Keterangan)",
+    hint: "Keterangan badge kiri. Contoh: Tinta aman & anti-luntur",
+  },
+  {
+    key: "floatingBadge2Title",
+    label: "Floating Badge Kanan (Judul)",
+    hint: "Badge kapasitas produksi di samping slider. Contoh: Produksi 10.000 m/hari",
+  },
+  {
+    key: "floatingBadge2Sub",
+    label: "Floating Badge Kanan (Keterangan)",
+    hint: "Keterangan badge kanan. Contoh: Lead time 3–7 hari kerja",
   },
 ];
 

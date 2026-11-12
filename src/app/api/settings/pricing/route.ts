@@ -12,6 +12,15 @@ const DEFAULT_PRICING = {
   revisionPolicy: "Termasuk 2x revisi minor & digital 3D proofing mockup sebelum naik mesin cetak.",
 };
 
+/**
+ * Normalisasi nominal rupiah: menerima nilai apa pun (termasuk 12.500),
+ * tapi menolak NaN / negatif agar data pengaturan tidak rusak.
+ */
+function normalizeFee(value: unknown, fallback: number): number {
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 ? n : fallback;
+}
+
 export async function GET(request: Request) {
   try {
     const lang = normalizeLocale(new URL(request.url).searchParams.get("lang"));
@@ -24,13 +33,15 @@ export async function GET(request: Request) {
 
     const map = new Map(rows.map((r) => [r.key, r.value]));
 
-    const designServiceFee = map.has("pricing.design_service_fee")
-      ? Number(map.get("pricing.design_service_fee")) || DEFAULT_PRICING.designServiceFee
-      : DEFAULT_PRICING.designServiceFee;
+    const designServiceFee = normalizeFee(
+      map.get("pricing.design_service_fee"),
+      DEFAULT_PRICING.designServiceFee
+    );
 
-    const sublimationPrintFee = map.has("pricing.sublimation_print_fee")
-      ? Number(map.get("pricing.sublimation_print_fee")) || DEFAULT_PRICING.sublimationPrintFee
-      : DEFAULT_PRICING.sublimationPrintFee;
+    const sublimationPrintFee = normalizeFee(
+      map.get("pricing.sublimation_print_fee"),
+      DEFAULT_PRICING.sublimationPrintFee
+    );
 
     let designServiceTitle = map.get("pricing.design_service_title") || DEFAULT_PRICING.designServiceTitle;
     let designServiceDescription = map.get("pricing.design_service_description") || DEFAULT_PRICING.designServiceDescription;
@@ -79,15 +90,24 @@ export async function POST(request: Request) {
       revisionPolicy,
     } = body;
 
+    const safeDesignServiceFee = normalizeFee(
+      designServiceFee,
+      DEFAULT_PRICING.designServiceFee
+    );
+    const safeSublimationPrintFee = normalizeFee(
+      sublimationPrintFee,
+      DEFAULT_PRICING.sublimationPrintFee
+    );
+
     const entries = [
       {
         key: "pricing.design_service_fee",
-        value: String(Number(designServiceFee) || DEFAULT_PRICING.designServiceFee),
+        value: String(safeDesignServiceFee),
         label: "Tarif Jasa Desain Grafis (Rp)",
       },
       {
         key: "pricing.sublimation_print_fee",
-        value: String(Number(sublimationPrintFee) || DEFAULT_PRICING.sublimationPrintFee),
+        value: String(safeSublimationPrintFee),
         label: "Tarif Cetak Sublimasi per Meter (Rp)",
       },
       {
@@ -127,8 +147,8 @@ export async function POST(request: Request) {
       success: true,
       message: "Tarif layanan berhasil diperbarui oleh manajemen.",
       data: {
-        designServiceFee: Number(designServiceFee),
-        sublimationPrintFee: Number(sublimationPrintFee),
+        designServiceFee: safeDesignServiceFee,
+        sublimationPrintFee: safeSublimationPrintFee,
         designServiceTitle,
         designServiceDescription,
         revisionPolicy,

@@ -32,11 +32,14 @@ import { metersToYards, yardsToMeters, pricePerYard, pricePerYardExact, pricePer
 import { FabricProduct } from "@/types";
 import { RichTextEditor } from "@/components/common/RichTextEditor";
 import { htmlToPlainText } from "@/lib/sanitize";
-import { getImageFileDimensions, isLowResolutionImage } from "@/lib/image-gallery";
+import { getImageFileDimensions, isLowResolutionImage, MAX_GALLERY_IMAGES } from "@/lib/image-gallery";
 import { shrinkImageForUpload, uploadImageFile } from "@/lib/upload-client";
 
-/** Batas galeri gambar kain (sinkron lib/image-gallery: maks 10 gambar). */
-const MAX_PRODUCT_IMAGES = 10;
+/**
+ * Batas galeri gambar kain — satu sumber dengan `MAX_GALLERY_IMAGES`
+ * di lib/image-gallery (30 gambar) agar UI & API tidak berbeda.
+ */
+const MAX_PRODUCT_IMAGES = MAX_GALLERY_IMAGES;
 const MAX_PRODUCT_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB per gambar
 
 /**
@@ -194,7 +197,7 @@ export default function CatalogManagementPage() {
 
   const [imageBusy, setImageBusy] = useState(false);
 
-  /** Upload gambar galeri kain: JPG/PNG/GIF/AVIF → otomatis .webp (maks 5 gambar, 5MB). */
+  /** Upload gambar galeri kain: JPG/PNG/GIF/AVIF → otomatis .webp (maks MAX_PRODUCT_IMAGES gambar, 5MB). */
   const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     e.target.value = "";
@@ -627,12 +630,12 @@ export default function CatalogManagementPage() {
       stockMeters: fabric.variants[0]?.stockMeters || 2000,
       description: fabric.description,
       thumbnailUrl: fabric.thumbnailUrl || "",
-      // Galeri legacy: thumbnail lama + galleryImages (dedupe, maks 5).
+      // Galeri legacy: thumbnail lama + galleryImages (dedupe, maks MAX_PRODUCT_IMAGES).
       images: (fabric.images?.length
         ? fabric.images
         : [fabric.thumbnailUrl || ""])
         .filter((v, i, arr) => v && arr.indexOf(v) === i)
-        .slice(0, 5),
+        .slice(0, MAX_PRODUCT_IMAGES),
     });
     setPriceYardInput(String(pricePerYardExact(Number(fabric.basePricePerMeter) || 0)));
     setTierDrafts(
@@ -1557,12 +1560,15 @@ export default function CatalogManagementPage() {
                 )}
               </div>
 
-              {/* Galeri gambar — maks 5, JPG/PNG/GIF otomatis .webp */}
+              {/* Galeri gambar — maks MAX_PRODUCT_IMAGES, JPG/PNG/GIF otomatis .webp */}
               <div>
                 <label className="block text-slate-300 font-semibold mb-2">
                   Galeri Gambar ({formData.images.length}/{MAX_PRODUCT_IMAGES})
                   <span className="text-[10px] text-slate-500 font-normal ml-1">
                     JPG/PNG/GIF/AVIF otomatis jadi .webp · maks 5MB/gambar · gambar pertama = thumbnail
+                  </span>
+                  <span className="block text-[10px] text-slate-500 font-normal mt-0.5">
+                    Maksimal {MAX_PRODUCT_IMAGES} gambar per kain — cukup untuk katalog multi-motif.
                   </span>
                 </label>
                 <div className="flex flex-wrap gap-2">

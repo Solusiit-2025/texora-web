@@ -301,25 +301,31 @@ export function ImageCarousel({
             </>
           )}
 
-          {/* Dots Indicator Glassmorphic */}
-          <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20 px-2 py-1 rounded-full bg-slate-950/60 backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto">
-            {images.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                aria-label={`Gambar ${i + 1}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  goTo(i);
-                }}
-                className={`h-1.5 rounded-full transition-all duration-500 ease-out ${
-                  i === activeDot
-                    ? "w-5 bg-gradient-to-r from-brand-400 to-accent-cyan shadow-sm shadow-brand-500/50"
-                    : "w-1.5 bg-slate-400/40 hover:bg-white/80"
-                }`}
-              />
-            ))}
-          </div>
+          {/* Dots Indicator Glassmorphic — kalau gambar banyak, ganti jadi counter agar tidak meluber */}
+          {images.length > 12 ? (
+            <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 z-20 px-2.5 py-1 rounded-full bg-slate-950/60 backdrop-blur-md border border-white/10 shadow-lg text-[10px] font-mono font-bold text-white pointer-events-none">
+              {activeDot + 1} / {images.length}
+            </div>
+          ) : (
+            <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20 px-2 py-1 rounded-full bg-slate-950/60 backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto">
+              {images.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  aria-label={`Gambar ${i + 1}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    goTo(i);
+                  }}
+                  className={`h-1.5 rounded-full transition-all duration-500 ease-out ${
+                    i === activeDot
+                      ? "w-5 bg-gradient-to-r from-brand-400 to-accent-cyan shadow-sm shadow-brand-500/50"
+                      : "w-1.5 bg-slate-400/40 hover:bg-white/80"
+                  }`}
+                />
+              ))}
+            </div>
+          )}
 
           {/* Thumbnail strip opsional (dipakai di halaman detail artikel) */}
           {showThumbs && (

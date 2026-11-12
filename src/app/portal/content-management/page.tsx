@@ -28,6 +28,7 @@ import {
   Languages,
   Type,
   BadgeCheck,
+  Gauge,
   ArrowUpRight,
   MapPin,
   Mail,
@@ -1469,6 +1470,10 @@ function ContentManagementInner() {
     badge3: 44,
     ctaPrint: 28,
     ctaCatalog: 28,
+    floatingBadge1Title: 40,
+    floatingBadge1Sub: 60,
+    floatingBadge2Title: 40,
+    floatingBadge2Sub: 60,
   };
 
   const heroTextDirty = JSON.stringify(heroTextData) !== JSON.stringify(savedHeroText);
@@ -1778,6 +1783,29 @@ function ContentManagementInner() {
                     {heroTextData.ctaCatalog}
                   </span>
                 </div>
+
+                {/* Preview Floating Badges */}
+                <div className="mt-5 pt-4 border-t border-slate-800 flex flex-wrap gap-3">
+                  <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-slate-900/90 px-3 py-2 text-[10px]">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-400">
+                      <BadgeCheck className="h-3.5 w-3.5" />
+                    </span>
+                    <div>
+                      <p className="font-bold text-white">{heroTextData.floatingBadge1Title || "—"}</p>
+                      <p className="text-[9px] text-slate-400">{heroTextData.floatingBadge1Sub || "—"}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-slate-900/90 px-3 py-2 text-[10px]">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-brand-500/15 text-brand-400">
+                      <Gauge className="h-3.5 w-3.5" />
+                    </span>
+                    <div>
+                      <p className="font-bold text-white">{heroTextData.floatingBadge2Title || "—"}</p>
+                      <p className="text-[9px] text-slate-400">{heroTextData.floatingBadge2Sub || "—"}</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1870,6 +1898,39 @@ function ContentManagementInner() {
                 Tautan tombol tetap mengikuti halaman Studio Sublimasi dan Katalog — hanya
                 labelnya yang dapat diubah di sini.
               </p>
+            </div>
+
+            {/* 6. Floating Badges Slider */}
+            <div className="p-5 sm:p-6 space-y-4">
+              <div className="flex items-center gap-2">
+                <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-brand-500/15 text-[10px] font-bold text-brand-300">
+                  6
+                </span>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                  Floating Badges di Atas Foto Slider
+                </h3>
+              </div>
+              <p className="text-xs text-slate-400">
+                Dua badge melayang yang tampil di atas foto slider mesin/kain pada layar desktop & tablet.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
+                  <div className="flex items-center gap-2 text-xs font-bold text-emerald-400 pb-1 border-b border-slate-800">
+                    <BadgeCheck className="w-4 h-4" />
+                    <span>Badge Kiri Atas (Sertifikasi / Mutu)</span>
+                  </div>
+                  {renderHeroField("floatingBadge1Title")}
+                  {renderHeroField("floatingBadge1Sub")}
+                </div>
+                <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
+                  <div className="flex items-center gap-2 text-xs font-bold text-brand-400 pb-1 border-b border-slate-800">
+                    <Gauge className="w-4 h-4" />
+                    <span>Badge Kanan Bawah (Kapasitas / Lead Time)</span>
+                  </div>
+                  {renderHeroField("floatingBadge2Title")}
+                  {renderHeroField("floatingBadge2Sub")}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -2971,7 +3032,7 @@ function ContentManagementInner() {
                   <input
                     type="number"
                     min={0}
-                    step={5000}
+                    step={1}
                     value={pricingForm.designServiceFee}
                     onChange={(e) => setPricingForm({ ...pricingForm, designServiceFee: Number(e.target.value) })}
                     className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 pl-10 text-white font-mono font-bold text-sm focus:border-brand-500 focus:outline-none"
@@ -3033,7 +3094,7 @@ function ContentManagementInner() {
                   <input
                     type="number"
                     min={0}
-                    step={1000}
+                    step={1}
                     value={pricingForm.sublimationPrintFee}
                     onChange={(e) => setPricingForm({ ...pricingForm, sublimationPrintFee: Number(e.target.value) })}
                     className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 pl-10 text-white font-mono font-bold text-sm focus:border-brand-500 focus:outline-none"
@@ -3041,6 +3102,7 @@ function ContentManagementInner() {
                 </div>
                 <p className="text-[11px] text-slate-500 mt-1">
                   Biaya cetak per meter yang digunakan di simulator kustom sublimasi dan katalog kain.
+                  Nominal bebas (tidak harus bulat), misalnya 12.500.
                 </p>
               </div>
 
